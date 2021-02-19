@@ -17,4 +17,4 @@ that package.
 
 (2) Do ./compile. This will compile all necessary code, put object files
 into the bin folder, and copy the id_dist static library id_lib.a to the
-lib-static folder.
+lib-static folder. Ignore all pesky warnings.

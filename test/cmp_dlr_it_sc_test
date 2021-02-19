@@ -1,0 +1,1 @@
+gfortran dlr_it_sc_test.f90 ../bin/*.o ../lib-static/id_lib.a -llapack -lblas -o test
