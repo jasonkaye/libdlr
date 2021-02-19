@@ -1,0 +1,5 @@
+cp id_dist/id_lib.a lib-static
+gfortran -c src/utils/*.f
+gfortran -c src/utils/*.f90
+gfortran -c src/dlr_sr.f90
+mv *.o bin 
