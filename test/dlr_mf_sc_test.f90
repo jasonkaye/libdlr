@@ -76,7 +76,7 @@
 
       allocate(kmat(nt,no),t(nt),om(no))
 
-      call kfine_cc(lambda,eps,fb,npt,npo,p,t,om,kmat,kerr)
+      call kfine_cc(fb,lambda,p,npt,npo,t,om,kmat,kerr)
 
       write(6,*) ''
       write(6,*) '-------------- Fine K discretization --------------'

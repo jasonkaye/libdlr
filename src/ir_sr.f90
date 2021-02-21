@@ -1,3 +1,135 @@
+      subroutine kcgl(lambda,eps,kfun,nt,no,p,t,om,twgt,pbpt,kmat)
+
+      ! ----- Get discretization of kernel K(tau,omega) on
+      ! dyadically-refined CGL grids on tau and omega -----
+
+      implicit none
+      integer nt,no,p
+      real *8 lambda,eps,t(2*nt*p),om(2*no*p),twgt(2*nt*p)
+      real *8 pbpt(2*nt+1),kmat(2*nt*p,2*no*p)
+      real *8, external :: kfun
+
+      integer nnt,nno,i,j
+      real *8 one,a,b,start,finish
+      real *8, allocatable :: xgl(:),legf(:,:),legb(:,:),wgl(:)
+      real *8, allocatable :: pbpo(:)
+      real *8, allocatable :: err1(:,:),err2(:,:)
+      real *8, allocatable :: ktcoef(:,:),komcoef(:,:)
+
+      one = 1.0d0
+
+      ! --- Derived parameters ---
+
+      nnt = 2*nt*p
+      nno = 2*no*p
+
+      ! --- Get Gauss-Legendre nodes and transforms ---
+
+      allocate(xgl(p),legf(p,p),legb(p,p),wgl(p))
+      
+      call legeexps(2,p,xgl,legf,legb,wgl)
+
+      ! ----- Get tau space discretization -----
+
+      ! --- Panel break points ---
+
+      pbpt(1) = 0*one
+      do i=1,nt
+        pbpt(i+1) = one/2**(nt-i+1)
+      enddo
+
+      pbpt(nt+2:2*nt+1) = 1-pbpt(nt:1:-1)
+
+      ! --- Grid points ---
+
+      do i=1,2*nt
+        a = pbpt(i)
+        b = pbpt(i+1)
+        t((i-1)*p+1:i*p) = a + (b-a)*(xgl+one)/2
+        twgt((i-1)*p+1:i*p) = wgl*(b-a)/2
+      enddo
+
+      ! ----- Get omega space discretization -----
+
+      ! --- Panel break points ---
+
+      allocate(pbpo(2*no+1))
+
+      pbpo(no+1) = 0*one
+      do i=1,no
+        !pbpo(no+i+1) = lambda/2**(no-i+1)
+        pbpo(no+i+1) = lambda/2**(no-i)
+      enddo
+
+      pbpo(1:no) = -pbpo(2*no+1:no+2:-1)
+
+
+      ! --- Grid points ---
+
+      do i=1,2*no
+        a = pbpo(i)
+        b = pbpo(i+1)
+        om((i-1)*p+1:i*p) = a + (b-a)*(xgl+one)/2
+      enddo
+
+
+
+      ! ----- Sample K(tau,omega) on grid -----
+
+      do j=1,nno
+        do i=1,nnt/2
+
+          kmat(i,j) = kfun(t(i),om(j))
+
+        enddo
+      enddo
+
+      ! Copy second half of matrix from first half to improve accuracy
+      ! for extremely large nt: computing exp((1-t)*omega) loses digits
+      ! if t is very close to 1 and (1-t)*omega ~ 1, but exp(-omega*t)
+      ! is fine for small t and t*omega ~ 1.
+
+      kmat(nnt/2+1:nnt,1:nno) = kmat(nnt/2:1:-1,nno:1:-1)
+
+      ! --- Estimate error of discretization ---
+
+      allocate(ktcoef(nnt,nno),komcoef(nno,nnt))
+
+      call cgl_pt2coef(p,2*nt,nno,legf,kmat,ktcoef)
+
+      call cgl_pt2coef(p,2*no,nnt,legf,transpose(kmat),komcoef)
+
+      allocate(err1(2*nt,nno),err2(2*no,nnt))
+      
+      do j=1,nno
+        do i=1,2*nt
+          err1(i,j) = sum(abs(ktcoef((i-1)*p+p-4:i*p,j)))
+        enddo
+      enddo
+
+
+      do j=1,nnt
+        do i=1,2*no
+          err2(i,j) = sum(abs(komcoef((i-1)*p+p-4:i*p,j)))
+        enddo
+      enddo
+
+      write(6,*) '---------------------------------------------------'
+      write(6,*) 'Using ',nnt,' fine discretization nodes in tau'
+      write(6,*) 'Using ',nno,' fine discretization nodes in omega'
+      write(6,*) ''
+      write(6,*) 'Error of K(tau,omega) discretization in tau ~= ',&
+        maxval(err1)
+      write(6,*) 'Error of K(tau,omega) discretization in omega ~= ',&
+        maxval(err2)
+      write(6,*) '---------------------------------------------------'
+      write(6,*) ''
+
+
+      end subroutine kcgl
+
+
+      
       subroutine irbasis(lambda,eps,nt,no,p,kmat,twgt,rank,irb)
 
       ! ----- Compute intermediate representation basis -----

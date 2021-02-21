@@ -74,7 +74,7 @@
 
       allocate(kmat(nt,no),t(nt),om(no))
 
-      call kfine_cc(lambda,eps,fb,npt,npo,p,t,om,kmat,kerr)
+      call kfine_cc(fb,lambda,p,npt,npo,t,om,kmat,kerr)
 
       write(6,*) ''
       write(6,*) '-------------- Fine K discretization --------------'
@@ -98,7 +98,7 @@
 
       allocate(dlrit(rank),tidx(rank))
 
-      call dlr_it(lambda,nt,no,rank,t,kmat,oidx,dlrit,tidx)
+      call dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
 
 
       ! Get imaginary time values -> DLR coefficients transform matrix in LU form

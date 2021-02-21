@@ -72,7 +72,21 @@
 
       subroutine gridparams(lambda,p,npt,npo,nt,no)
 
-      ! ----- Set fine grid parameters based on Lambda -----
+      ! Set parameters for composite Chebyshev fine grid
+      !
+      ! Input:
+      !
+      ! lambda  - cutoff parameter
+      !
+      ! Output:
+      !
+      ! p       - Chebyshev degree in each subinterval
+      ! npt     - # subintervals on [0,1/2] in tau space (# subintervals
+      !             on [0,1] is 2*npt)
+      ! npo     - # subintervals on [0,lambda] in omega space (#
+      !             subintervals on [-lambda,lambda] is 2*npo)
+      ! nt      - # fine grid points in tau = 2*npt*p
+      ! no      - # fine grid points in omega = 2*npo*p
 
       implicit none
       integer p,npt,npo,nt,no
@@ -80,33 +94,53 @@
 
       p = 24 ! Chebyshev degree of panels
       
-      npt = ceiling(log(lambda)/log(2.0d0))-2 ! Half the # panels in fine tau grid
-      npo = ceiling(log(lambda)/log(2.0d0)) ! Half the # panels in fine omega grid
+      npt = ceiling(log(lambda)/log(2.0d0))-2
+      npo = ceiling(log(lambda)/log(2.0d0))
 
-      nt = 2*p*npt ! Total # fine grid points in tau
-      no = 2*p*npo ! Total # fine grid points in omega
+      nt = 2*p*npt
+      no = 2*p*npo
 
       end subroutine gridparams
 
 
-      subroutine kfine_cc(lambda,eps,fb,npt,npo,p,t,om,kmat,err)
+      subroutine kfine_cc(fb,lambda,p,npt,npo,t,om,kmat,err)
 
-      ! Get fine discretization of kernel K(tau,omega) on
-      ! dyadically-refined composite Chebyshev grids on tau and omega
+      ! Discretization of kernel K(tau,omega) on composite Chebyshev
+      ! fine grids in tau and omega
       !
-      ! This is a wrapper for the main subroutine, kfine_cc1
+      ! Note: this is a wrapper for the main subroutine, kfine_cc1
+      !
+      ! Input:
+      !
+      ! fb      - Fermionic (f) or bosonic (b) kernel
+      ! lambda  - cutoff parameter
+      ! p       - Chebyshev degree in each subinterval
+      ! npt     - # subintervals on [0,1/2] in tau space (# subintervals
+      !             on [0,1] is 2*npt)
+      ! npo     - # subintervals on [0,lambda] in omega space (#
+      !             subintervals on [-lambda,lambda] is 2*npo)
+      !
+      ! Output:
+      !
+      ! t       - tau fine grid points on (0,1/2) (half of full grid)
+      ! om      - omega fine grid points
+      ! kmat    - K(tau,omega) on fine grid 
+      ! err     - Error of composite Chebyshev interpolant of
+      !             K(tau,omega). err(1) is ~= max relative L^inf error
+      !             in tau over all omega in fine grid. err(2) is ~= max
+      !             L^inf error in omega over all tau in fine grid.
 
       implicit none
-      integer npt,npo,p
-      real *8 lambda,eps,t(npt*p),om(2*npo*p)
+      integer p,npt,npo
+      real *8 lambda,t(npt*p),om(2*npo*p)
       real *8 kmat(2*npt*p,2*npo*p),err(2)
       real *8, external :: kfunf,kfunb
       character :: fb
 
       if (fb.eq.'f') then
-        call kfine_cc1(lambda,eps,kfunf,npt,npo,p,t,om,kmat,err)
+        call kfine_cc1(kfunf,lambda,p,npt,npo,t,om,kmat,err)
       elseif (fb.eq.'b') then
-        call kfine_cc1(lambda,eps,kfunb,npt,npo,p,t,om,kmat,err)
+        call kfine_cc1(kfunb,lambda,p,npt,npo,t,om,kmat,err)
       else
         stop 'choose fb = f or b'
       endif
@@ -114,16 +148,17 @@
       end subroutine kfine_cc
 
 
-      subroutine kfine_cc1(lambda,eps,kfun,npt,npo,p,t,om,kmat,err)
+      subroutine kfine_cc1(kfun,lambda,p,npt,npo,t,om,kmat,err)
 
-      ! Get fine discretization of kernel K(tau,omega) on
-      ! dyadically-refined composite Chebyshev grids on tau and omega
+      ! Main subroutine for kfine_cc
       !
-      ! Main subroutine
+      ! See subroutine kfine_cc for description of arguments, except for
+      ! kfun, which indicates the kernel evaluator to be used, and
+      ! depends on whether fb = 'f' or fb = 'b'.
 
       implicit none
-      integer npt,npo,p
-      real *8 lambda,eps,t(npt*p),om(2*npo*p)
+      integer p,npt,npo
+      real *8 lambda,t(npt*p),om(2*npo*p)
       real *8 kmat(2*npt*p,2*npo*p),err(2)
       real *8, external :: kfun
 
@@ -138,15 +173,15 @@
       nt = 2*npt*p
       no = 2*npo*p
 
-      ! --- Get Chebyshev nodes and transform matrix ---
+      ! --- Chebyshev nodes and interpolation weights ---
 
       allocate(xc(p),wc(p))
       
       call barychebinit(p,xc,wc)
 
-      ! ----- Get tau space discretization -----
+      ! -- Tau space discretization ---
 
-      ! --- Panel break points ---
+      ! Panel break points
 
       allocate(pbpt(2*npt+1))
 
@@ -157,7 +192,7 @@
 
       !pbpt(npt+2:2*npt+1) = 1-pbpt(npt:1:-1)
 
-      ! --- Grid points ---
+      ! Grid points
 
       do i=1,npt
         a = pbpt(i)
@@ -165,9 +200,9 @@
         t((i-1)*p+1:i*p) = a + (b-a)*(xc+one)/2
       enddo
 
-      ! ----- Get omega space discretization -----
+      ! --- Omega space discretization ---
 
-      ! --- Panel break points ---
+      ! Panel break points
 
       allocate(pbpo(2*npo+1))
 
@@ -178,7 +213,7 @@
 
       pbpo(1:npo) = -pbpo(2*npo+1:npo+2:-1)
 
-      ! --- Grid points ---
+      ! Grid points
 
       do i=1,2*npo
         a = pbpo(i)
@@ -186,7 +221,7 @@
         om((i-1)*p+1:i*p) = a + (b-a)*(xc+one)/2
       enddo
 
-      ! ----- Sample K(tau,omega) on grid -----
+      ! --- Sample K(tau,omega) on grid ---
 
       do j=1,no
         do i=1,nt/2
@@ -204,11 +239,12 @@
       kmat(nt/2+1:nt,1:no) = kmat(nt/2:1:-1,no:1:-1)
 
 
-      ! ----- Check accuracy of Cheb interpolant on each panel in tau
+      ! --- Check accuracy of Cheb interpolant on each panel in tau
       ! for fixed omega, and each panel in omega for fixed tau, by
-      ! comparing with K(tau,omega) on Cheb grid of 2*p nodes -----
+      ! comparing with K(tau,omega) on Cheb grid of 2*p nodes ---
 
       allocate(xc2(2*p),wc2(2*p))
+
       call barychebinit(2*p,xc2,wc2)
 
       err(:) = 0.0d0
@@ -266,161 +302,41 @@
 
       enddo
 
-
       end subroutine kfine_cc1
 
 
-
-
-      subroutine kcgl(lambda,eps,kfun,nt,no,p,t,om,twgt,pbpt,kmat)
-
-      ! ----- Get discretization of kernel K(tau,omega) on
-      ! dyadically-refined CGL grids on tau and omega -----
-
-      implicit none
-      integer nt,no,p
-      real *8 lambda,eps,t(2*nt*p),om(2*no*p),twgt(2*nt*p)
-      real *8 pbpt(2*nt+1),kmat(2*nt*p,2*no*p)
-      real *8, external :: kfun
-
-      integer nnt,nno,i,j
-      real *8 one,a,b,start,finish
-      real *8, allocatable :: xgl(:),legf(:,:),legb(:,:),wgl(:)
-      real *8, allocatable :: pbpo(:)
-      real *8, allocatable :: err1(:,:),err2(:,:)
-      real *8, allocatable :: ktcoef(:,:),komcoef(:,:)
-
-      one = 1.0d0
-
-      ! --- Derived parameters ---
-
-      nnt = 2*nt*p
-      nno = 2*no*p
-
-      ! --- Get Gauss-Legendre nodes and transforms ---
-
-      allocate(xgl(p),legf(p,p),legb(p,p),wgl(p))
       
-      call legeexps(2,p,xgl,legf,legb,wgl)
+      subroutine dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrom,oidx)
 
-      ! ----- Get tau space discretization -----
-
-      ! --- Panel break points ---
-
-      pbpt(1) = 0*one
-      do i=1,nt
-        pbpt(i+1) = one/2**(nt-i+1)
-      enddo
-
-      pbpt(nt+2:2*nt+1) = 1-pbpt(nt:1:-1)
-
-      ! --- Grid points ---
-
-      do i=1,2*nt
-        a = pbpt(i)
-        b = pbpt(i+1)
-        t((i-1)*p+1:i*p) = a + (b-a)*(xgl+one)/2
-        twgt((i-1)*p+1:i*p) = wgl*(b-a)/2
-      enddo
-
-      ! ----- Get omega space discretization -----
-
-      ! --- Panel break points ---
-
-      allocate(pbpo(2*no+1))
-
-      pbpo(no+1) = 0*one
-      do i=1,no
-        !pbpo(no+i+1) = lambda/2**(no-i+1)
-        pbpo(no+i+1) = lambda/2**(no-i)
-      enddo
-
-      pbpo(1:no) = -pbpo(2*no+1:no+2:-1)
-
-
-      ! --- Grid points ---
-
-      do i=1,2*no
-        a = pbpo(i)
-        b = pbpo(i+1)
-        om((i-1)*p+1:i*p) = a + (b-a)*(xgl+one)/2
-      enddo
-
-
-
-      ! ----- Sample K(tau,omega) on grid -----
-
-      do j=1,nno
-        do i=1,nnt/2
-
-          kmat(i,j) = kfun(t(i),om(j))
-
-        enddo
-      enddo
-
-      ! Copy second half of matrix from first half to improve accuracy
-      ! for extremely large nt: computing exp((1-t)*omega) loses digits
-      ! if t is very close to 1 and (1-t)*omega ~ 1, but exp(-omega*t)
-      ! is fine for small t and t*omega ~ 1.
-
-      kmat(nnt/2+1:nnt,1:nno) = kmat(nnt/2:1:-1,nno:1:-1)
-
-      ! --- Estimate error of discretization ---
-
-      allocate(ktcoef(nnt,nno),komcoef(nno,nnt))
-
-      call cgl_pt2coef(p,2*nt,nno,legf,kmat,ktcoef)
-
-      call cgl_pt2coef(p,2*no,nnt,legf,transpose(kmat),komcoef)
-
-      allocate(err1(2*nt,nno),err2(2*no,nnt))
-      
-      do j=1,nno
-        do i=1,2*nt
-          err1(i,j) = sum(abs(ktcoef((i-1)*p+p-4:i*p,j)))
-        enddo
-      enddo
-
-
-      do j=1,nnt
-        do i=1,2*no
-          err2(i,j) = sum(abs(komcoef((i-1)*p+p-4:i*p,j)))
-        enddo
-      enddo
-
-      write(6,*) '---------------------------------------------------'
-      write(6,*) 'Using ',nnt,' fine discretization nodes in tau'
-      write(6,*) 'Using ',nno,' fine discretization nodes in omega'
-      write(6,*) ''
-      write(6,*) 'Error of K(tau,omega) discretization in tau ~= ',&
-        maxval(err1)
-      write(6,*) 'Error of K(tau,omega) discretization in omega ~= ',&
-        maxval(err2)
-      write(6,*) '---------------------------------------------------'
-      write(6,*) ''
-
-
-      end subroutine kcgl
-
-      
-      
-      subroutine dlr_rf(lambda,eps,nt,no,om,kmat,rank,opts,oidx)
-
-      ! Get real frequency DLR points
-
-      ! On input, rank is maximum possible rank and defines the sizes of
-      ! tpts and opts. On output, rank is the actual rank.
+      ! Select real frequency nodes defining DLR basis
+      !
+      ! Input:
+      !
+      ! lambda  - cutoff parameter
+      ! eps     - DLR error tolerance
+      ! nt      - # fine grid points in tau
+      ! no      - # fine grid points in omega
+      ! om      - omega fine grid points
+      ! kmat    - K(tau,omega) on fine grid
+      ! rank    - max possible rank of DLR, defining input size of some
+      !             arrays
+      !
+      ! Output :
+      !
+      ! rank    - rank of DLR (# basis functions)
+      ! dlrom   - selected real frequency nodes (omega points)
+      ! oidx    - column indices of kmat corresponding to selected real
+      !             frequency nodes
 
       implicit none
       integer nt,no,rank,oidx(rank)
-      real *8 lambda,eps,om(no),kmat(nt,no),opts(rank)
+      real *8 lambda,eps,om(no),kmat(nt,no),dlrom(rank)
 
-      integer i,j,k,info
       integer, allocatable :: list(:)
       real *8, allocatable :: tmp(:,:),work(:)
 
-      ! --- Get selected frequency points by pivoted QR on columns of
-      ! fine grid K matrix ---
+      ! --- Select real frequency nodes by pivoted QR on columns of 
+      ! kmat ---
 
       allocate(tmp(nt,no),list(no),work(max(nt,no)))
 
@@ -437,27 +353,44 @@
       ! Extract selected frequencies
 
       oidx = list(1:rank)
-      opts = om(oidx)
+      dlrom = om(oidx)
           
       end subroutine dlr_rf
 
 
-      subroutine dlr_it(lambda,nt,no,rank,t,kmat,oidx,dlrit,tidx)
+      subroutine dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
 
-      ! Get DLR imaginary time points
+      ! Select imaginary time nodes for construction of a DLR
+      !
+      ! Input:
+      !
+      ! lambda  - cutoff parameter
+      ! nt      - # fine grid points in tau
+      ! no      - # fine grid points in omega
+      ! t       - tau fine grid points
+      ! kmat    - K(tau,omega) on fine grid
+      ! rank    - rank of DLR (# basis functions)
+      ! oidx    - column indices of kmat corresponding to selected real
+      !             frequency nodes
+      !
+      ! Output :
+      !
+      ! dlrit   - selected imaginary time nodes (tau points)
+      ! tidx    - row indices of kmat corresponding to selected
+      !             imaginary time nodes
 
       implicit none
       integer nt,no,rank,oidx(rank),tidx(rank)
       real *8 lambda,t(nt),kmat(nt,no),dlrit(rank)
 
-      integer i,j,k,info
+      integer j,k
       integer, allocatable :: list(:)
       real *8, allocatable :: tmp(:,:),work(:)
 
-      ! --- Get selected imaginary time points by pivoted QR on rows of
-      ! selected columns ---
+      ! --- Select imaginary time nodes by pivoted QR on rows of 
+      ! kmat ---
 
-      ! Get matrix of selected columns, transposed
+      ! Matrix of selected columns
 
       allocate(tmp(rank,nt),list(nt),work(nt))
 
@@ -471,12 +404,12 @@
 
       call iddr_qrpiv(rank,nt,tmp,rank,list,work)
 
-      ! Rearrange indices to get selected imaginary time point indices
+      ! Rearrange indices to get selected imaginary time node indices
 
       call ind_rearrange(nt,rank,list)
 
       ! Extract selected imaginary times. To maintain high precision for
-      ! extremely large Lambda and small eps calculations, if a t was
+      ! extremely large lambda and small eps calculations, if t was
       ! chosen which is close to 1, take the calculated value t*=1-t,
       ! which is known to full relative precision, and store -t*. Then t
       ! can either be recovered as 1+(-t*), resulting in a loss of
@@ -495,6 +428,9 @@
       enddo
       
       end subroutine dlr_it
+
+
+
 
 
       subroutine dlr_it2cf(nt,no,rank,kmat,tidx,oidx,dlrt2c,ipiv)
@@ -521,10 +457,6 @@
       call dgetrf(rank,rank,dlrt2c,rank,ipiv,info)
 
       end subroutine dlr_it2cf
-
-
-
-
 
 
       subroutine dlr_expnd(rank,dlrmat,ipiv,g)
