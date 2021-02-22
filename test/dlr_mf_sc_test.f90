@@ -100,14 +100,14 @@
 
       allocate(dlrmf(rank))
 
-      call dlr_mf(rank,dlrrf,nmax,fb,dlrmf)
+      call dlr_mf(fb,nmax,rank,dlrrf,dlrmf)
 
 
       ! Get Matsubara frequency values -> DLR coefficients transform matrix in LU form
 
       allocate(mf2cf(rank,rank),ipiv(rank))
 
-      call dlr_mf2cf(nmax,rank,dlrrf,dlrmf,fb,mf2cf,ipiv)
+      call dlr_mf2cf(fb,nmax,rank,dlrrf,dlrmf,mf2cf,ipiv)
 
 
       ! --- Compute actual eps-rank of fine grid K matrix by SVD ---
@@ -173,7 +173,7 @@
 
         ! Evaluate DLR
 
-        call dlr_eval(rank,fb,dlrrf,real(gdlr),ttst(i),gtest)
+        call dlr_eval(fb,rank,dlrrf,real(gdlr),ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 

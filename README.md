@@ -6,26 +6,36 @@ Lehmann representation for imaginary time Green's functions.
 
 
 
-Compile instructions
+Compile and clean instructions
 
-(1) You first need to compile the id_dist library, which contains
-subroutines to do pivoted QR and build interpolative decompositions.
-Enter the id_dist directory and doing make.  Make sure all of the tests
-finish correctly. Note that on some machines, modifications may need to
+(1) Simply run ./compile. This will first compile the id_dist library,
+which contains subroutines to do pivoted QR and interpolative
+decompositions. Make sure all of the tests finish correctly. Note that
+on some machines, modifications may need to
 be made to the Makefile in id_dist, according to the documentation of
-that package.
-
-(2) Do ./compile. This will compile all necessary code, put object files
+that package. After, this will compile all other code, put object files
 into the bin folder, and copy the id_dist static library id_lib.a to the
-lib-static folder. Ignore all pesky warnings.
+lib-static folder.
+
+(2) To clean and start from scratch, run ./clean. This will first run
+make clean in the id_dist library, and then it will delete all object
+files from the bin folder, and the static library id_lib.a from the
+lib-static folder.
+
+(3) To run tests, go to the test folder. Each .f90 test program has some
+parameters that can be adjusted at the top. It also has a compile script
+associated with it called, for example, cmp_testcode, for the test
+program testcode.f90. Running the compile script generates an
+executable, test, for that test program.
 
 
 
 Notes for the user
 
-(1) For the time being, see the test codes to see how subroutines are
-used, along with documentation of subroutines in src/dlr_sr.f90 for
-explanations of variables and subroutines.
+(1) For the time being, look through the test codes to see how
+subroutines are used, along with the documentation of subroutines in the
+source files in the src folder for explanations of variables and
+subroutines.
 
 (2) Throughout the code, imaginary time (tau) grid points that are in
 (0.5,1) are stored in a peculiar manner. Namely, suppose tau in (0.5,1).

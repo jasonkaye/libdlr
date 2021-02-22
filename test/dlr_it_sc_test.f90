@@ -105,7 +105,7 @@
 
       allocate(it2cf(rank,rank),ipiv(rank))
 
-      call dlr_it2cf(nt,no,rank,kmat,tidx,oidx,it2cf,ipiv)
+      call dlr_it2cf(nt,no,kmat,rank,oidx,tidx,it2cf,ipiv)
 
 
 
@@ -171,7 +171,7 @@
 
         ! Evaluate DLR
 
-        call dlr_eval(rank,fb,dlrrf,gdlr,ttst(i),gtest)
+        call dlr_eval(fb,rank,dlrrf,gdlr,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 

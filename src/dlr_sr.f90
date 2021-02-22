@@ -1,73 +1,9 @@
-      ! ----- Subroutines for intermediate representation and discrete
-      ! Lehmann representation -----
-
-
-      ! ----- Kernel evaluator -----
-
-      real *8 function kfunf(t,om)
-
-      implicit none
-      real *8 t,om
-
-      if (om.ge.0.0d0) then
-        kfunf = exp(-t*om)/(1.0d0+exp(-om))
-      else
-        kfunf = exp((1.0d0-t)*om)/(1.0d0+exp(om))
-      endif
-
-      end function kfunf
-
-
-      real *8 function kfunb(t,om)
-
-      implicit none
-      real *8 t,om
-
-      if (om.ge.0.0d0) then
-        call evalexpfun(om,kfunb)
-        kfunb = exp(-t*om)/kfunb
-      else
-        call evalexpfun(-om,kfunb)
-        kfunb = exp((1.0d0-t)*om)/kfunb
-      endif
-
-      end function kfunb
-
-
-      complex *16 function kfunf_mf(n,om)
-
-      implicit none
-      integer n
-      real *8 om
-
-      real *8 pi
-      complex *16 eye
-
-      pi = 4*atan(1.0d0)
-      eye = (0.0d0,1.0d0)
-
-      !kfunf_mf = tanh(om/2)/(2*pi*eye*n+om)
-      kfunf_mf = 1.0d0/((2*n+1)*pi*eye+om)
-
-      end function kfunf_mf
-
-
-      real *8 function kfunf2(t,om)
-
-      ! Stable evaluation of fermionic K(tau,omega) with tau<0 treated as 1+tau
-
-      implicit none
-      real *8 t,om
-
-      real *8, external :: kfunf
-
-        if (t.ge.0.0d0) then
-          kfunf2 = kfunf(t,om)
-        else
-          kfunf2 = kfunf(-t,-om)
-        endif
-
-      end function kfunf2
+      !
+      !
+      ! This file contains the core subroutines for working with the
+      ! discrete Lehmann representation
+      !
+      !
 
 
       subroutine gridparams(lambda,p,npt,npo,nt,no)
@@ -306,7 +242,7 @@
 
 
       
-      subroutine dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrom,oidx)
+      subroutine dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
 
       ! Select real frequency nodes defining DLR basis
       !
@@ -324,13 +260,13 @@
       ! Output :
       !
       ! rank    - rank of DLR (# basis functions)
-      ! dlrom   - selected real frequency nodes (omega points)
+      ! dlrrf   - selected real frequency nodes (omega points)
       ! oidx    - column indices of kmat corresponding to selected real
       !             frequency nodes
 
       implicit none
       integer nt,no,rank,oidx(rank)
-      real *8 lambda,eps,om(no),kmat(nt,no),dlrom(rank)
+      real *8 lambda,eps,om(no),kmat(nt,no),dlrrf(rank)
 
       integer, allocatable :: list(:)
       real *8, allocatable :: tmp(:,:),work(:)
@@ -353,14 +289,14 @@
       ! Extract selected frequencies
 
       oidx = list(1:rank)
-      dlrom = om(oidx)
+      dlrrf = om(oidx)
           
       end subroutine dlr_rf
 
 
       subroutine dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
 
-      ! Select imaginary time nodes for construction of a DLR
+      ! Select imaginary time DLR nodes
       !
       ! Input:
       !
@@ -430,17 +366,32 @@
       end subroutine dlr_it
 
 
+      subroutine dlr_it2cf(nt,no,kmat,rank,oidx,tidx,dlrit2cf,it2cfpiv)
 
+      ! Build transform matrix from samples on imaginary time grid to
+      ! DLR coefficients in LU form
+      !
+      ! Input:
+      !
+      ! nt        - # fine grid points in tau
+      ! no        - # fine grid points in omega
+      ! kmat      - K(tau,omega) on fine grid
+      ! rank      - rank of DLR (# basis functions)
+      ! oidx      - column indices of kmat corresponding to selected
+      !               real frequency nodes
+      ! tidx      - row indices of kmat corresponding to selected
+      !               imaginary time nodes
+      !
+      ! Output :
+      !
+      ! dlrit2cf  - imaginary time grid values -> DLR coefficients
+      !               transform matrix in lapack LU storage format
+      ! it2cfpiv  - pivot matrix for dlrit2cf in lapack LU storage format
 
-
-      subroutine dlr_it2cf(nt,no,rank,kmat,tidx,oidx,dlrt2c,ipiv)
-
-      ! Get transform matrix from imaginary time grid to DLR
-      ! coefficients in LU form
 
       implicit none
-      integer nt,no,rank,ipiv(rank),tidx(rank),oidx(rank)
-      real *8 kmat(nt,no),dlrt2c(rank,rank)
+      integer nt,no,rank,tidx(rank),oidx(rank),it2cfpiv(rank)
+      real *8 kmat(nt,no),dlrit2cf(rank,rank)
 
       integer j,k,info
 
@@ -448,64 +399,98 @@
 
       do k=1,rank
         do j=1,rank
-          dlrt2c(j,k) = kmat(tidx(j),oidx(k))
+          dlrit2cf(j,k) = kmat(tidx(j),oidx(k))
         enddo
       enddo
 
       ! LU factorize
 
-      call dgetrf(rank,rank,dlrt2c,rank,ipiv,info)
+      call dgetrf(rank,rank,dlrit2cf,rank,it2cfpiv,info)
 
       end subroutine dlr_it2cf
 
 
-      subroutine dlr_expnd(rank,dlrmat,ipiv,g)
-
+      subroutine dlr_expnd(rank,dlrit2cf,it2cfpiv,g)
+      
       ! Get coefficients of DLR from samples on imaginary time DLR grid
-
-      ! On input, g contains samples of function at coarse grid points.
-      ! On output, it contains the coefficients of the DLR expansion.
-
+      !
+      ! Input:
+      !
+      ! rank      - rank of DLR (# basis functions)
+      ! dlrit2cf  - imaginary time grid values -> DLR coefficients
+      !               transform matrix in lapack LU storage format
+      ! it2cfpiv  - pivot matrix for dlrit2cf in lapack LU storage format
+      ! g         - Samples of a function G at imaginary time grid
+      !               points
+      !
+      ! Output :
+      !
+      ! g         - DLR coefficients of G
+      
       implicit none
-      integer rank,ipiv(rank)
-      real *8 dlrmat(rank,rank),g(rank)
+      integer rank,it2cfpiv(rank)
+      real *8 dlrit2cf(rank,rank),g(rank)
 
       integer info
 
-      ! Backsolve with DLR transform matrix in factored form
+      ! Backsolve with imaginary time grid values -> DLR coefficients
+      ! transform matrix stored in LU form
 
-      call dgetrs('N',rank,1,dlrmat,rank,ipiv,g,rank,info)
+      call dgetrs('N',rank,1,dlrit2cf,rank,it2cfpiv,g,rank,info)
 
       end subroutine dlr_expnd
 
 
 
-      subroutine dlr_mfexpnd(rank,dlrmf2c,ipiv,g)
+      subroutine dlr_mfexpnd(rank,dlrmf2cf,mf2cfpiv,g)
 
-      ! Get coefficients of DLR from samples on Matsubara frequency DLR grid
-
-      ! On input, g contains samples of function at coarse grid points.
-      ! On output, it contains the coefficients of the DLR expansion.
+      ! Get coefficients of DLR from samples on Matsubara frequency DLR
+      ! grid
+      !
+      ! Input:
+      !
+      ! rank      - rank of DLR (# basis functions)
+      ! dlrmf2cf  - Matsubara frequency grid values -> DLR coefficients
+      !               transform matrix in lapack LU storage format
+      ! mf2cfpiv  - pivot matrix for dlrmf2cf in lapack LU storage format
+      ! g         - Samples of a function G at Matsubara frequency grid
+      !               points
+      !
+      ! Output :
+      !
+      ! g         - DLR coefficients of G
 
       implicit none
-      integer rank,ipiv(rank)
-      complex *16 dlrmf2c(rank,rank),g(rank)
+      integer rank,mf2cfpiv(rank)
+      complex *16 dlrmf2cf(rank,rank),g(rank)
 
       integer info
 
       ! Backsolve with DLR transform matrix in factored form
 
-      call zgetrs('N',rank,1,dlrmf2c,rank,ipiv,g,rank,info)
+      call zgetrs('N',rank,1,dlrmf2cf,rank,mf2cfpiv,g,rank,info)
 
       end subroutine dlr_mfexpnd
 
 
-      subroutine dlr_eval(rank,fb,opts,g,t,val)
+      subroutine dlr_eval(fb,rank,dlrrf,g,t,val)
 
       ! Evaluate DLR expansion at a point t
       !
-      ! Note: to evaluate at a point 0.5<t<=1, input the value t* = t-1.
-      ! If t* has been computed to high relative precision, this
+      ! Input:
+      !
+      ! fb      - Fermionic (f) or bosonic (b) kernel
+      ! rank    - rank of DLR (# basis functions)
+      ! dlrrf   - selected real frequency nodes (omega points)
+      ! g       - DLR coefficients of a function G
+      ! t       - evaluation points in t' format
+      !
+      ! Output:
+      !
+      ! val     - value of DLR of G at t
+      !
+      ! Note: to evaluate at a point 0.5<t<1, input the value t' = t-1.
+      ! If t' has been computed to high relative precision, this
       ! subroutine will avoid loss of digits for t very close to 1 by
       ! evaluating the kernel K using its symmetries.
       !
@@ -513,15 +498,15 @@
 
       implicit none
       integer rank
-      real *8 opts(rank),g(rank),t,val
+      real *8 dlrrf(rank),g(rank),t,val
       character :: fb
 
       real *8, external :: kfunf,kfunb
 
       if (fb.eq.'f') then
-        call dlr_eval1(rank,kfunf,opts,g,t,val)
+        call dlr_eval1(rank,kfunf,dlrrf,g,t,val)
       elseif (fb.eq.'b') then
-        call dlr_eval1(rank,kfunb,opts,g,t,val)
+        call dlr_eval1(rank,kfunb,dlrrf,g,t,val)
       else
         stop 'choose fb = f or b'
       endif
@@ -529,15 +514,17 @@
       end subroutine dlr_eval
 
 
-      subroutine dlr_eval1(rank,kfun,opts,g,t,val)
+      subroutine dlr_eval1(rank,kfun,dlrrf,g,t,val)
 
-      ! Evaluate DLR expansion at a point
+      ! Main subroutine for dlr_eval
       !
-      ! Main subroutine
+      ! See subroutine dlr_eval for description of arguments, except for
+      ! kfun, which indicates the kernel evaluator to be used, and
+      ! depends on whether fb = 'f' or fb = 'b'.
 
       implicit none
       integer rank
-      real *8 opts(rank),g(rank),t,val
+      real *8 dlrrf(rank),g(rank),t,val
       real *8, external :: kfun
 
       integer i
@@ -546,10 +533,13 @@
       val = 0.0d0
       do i=1,rank
 
+        ! For 0.5<t<1, corresponding to negative t', use symmetry of K
+        ! to evaluate basis functions
+
         if (t.ge.0.0d0) then
-          kval = kfun(t,opts(i))
+          kval = kfun(t,dlrrf(i))
         else
-          kval = kfun(-t,-opts(i))
+          kval = kfun(-t,-dlrrf(i))
         endif
 
         val = val + g(i)*kval
@@ -559,56 +549,35 @@
       end subroutine dlr_eval1
 
 
+      subroutine dlr_mf(fb,nmax,rank,dlrrf,dlrmf)
 
-      !subroutine zdlreval(rank,kfun,ompts,g,t,val)
-
-      !! ----- Evaluate DLR expansion at a point -----
-
-      !implicit none
-      !integer rank
-      !real *8 ompts(rank),t,kval
-      !complex *16 g(rank),val
-      !real *8, external :: kfun
-
-      !integer i
-
-      !!val = 0
-      !!do i=1,rank
-      !!  val = val + g(i)*kfun(t,ompts(i))
-      !!enddo
-
-      !val = 0
-      !do i=1,rank
-
-      !  if (t.ge.0.0d0) then
-      !    kval = kfun(t,ompts(i))
-      !  else
-      !    kval = kfun(-t,-ompts(i))
-      !  endif
-
-      !  val = val + g(i)*kval
-
-      !enddo
-
-      !end subroutine zdlreval
-
-      subroutine dlr_mf(rank,dlro,nmax,fb,mfpts)
-
-      ! Get Matsubara frequency grid for DLR
+      ! Select Matsubara frequency DLR nodes
+      !      
+      ! Input:
+      !
+      ! fb      - Fermionic (f) or bosonic (b) kernel
+      ! nmax    - Matsubara frequency cutoff
+      ! rank    - rank of DLR (# basis functions)
+      ! dlrrf   - selected real frequency nodes (omega points)
+      !
+      ! Output :
+      !
+      ! dlrmf   - selected Matsubara frequency nodes
+      !
       !
       ! This is a wrapper for the main subroutine, dlr_mf1
 
       implicit none
-      integer rank,nmax,mfpts(rank)
-      real *8 dlro(rank)
+      integer nmax,rank,dlrmf(rank)
+      real *8 dlrrf(rank)
       character :: fb
 
       complex *16, external :: kfunf_mf
 
       if (fb.eq.'f') then
-        call dlr_mf1(rank,dlro,nmax,kfunf_mf,mfpts)
+        call dlr_mf1(kfunf_mf,nmax,rank,dlrrf,dlrmf)
       !elseif (fb.eq.'b') then
-        !call dlr_mf1(rank,dlro,nmax,kfun,mfpts)
+        !call dlr_mf1(kfunb_mf,nmax,rank,dlrrf,dlrmf)
       else
         stop 'choose fb = f or b'
       endif
@@ -616,21 +585,25 @@
       end subroutine dlr_mf
 
 
-      subroutine dlr_mf1(rank,dlro,nmax,kfun,mfpts)
+      subroutine dlr_mf1(kfun,nmax,rank,dlrrf,dlrmf)
 
-      ! ----- Get Matsubara frequency grid for DLR basis -----
+      ! Main subroutine for dlr_mf
+      !
+      ! See subroutine dlr_mf for description of arguments, except for
+      ! kfun, which indicates the kernel evaluator to be used, and
+      ! depends on whether fb = 'f' or fb = 'b'.
 
       implicit none
-      integer rank,nmax,mfpts(rank)
-      real *8 dlro(rank)
+      integer rank,nmax,dlrmf(rank)
+      real *8 dlrrf(rank)
       complex *16, external :: kfun
 
-      integer i,k,n,info
+      integer i,k,info
       integer, allocatable :: ns(:),list(:)
       real *8, allocatable :: work(:)
-      complex *16, allocatable :: poles(:,:),tmp(:,:)
+      complex *16, allocatable :: poles(:,:)
 
-      ! --- Get Fourier transforms of DLR basis functions ---
+      ! Get matrix of Fourier transforms of DLR basis functions
 
       allocate(poles(rank,2*nmax+1),ns(2*nmax+1))
 
@@ -639,45 +612,71 @@
       do i=1,2*nmax+1
         do k=1,rank
           
-          poles(k,i) = kfun(ns(i),dlro(k))
+          poles(k,i) = kfun(ns(i),dlrrf(k))
           
         enddo
       enddo
 
-      ! --- Pivoted QR to select Matsubara frequency points ---
+      ! --- Select Matsubara frequency nodes by pivoted QR on rows of
+      ! Fourier transformed K matrix ---
 
-      allocate(tmp(rank,2*nmax+1),list(2*nmax+1),work(2*nmax+1))
+      allocate(list(2*nmax+1),work(2*nmax+1))
 
-      tmp = poles
+      ! Pivoted QR
 
-      call idzr_qrpiv(rank,2*nmax+1,tmp,rank,list,work)
+      call idzr_qrpiv(rank,2*nmax+1,poles,rank,list,work)
+
+      ! Rearrange indices to get selected frequency point indices
 
       call ind_rearrange(2*nmax+1,rank,list)
 
-      mfpts = ns(list(1:rank))
+      ! Extract selected frequencies
+
+      dlrmf = ns(list(1:rank))
 
       end subroutine dlr_mf1
 
 
-      subroutine dlr_mf2cf(nmax,rank,dlro,dlrmf,fb,mf2cf,ipiv)
 
-      ! Get Matsubara frequency values -> DLR coefficients transform matrix in
-      ! LU form
+
+
+
+      subroutine dlr_mf2cf(fb,nmax,rank,dlrrf,dlrmf,dlrmf2cf,mf2cfpiv)
+
+      ! Build transform matrix from samples on Matsubara frequency grid
+      ! to DLR coefficients in LU form
+      !
+      ! Input:
+      !
+      ! fb      - Fermionic (f) or bosonic (b) kernel
+      ! nmax    - Matsubara frequency cutoff
+      ! rank      - rank of DLR (# basis functions)
+      ! dlrrf   - selected real frequency nodes (omega points)
+      ! dlrmf   - selected Matsubara frequency nodes
+      !
+      ! Output :
+      !
+      ! dlrmf2cf  - Matsubara frequency grid values -> DLR coefficients
+      !               transform matrix in lapack LU storage format
+      ! mf2cfpiv  - pivot matrix for dlrmf2cf in lapack LU storage format
+      !
       !
       ! This is a wrapper for the main subroutine, dlr_mf2cf1
 
       implicit none
-      integer nmax,rank,dlrmf(rank),ipiv(rank)
-      real *8 dlro(rank)
-      complex *16 mf2cf(rank,rank)
+      integer nmax,rank,dlrmf(rank),mf2cfpiv(rank)
+      real *8 dlrrf(rank)
+      complex *16 dlrmf2cf(rank,rank)
       character :: fb
 
       complex *16, external :: kfunf_mf
 
       if (fb.eq.'f') then
-        call dlr_mf2cf1(nmax,rank,dlro,dlrmf,kfunf_mf,mf2cf,ipiv)
+        call dlr_mf2cf1(kfunf_mf,nmax,rank,dlrrf,dlrmf,dlrmf2cf,&
+          mf2cfpiv)
       !elseif (fb.eq.'b') then
-        !call dlr_mf2cf1(nmax,rank,dlro,dlrmf,kfun,mf2cf,ipiv)
+        !call dlr_mf2cf1(kfunb_mf,nmax,rank,dlrrf,dlrmf,dlrmf2cf,&
+        ! mf2cfpiv)
       else
         stop 'choose fb = f or b'
       endif
@@ -685,668 +684,34 @@
       end subroutine dlr_mf2cf
 
 
-      subroutine dlr_mf2cf1(nmax,rank,dlro,dlrmf,kfun,mf2cf,ipiv)
+      subroutine dlr_mf2cf1(kfun,nmax,rank,dlrrf,dlrmf,dlrmf2cf,&
+          mf2cfpiv)
+
+      ! Main subroutine for dlr_mf2cf
+      !
+      ! See subroutine dlr_mf2cf for description of arguments, except for
+      ! kfun, which indicates the kernel evaluator to be used, and
+      ! depends on whether fb = 'f' or fb = 'b'.
 
       implicit none
-      integer nmax,rank,dlrmf(rank),ipiv(rank)
-      real *8 dlro(rank)
-      complex *16 mf2cf(rank,rank)
+      integer nmax,rank,dlrmf(rank),mf2cfpiv(rank)
+      real *8 dlrrf(rank)
+      complex *16 dlrmf2cf(rank,rank)
       complex *16, external :: kfun
 
       integer j,k,info
-      integer, allocatable :: ns(:)
 
-      allocate(ns(2*nmax+1))
-
-      ns = (/(j, j=-nmax,nmax)/)
+      ! Extract selected rows and columns of Fourier transformed K
+      ! matrix
 
       do k=1,rank
         do j=1,rank
-          mf2cf(j,k) = kfun(dlrmf(j),dlro(k))
+          dlrmf2cf(j,k) = kfun(dlrmf(j),dlrrf(k))
         enddo
       enddo
 
-      call zgetrf(rank,rank,mf2cf,rank,ipiv,info)
+      ! LU factorize
 
+      call zgetrf(rank,rank,dlrmf2cf,rank,mf2cfpiv,info)
 
       end subroutine dlr_mf2cf1
-
-
-
-
-      subroutine dlr_convinit(rank,dlrrf,dlrit,phi)
-
-      ! Get matrix of convolutions of DLR basis functions,
-      ! evaluated on DLR grid
-      !
-      ! Fermionic case only
-      !
-      ! Entries will be given by
-      !
-      ! int_0^1 phi_j(t_i-t') phi_k(t') dt'
-      !
-      ! for t_i a DLR grid point, and phi_j, phi_k DLR basis functions. 
-
-      implicit none
-      integer rank
-      real *8 dlrrf(rank),dlrit(rank)
-      real *8 phi(rank,rank,rank)
-      real *8, external :: kfun
-
-      integer j,k,l,ier,maxrec,numint
-      real *8 one,rint1,rint2
-      real *8, external :: kfunf,kfunf2
-
-      one = 1.0d0
-
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-
-            if (k.ne.l) then
-
-              phi(j,k,l) = (kfunf2(dlrit(j),dlrrf(l)) -&
-                kfunf2(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
-
-            else
-
-              if (dlrit(j).gt.0.0d0) then
-
-                phi(j,k,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
-                  kfunf2(dlrit(j),dlrrf(k))
-
-              else
-
-                phi(j,k,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
-                  kfunf2(dlrit(j),dlrrf(k))
-
-              endif
-            endif
-
-          enddo
-        enddo
-      enddo
-
-      end subroutine dlr_convinit
-
-
-      subroutine dlr_conv(rank,phi,it2cf,ipiv,g,gmat)
-
-      ! Build matrix of convolution by a Green's function in its DLR
-      ! coefficient representation
-
-      implicit none
-      integer rank,ipiv(rank)
-      real *8 phi(rank,rank,rank),it2cf(rank,rank),g(rank)
-      real *8 gmat(rank,rank)
-
-      integer i,j,info
-
-      do j=1,rank
-        do i=1,rank
-          gmat(i,j) = sum(g*phi(i,:,j))
-        enddo
-      enddo
-
-      call dgetrs('N',rank,rank,it2cf,rank,ipiv,gmat,rank,info)
-
-      end subroutine dlr_conv
-
-
-      subroutine dlr_dyson(rank,mu,dlrit,it2cf,ipiv,cf2it,phi,&
-          g,numit,w,fptol,useg0,sigeval)
-
-      ! Solve the Dyson equation self-consistently using the DLR in
-      ! imaginary time and weighted fixed point iteration
-
-      ! g: on input, initial guess, unless useg0==1. On output, DLR
-      ! coefficients of solution
-      !
-      ! numit: on input, max number of fixed point iterations. On
-      ! output, actual number of fixed point iterations.
-      !
-      ! sigeval: subroutine with calling sequence sigeval(rank,g,sig),
-      ! which takes in DLR coefficients of a Green's function G, and
-      ! returns values of Sigma on the DLR imaginary time grid.
-
-      implicit none
-      integer rank,numit,useg0,ipiv(rank)
-      real *8 dlrit(rank),mu,it2cf(rank,rank)
-      real *8 cf2it(rank,rank),g(rank),w,fptol,phi(rank,rank,rank)
-
-      integer i,j,info
-      integer, allocatable :: ipiv1(:)
-      real *8 one
-      real *8, allocatable :: g0(:),g0mat(:,:),sig(:),sigmat(:,:)
-      real *8, allocatable :: sysmat(:,:),gnew(:)
-      real *8, allocatable :: tmp(:)
-      real *8, external :: kfunf2
-
-      one = 1.0d0
-
-      ! --- Get DLR of G0, matrix of convolution by G0 ---
-
-      ! Imaginary time grid representation of G0
-
-      allocate(g0(rank))
-
-      do i=1,rank
-
-        g0(i) = -kfunf2(dlrit(i),mu)
-
-      enddo
-
-      ! DLR coefficient representation of G0
-
-      call dlr_expnd(rank,it2cf,ipiv,g0)
-
-      ! Matrix of convolution by G0
-
-      allocate(g0mat(rank,rank))
-
-      call dlr_conv(rank,phi,it2cf,ipiv,g0,g0mat)
-
-
-      ! --- Fixed point iteration for G ---
-
-      ! Either use input initial guess, or use G0 as initial guess
-
-      if (useg0==1) then
-        g = g0
-      endif
-
-      allocate(sig(rank),sigmat(rank,rank),gnew(rank))
-      allocate(sysmat(rank,rank),ipiv1(rank))
-
-      do i=1,numit
-
-        ! Get Sigma in imaginary time grid representation from DLR
-        ! coefficient representation of previous G
-
-        call sigeval(rank,g,sig)
-
-        ! DLR coefficient representation of Sigma
-
-        call dlr_expnd(rank,it2cf,ipiv,sig)
-
-        ! Matrix of convolution by Sigma
-
-        call dlr_conv(rank,phi,it2cf,ipiv,sig,sigmat)
-
-        ! Linear VIE system matrix
-
-        sysmat = -matmul(g0mat,sigmat)
-
-        do j=1,rank
-          sysmat(j,j) = one + sysmat(j,j)
-        enddo
-
-        ! Solve linear VIE
-
-        call dgetrf(rank,rank,sysmat,rank,ipiv1,info)
-
-        gnew = g0
-
-        call dgetrs('N',rank,1,sysmat,rank,ipiv1,gnew,rank,info)
-
-        ! Check self-consistency
-
-        if (maxval(abs(matmul(cf2it,gnew-g)))<fptol) then
-
-          g = gnew
-          numit = i
-
-          return
-
-        else
-
-          g = w*gnew + (one-w)*g
-
-        endif
-      enddo
-
-      write(6,*) 'Warning: fixed point iteration did not converge.'
-
-      end subroutine dlr_dyson
-
-      subroutine dlr_dyson_mf(beta,rank,mu,dlrit,it2cf,ipiv1,cf2it,&
-          dlrmf,mf2cf,ipiv2,cf2mf,g,numit,w,fptol,useg0,sigeval)
-
-      ! Solve the Dyson equation self-consistently using the DLR in
-      ! Marsubara frequency and weighted fixed point iteration
-
-      ! g: on input, initial guess, unless useg0==1. On output, DLR
-      ! coefficients of solution
-      !
-      ! numit: on input, max number of fixed point iterations. On
-      ! output, actual number of fixed point iterations.
-      !
-      ! sigeval: subroutine with calling sequence sigeval(rank,g,sig),
-      ! which takes in DLR coefficients of a Green's function G, and
-      ! returns values of Sigma on the DLR imaginary time grid.
-
-      implicit none
-      integer rank,numit,useg0,ipiv1(rank),ipiv2(rank),dlrmf(rank)
-      real *8 beta,dlrit(rank),mu,it2cf(rank,rank)
-      real *8 cf2it(rank,rank),g(rank),w,fptol,phi(rank,rank,rank)
-      complex *16 mf2cf(rank,rank),cf2mf(rank,rank)
-
-      integer i,j,info
-      real *8 one
-      real *8, allocatable :: sig(:)
-      complex *16, allocatable :: g0(:),gmf(:),sigmf(:),gnew(:)
-      real *8, external :: kfunf2
-      complex *16, external :: kfunf_mf
-
-      one = 1.0d0
-
-      ! --- Get Matsubara frequency representation of G0 ---
-
-      allocate(g0(rank))
-
-      do i=1,rank
-
-        g0(i) = -kfunf_mf(dlrmf(i),beta*mu)
-
-      enddo
-
-
-      ! --- Fixed point iteration for G ---
-
-      ! Either use input initial guess, or use G0 as initial guess
-
-      allocate(gmf(rank))
-
-      if (useg0==1) then
-        
-        gmf = g0
-
-        call dlr_mfexpnd(rank,mf2cf,ipiv2,gmf)
-
-        g = real(gmf)
-
-        !do i=1,rank
-
-        !  g(i) = -kfunf2(dlrit(i),beta*mu)
-
-        !enddo
-
-        !call dlr_expnd(rank,it2cf,ipiv1,g)
-
-      endif
-
-      allocate(sig(rank),gnew(rank),sigmf(rank))
-
-      do i=1,numit
-
-        ! Get Sigma in imaginary time grid representation from DLR
-        ! coefficient representation of previous G
-
-        call sigeval(rank,g,sig)
-
-        ! DLR coefficient representation of Sigma
-
-        call dlr_expnd(rank,it2cf,ipiv1,sig)
-
-        ! Matsubara frequency representation of Sigma
-
-        sigmf = matmul(cf2mf,sig)
-
-        ! Solve linear VIE
-
-        gnew = g0/(one-beta**2*g0*sigmf)
-
-        ! DLR coefficient representation of solution
-
-        call dlr_mfexpnd(rank,mf2cf,ipiv2,gnew)
-
-        ! Check self-consistency
-
-        if (maxval(abs(matmul(cf2it,real(gnew)-g)))<fptol) then
-
-          g = real(gnew)
-          numit = i
-
-          return
-
-        else
-
-          g = w*real(gnew) + (one-w)*g
-
-        endif
-      enddo
-
-      write(6,*) 'Warning: fixed point iteration did not converge.'
-
-      end subroutine dlr_dyson_mf
-
-
-      subroutine leg_dyson(n,beta,mu,xgl,wgl,legf,g,numit,w,fptol,&
-          useg0,sigeval)
-
-      ! Solve the Dyson equation self-consistently using a Legendre
-      ! representation in imaginary time and weighted fixed point
-      ! iteration
-
-      ! g: on input, initial guess, unless useg0==1. On output, solution
-      ! on Legendre grid
-      !
-      ! numit: on input, max number of fixed point iterations. On
-      ! output, actual number of fixed point iterations.
-      !
-      ! sigeval: subroutine with calling sequence sigeval(n,g,sig),
-      ! which takes in Green's function G on Legendre grid, and
-      ! returns values of Sigma on that grid.
-
-      implicit none
-      integer n,numit,useg0
-      real *8 beta,mu,xgl(n),wgl(n),legf(n,n)
-      real *8 g(n),w,fptol
-
-      integer i,j,info
-      integer, allocatable :: ipiv(:)
-      real *8 one
-      real *8, allocatable :: g0(:),t(:),g0mat(:,:),sig(:),sigmat(:,:)
-      real *8, allocatable :: sysmat(:,:),gnew(:)
-
-      one = 1.0d0
-
-      ! --- Get G0, matrix of convolution by G0 ---
-
-      ! Imaginary time grid representation of G0
-
-      allocate(g0(n),t(n))
-
-      t = (xgl+one)/2*beta
-
-      g0 = -exp(-mu*t)/(one+exp(-mu*beta))
-
-      ! Matrix of convolution by G0
-
-      allocate(g0mat(n,n))
-
-      call leg_conv(beta,n,t,xgl,wgl,legf,g0,g0mat)
-
-
-      ! --- Fixed point iteration for G ---
-
-      ! Either use input initial guess, or use G0 as initial guess
-
-      if (useg0==1) then
-        g = g0
-      endif
-
-      allocate(sig(n),sigmat(n,n),gnew(n))
-      allocate(sysmat(n,n),ipiv(n))
-
-      do i=1,numit
-
-        ! Get Sigma in Legendre grid representation from Legendre 
-        ! coefficient representation of previous G
-
-        call sigeval(n,g,sig)
-
-        ! Matrix of convolution by Sigma
-
-        call leg_conv(beta,n,t,xgl,wgl,legf,sig,sigmat)
-
-        ! Linear VIE system matrix
-
-        sysmat = -matmul(g0mat,sigmat)
-
-        do j=1,n
-          sysmat(j,j) = one + sysmat(j,j)
-        enddo
-
-        ! Solve linear VIE
-
-        call dgetrf(n,n,sysmat,n,ipiv,info)
-
-        gnew = g0
-
-        call dgetrs('N',n,1,sysmat,n,ipiv,gnew,n,info)
-
-        ! Check self-consistency
-
-        if (maxval(abs(gnew-g))<fptol) then
-
-          g = gnew
-          numit = i
-
-          return
-
-        else
-
-          g = w*gnew + (one-w)*g
-
-        endif
-      enddo
-
-      write(6,*) 'Warning: fixed point iteration did not converge.'
-
-      end subroutine leg_dyson
-
-
-      subroutine leg_conv(beta,p,tt,xgl,wgl,legf,g,convmat)
-  
-      ! Build matrix of convolution by kernel defined on [0,beta] by
-      ! function g sampled at Legendre nodes
-
-      implicit none
-      integer p
-      real *8 beta,tt(p),xgl(p),wgl(p),legf(p,p),g(p),convmat(p,p)
-
-      integer i,j
-      real *8 one,ttar
-      real *8, allocatable :: c(:)
-      real *8, allocatable :: tgl(:),p1(:,:),p2(:,:),sig1(:),sig2(:)
-
-      one = 1.0d0
-
-      allocate(c(p))
-
-      c = matmul(legf,g)
-
-      allocate(tgl(p),p1(p,p),p2(p,p),sig1(p),sig2(p))
-        
-      do j=1,p ! Loop through target points
-      
-        ttar = tt(j); ! Target point t
-      
-        ! Evaluate Sigma(t-t') and Pn(t') at GL points on [0,t]
-      
-        tgl = (xgl+1)/2*ttar; ! GL points on [0,t]
-      
-        ! Evaluate Legendre polynomials on [0,beta] at GL points on [0,t]
-
-        do i=1,p
-     
-          call legepols(2*tgl(i)/beta-one,p-1,p1(:,i))
-
-        enddo
-      
-        tgl = ttar-tgl ! Input to Sigma
-      
-        ! Evaluate Sigma
-
-        do i=1,p
-          
-          call legeexev(2*tgl(i)/beta-one,sig1(i),c,p-1)
-     
-        enddo
-      
-        ! Evaluate Sigma(t-t') and Pn(t') at GL points on [t,beta]
-      
-        tgl = (xgl+one)/2*(beta-ttar)+ttar; ! GL points on [t,beta]
-      
-        ! Evaluate Legendre polynomials on [0,beta] at GL points on
-        ! [t,beta]
-
-        do i=1,p
-
-          call legepols(2*tgl(i)/beta-one,p-1,p2(:,i))
-
-        enddo
-      
-        tgl = ttar-tgl+beta; ! Input to Sigma
-
-        do i=1,p
-
-          call legeexev(2*tgl(i)/beta-one,sig2(i),c,p-1)
-          sig2(i) = -sig2(i)
-        
-        enddo
-      
-        ! Weight and sum
-      
-        sig1 = sig1*wgl*ttar/2
-        sig2 = sig2*wgl*(beta-ttar)/2
-      
-        convmat(j,1:p) = matmul(p1,sig1) + matmul(p2,sig2)
-      
-      enddo
-      
-      convmat = matmul(convmat,legf)
-          
-      end subroutine leg_conv
-
-
-
-
-      subroutine cgl_pt2coef(p,npan,nfun,legf,val,coef)
-
-      ! ----- Convert point value representation on composite
-      ! Gauss-Legendre grid to coefficient representation -----
-
-      integer p,npan
-      real *8 val(p*npan,nfun),coef(p*npan,nfun),legf(p,p)
-
-      do i=1,npan
-        coef((i-1)*p+1:i*p,:) = matmul(legf,val((i-1)*p+1:i*p,:))
-      enddo
-
-      end subroutine cgl_pt2coef
-
-
-      subroutine ind_rearrange(n,krank,ind)
-
-      ! Rearrange output ind from iddp_qrpiv or iddr_qrpiv to give list
-      ! of krank columns selected by a pivoted QR process
-      !
-      ! Output overwrites first krank entries of ind
-
-      implicit none
-      integer n,krank,ind(n)
-
-      integer k,iswap
-      integer, allocatable :: tmp(:)
-
-      allocate(tmp(n))
-
-      do k = 1,n
-        tmp(k) = k
-      enddo
-      
-      do k = 1,krank
-      
-        ! Swap rnorms(k) and rnorms(list(k)).
-      
-        iswap = tmp(k)
-        tmp(k) = tmp(ind(k))
-        tmp(ind(k)) = iswap
-      
-      enddo
-
-      ind(1:krank) = tmp(1:krank)
-     
-      end subroutine ind_rearrange
-     
-
-      subroutine evalexpfun(x,val)
-
-      ! ----- Evaluate the function (1-e^(-x))/x -----
-
-      implicit none
-      real *8 x,val
-
-      integer i
-      real *8 one,x1,c
-
-      one = 1.0d0
-
-      if (x>1.0d-1) then
-
-        val = (one-exp(-x))/x
-
-      else
-
-        val = one
-        c = one
-        x1 = x
-        do i=1,10
-          c = c*(i+1)
-          val = val + ((-1)**i)*x1/c
-          x1 = x1*x
-        enddo
-
-      endif
-
-      end subroutine evalexpfun
-
-
-      subroutine barychebinit(n,x,w)
-
-      ! Get Chebyshev nodes of first kind and corresponding barycentric
-      ! Lagrange interpolation weights
-
-      implicit none
-      integer n
-      real *8 x(n),w(n)
-
-      integer j
-      real *8 pi,c
-
-      pi = 4*atan(1.0d0)
-
-      do j=1,n
-        c = (2.0d0*j-1)/(2*n)*pi
-        x(n-j+1) = cos(c)
-        w(n-j+1) = (1-2*mod(j-1,2))*sin(c)
-        !w(j) = (-1)**(j-1)*sin(c)
-      enddo
-
-      end subroutine barychebinit
-
-
-      subroutine barycheb(n,x,f,wc,xc,val)
-
-      ! Barycentric Lagrange interpolation at Chebyshev nodes
-
-      implicit none
-      integer n
-      real *8 x,f(n),wc(n),xc(n),val
-
-      integer j
-      real *8 dif,q,num,den
-
-      do j=1,n
-        if (x==xc(j)) then
-          val = f(j)
-          return
-        endif
-      enddo
-
-      num = 0.0d0
-      den = 0.0d0
-      do j=1,n
-
-        dif = x-xc(j)
-        q = wc(j)/dif
-        num = num + q*f(j)
-        den = den + q
-
-      enddo
-      
-      val = num/den
-
-      end subroutine barycheb
