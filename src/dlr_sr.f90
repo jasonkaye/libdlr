@@ -288,8 +288,8 @@
 
       ! Extract selected frequencies
 
-      oidx = list(1:rank)
-      dlrrf = om(oidx)
+      oidx(1:rank) = list(1:rank)
+      dlrrf(1:rank) = om(oidx(1:rank))
           
       end subroutine dlr_rf
 
