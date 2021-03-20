@@ -1,8 +1,0 @@
-# Clean out the id_dist, bin, and lib-static folders
-
-cd id_dist
-make clean
-cd ../bin
-rm *.o
-cd ../lib-static
-rm id_lib.a
