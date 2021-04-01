@@ -1,43 +1,51 @@
-# dlrcode
-Discrete Lehmann representation codes
 
-This repository contains codes to build and work with the discrete
-Lehmann representation for imaginary time Green's functions.
+# The Discrete Lehmann Representation Library **libdlr**
 
+This library provides an implementation of the discrete
+Lehmann representation for functions depending on imaginary time,
+in particular single-particle Green's functions.
 
+Author: Jason Kaye (2021)
 
-Compile and clean instructions
+Contributors: Hugo UR Strand (2021)
 
-(1) Simply run ./compile. This will first compile the id_dist library,
-which contains subroutines to do pivoted QR and interpolative
-decompositions. Make sure all of the tests finish correctly. Note that
-on some machines, modifications may need to
-be made to the Makefile in id_dist, according to the documentation of
-that package. After, this will compile all other code, put object files
-into the bin folder, and copy the id_dist static library id_lib.a to the
-lib-static folder.
+## Usage
 
-(2) To clean and start from scratch, run ./clean. This will first run
-make clean in the id_dist library, and then it will delete all object
-files from the bin folder, and the static library id_lib.a from the
-lib-static folder.
+While the library is implemented in Fortran it also provides a stable C API
+that can be called from C/C++ as well as a Python wrapper using Numpy/Scipy.
 
-(3) To run tests, go to the test folder. Each .f90 test program has some
-parameters that can be adjusted at the top. It also has a compile script
-associated with it called, for example, cmp_testcode, for the test
-program testcode.f90. Running the compile script generates an
-executable, test, for that test program.
+For example programs in Fortran see the `./test/` directory.
 
+## Build instructions
 
+Requirements
+- BLAS and LAPACK
+- CMake > 3.12
 
-Notes for the user
+To build the library and the test programs run
 
-(1) For the time being, look through the test codes to see how
+```
+mkdir cbuild
+cd cbuild
+FC=icc cmake ..
+make
+```
+
+This will use the Intel Fortran compiler `icc` to build the shared library `libdlr` and the test programs in the folder `./cbuild`. (If the Fortran compiler is not specified CMake will try to use any available compliant compiler it can find.)
+
+## Example programs
+
+To run the Fortran test programs, go to the test folder. Each .f90 test program has some
+parameters that can be adjusted at the top.
+
+For the time being, look through the test codes to see how
 subroutines are used, along with the documentation of subroutines in the
 source files in the src folder for explanations of variables and
 subroutines.
 
-(2) Throughout the code, imaginary time (tau) grid points that are in
+## Imaginary time grid
+
+Throughout the code, imaginary time (tau) grid points that are in
 (0.5,1) are stored in a peculiar manner. Namely, suppose tau in (0.5,1).
 Then instead of storing t, we store the number tau' = tau-1. In other words,
 we store the negative distance of tau to 1, rather than tau itself. To
