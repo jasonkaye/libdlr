@@ -17,5 +17,5 @@ target_link_libraries(dlr PUBLIC id_dist BLAS::BLAS LAPACK::LAPACK)
 add_executable(dlr_mf_sc_test ./test/dlr_mf_sc_test.f90)
 target_link_libraries(dlr_mf_sc_test PRIVATE dlr)
 
-add_executable(dlr_it_sc_test ./test/dlr_mf_sc_test.f90)
+add_executable(dlr_it_sc_test ./test/dlr_it_sc_test.f90)
 target_link_libraries(dlr_it_sc_test PRIVATE dlr)
