@@ -549,6 +549,75 @@
       end subroutine dlr_eval1
 
 
+
+      subroutine dlr_mf_eval(fb,rank,dlrrf,g,n,val)
+
+      ! Evaluate DLR expansion at a point t
+      !
+      ! Input:
+      !
+      ! fb      - Fermionic (f) or bosonic (b) kernel
+      ! rank    - rank of DLR (# basis functions)
+      ! dlrrf   - selected real frequency nodes (omega points)
+      ! g       - DLR coefficients of a function G
+      ! n       - evaluation point in Matsubara frequency
+      !
+      ! Output:
+      !
+      ! val     - value of DLR of G at n
+      !
+      ! This is a wrapper for the main subroutine, dlr_mf_eval1
+
+      implicit none
+      integer rank,n
+      real *8 dlrrf(rank),g(rank)
+      complex *16 val
+      character :: fb
+
+      complex *16, external :: kfunf_mf
+
+      if (fb.eq.'f') then
+        call dlr_mf_eval1(rank,kfunf_mf,dlrrf,g,n,val)
+      elseif (fb.eq.'b') then
+        stop 'choose fb = b not supported yet'
+        !call dlr_mf_eval1(rank,kfunb,dlrrf,g,n,val)
+      else
+        stop 'choose fb = f or b'
+      endif
+
+      end subroutine dlr_mf_eval
+
+
+      subroutine dlr_mf_eval1(rank,kfun,dlrrf,g,n,val)
+
+      ! Main subroutine for dlr_mf_eval
+      !
+      ! See subroutine dlr_mf_eval for description of arguments, except for
+      ! kfun, which indicates the kernel evaluator to be used, and
+      ! depends on whether fb = 'f' or fb = 'b'.
+
+      implicit none
+      integer rank,n
+      real *8 dlrrf(rank),g(rank)
+      complex *16 val
+      complex *16, external :: kfun
+
+      integer i
+      complex *16 kval
+
+      val = 0.0d0
+      do i=1,rank
+
+        kval = kfun(n,dlrrf(i))
+
+        val = val + g(i)*kval
+
+      enddo
+
+      end subroutine dlr_mf_eval1
+
+
+
       subroutine dlr_mf(fb,nmax,rank,dlrrf,dlrmf)
 
       ! Select Matsubara frequency DLR nodes
