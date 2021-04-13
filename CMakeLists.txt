@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.12)
 # project name and language
 project(dlr LANGUAGES Fortran)
 
+option(with_python "Install python module: pydlr" OFF)
+
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
@@ -42,14 +44,18 @@ set_target_properties(dlr_c PROPERTIES INSTALL_RPATH "@loader_path/")
 
 # Python module: pydlr
 
-find_package(Python COMPONENTS Interpreter Development)
-FILE(GLOB_RECURSE pydlr_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
-foreach(f ${pydlr_SRC})
- configure_file(${f} ${f} COPYONLY)
-endforeach()
-install(FILES pydlr/pydlr.py DESTINATION pydlr)
+if(with_python)
 
-add_test(NAME python-test_kernel
-  COMMAND ${Python_EXECUTABLE} -m nose ./test/test_kernel.py -v
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-  )
+  find_package(Python COMPONENTS Interpreter Development)
+  FILE(GLOB_RECURSE pydlr_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
+  foreach(f ${pydlr_SRC})
+   configure_file(${f} ${f} COPYONLY)
+  endforeach()
+  install(FILES pydlr/pydlr.py DESTINATION pydlr)
+
+  add_test(NAME python-test_kernel
+    COMMAND ${Python_EXECUTABLE} -m nose ./test/test_kernel.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
+endif()
