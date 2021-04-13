@@ -56,7 +56,7 @@ def get_A(lu, piv):
     return A
 
 import glob
-libname = sum([ glob.glob(f'../cbuild/libdlr_c.{sfx}') for sfx in ['so', 'dylib']], [])[0]
+libname = sum([ glob.glob(f'../lib/libdlr_c.{sfx}') for sfx in ['so', 'dylib']], [])[0]
 
 # -- CFFI
 
