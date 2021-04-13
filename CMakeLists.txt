@@ -6,6 +6,7 @@ project(dlr LANGUAGES Fortran)
 
 option(with_python "Install python module: pydlr" OFF)
 
+include(CTest)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
@@ -24,8 +25,6 @@ install(TARGETS dlr LIBRARY)
 
 # Test programs
 
-enable_testing()
-
 add_executable(dlr_mf_sc_test ./test/dlr_mf_sc_test.f90)
 target_link_libraries(dlr_mf_sc_test PRIVATE dlr)
 add_test(NAME dlr_mf_sc_test COMMAND dlr_mf_sc_test)
@@ -42,11 +41,34 @@ target_link_libraries(dlr_c PUBLIC dlr id_dist BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS dlr_c LIBRARY)
 set_target_properties(dlr_c PROPERTIES INSTALL_RPATH "@loader_path/")
 
+# Macro for finding Python modules
+
+macro(find_python_module _module_name)
+  execute_process(
+    COMMAND
+      ${Python_EXECUTABLE} "-c" "import ${_module_name}; print(${_module_name}.__version__)"
+    OUTPUT_VARIABLE _stdout
+    ERROR_VARIABLE _stderr
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_STRIP_TRAILING_WHITESPACE
+    )
+
+  if(_stderr MATCHES "ModuleNotFoundError")
+    message(SEND_ERROR "Python module \"${_module_name}\" not found")
+  else()
+    message(STATUS "Found Python module ${_module_name} v${_stdout}")
+  endif()
+endmacro()
+
 # Python module: pydlr
 
 if(with_python)
 
-  find_package(Python COMPONENTS Interpreter Development)
+  find_package(Python REQUIRED COMPONENTS Interpreter Development)
+  find_python_module("numpy")
+  find_python_module("cffi")
+  find_python_module("nose")
+
   FILE(GLOB_RECURSE pydlr_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
   foreach(f ${pydlr_SRC})
    configure_file(${f} ${f} COPYONLY)
