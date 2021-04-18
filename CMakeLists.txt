@@ -46,7 +46,7 @@ set_target_properties(dlr_c PROPERTIES INSTALL_RPATH "@loader_path/")
 macro(find_python_module _module_name)
   execute_process(
     COMMAND
-      ${Python_EXECUTABLE} "-c" "import ${_module_name}; print(${_module_name}.__version__)"
+      ${Python3_EXECUTABLE} "-c" "import ${_module_name}; print(${_module_name}.__version__)"
     OUTPUT_VARIABLE _stdout
     ERROR_VARIABLE _stderr
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -64,7 +64,7 @@ endmacro()
 
 if(with_python)
 
-  find_package(Python REQUIRED COMPONENTS Interpreter Development)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
   find_python_module("numpy")
   find_python_module("cffi")
   find_python_module("nose")
@@ -76,7 +76,7 @@ if(with_python)
   install(FILES pydlr/pydlr.py DESTINATION pydlr)
 
   add_test(NAME python-test_kernel
-    COMMAND ${Python_EXECUTABLE} -m nose ./test/test_kernel.py -v
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_kernel.py -v
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
     )
 
