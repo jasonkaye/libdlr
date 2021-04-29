@@ -22,6 +22,11 @@ Requirements
 - BLAS and LAPACK
 - CMake > 3.12
 
+Optional requirements for the Python module `pydlr`:
+- Python, Numpy, CFFI
+
+To enable the python module and tests pass the additional flag `-Dwith_python=ON` to cmake below.
+
 To build the library and the test programs run
 
 ```
@@ -32,6 +37,7 @@ make
 ```
 
 This will use the Intel Fortran compiler `icc` to build the shared library `libdlr` and the test programs in the folder `./cbuild`. (If the Fortran compiler is not specified CMake will try to use any available compliant compiler it can find.)
+
 
 ## Example programs
 
