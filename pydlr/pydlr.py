@@ -55,8 +55,9 @@ def get_A(lu, piv):
     A = P @ L @ U
     return A
 
+import os
 import glob
-libname = sum([ glob.glob(f'../lib/libdlr_c.{sfx}') for sfx in ['so', 'dylib']], [])[0]
+libname = glob.glob(os.path.dirname(__file__) + '/../lib/libdlr_c.*')[0]
 
 # -- CFFI
 
