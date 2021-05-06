@@ -208,12 +208,12 @@ class dlr(object):
         return tt[self.tidx - 1]
 
     
-    def get_tau(self, beta):
+    def get_tau(self, beta=1.):
         tau_l = self.get_tau_over_beta() * beta
         return tau_l
 
 
-    def get_matsubara_frequencies(self, beta):
+    def get_matsubara_frequencies(self, beta=1.):
         zeta = (1 - self.xi)/2
         w_q = 1.j * np.pi/beta * (2*self.dlrmf + zeta)
         return w_q
@@ -230,13 +230,13 @@ class dlr(object):
         return G_x
 
 
-    def matsubara_from_dlr(self, G_x, beta):
+    def matsubara_from_dlr(self, G_x, beta=1.):
         T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv - 1)
         G_q = beta * np.tensordot(T_qx, G_x, axes=(1, 0)).conj()        
         return G_q
 
 
-    def dlr_from_matsubara(self, G_q, beta):
+    def dlr_from_matsubara(self, G_q, beta=1.):
         G_x = lu_solve((self.dlrmf2cf, self.mf2cfpiv - 1), G_q.conj() / beta)
         #print('--> Test!')
         #G_q_ref = self.matsubara_from_dlr(G_x, beta)
