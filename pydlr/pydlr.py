@@ -55,8 +55,9 @@ def get_A(lu, piv):
     A = P @ L @ U
     return A
 
+import os
 import glob
-libname = sum([ glob.glob(f'../lib/libdlr_c.{sfx}') for sfx in ['so', 'dylib']], [])[0]
+libname = glob.glob(os.path.dirname(__file__) + '/../lib/libdlr_c.*')[0]
 
 # -- CFFI
 
@@ -207,12 +208,12 @@ class dlr(object):
         return tt[self.tidx - 1]
 
     
-    def get_tau(self, beta):
+    def get_tau(self, beta=1.):
         tau_l = self.get_tau_over_beta() * beta
         return tau_l
 
 
-    def get_matsubara_frequencies(self, beta):
+    def get_matsubara_frequencies(self, beta=1.):
         zeta = (1 - self.xi)/2
         w_q = 1.j * np.pi/beta * (2*self.dlrmf + zeta)
         return w_q
@@ -229,13 +230,13 @@ class dlr(object):
         return G_x
 
 
-    def matsubara_from_dlr(self, G_x, beta):
+    def matsubara_from_dlr(self, G_x, beta=1.):
         T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv - 1)
         G_q = beta * np.tensordot(T_qx, G_x, axes=(1, 0)).conj()        
         return G_q
 
 
-    def dlr_from_matsubara(self, G_q, beta):
+    def dlr_from_matsubara(self, G_q, beta=1.):
         G_x = lu_solve((self.dlrmf2cf, self.mf2cfpiv - 1), G_q.conj() / beta)
         #print('--> Test!')
         #G_q_ref = self.matsubara_from_dlr(G_x, beta)
@@ -276,3 +277,21 @@ class dlr(object):
         return G_q
     
     
+    def convolution(self, a_x, b_x):
+
+        tau_l = self.get_tau(1.)
+        w_x = self.om[self.oidx - 1]
+
+        k_lx = self.kmat[self.tidx - 1][:, self.oidx - 1]
+
+        I = np.eye(len(w_x))
+        W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
+
+        k1_x = -np.squeeze(kernel(np.ones(1), w_x))
+
+        c_x = a_x * b_x * k1_x + \
+            b_x * np.sum(a_x[:, None] * W_xx, axis=0) + \
+            a_x * np.sum(b_x[:, None] * W_xx, axis=0) + \
+            self.dlr_from_tau(tau_l * np.sum(k_lx * (a_x * b_x)[None, :], axis=-1))
+        
+        return c_x
