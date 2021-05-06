@@ -277,3 +277,21 @@ class dlr(object):
         return G_q
     
     
+    def convolution(self, a_x, b_x):
+
+        tau_l = self.get_tau(1.)
+        w_x = self.om[self.oidx - 1]
+
+        k_lx = self.kmat[self.tidx - 1][:, self.oidx - 1]
+
+        I = np.eye(len(w_x))
+        W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
+
+        k1_x = -np.squeeze(kernel(np.ones(1), w_x))
+
+        c_x = a_x * b_x * k1_x + \
+            b_x * np.sum(a_x[:, None] * W_xx, axis=0) + \
+            a_x * np.sum(b_x[:, None] * W_xx, axis=0) + \
+            self.dlr_from_tau(tau_l * np.sum(k_lx * (a_x * b_x)[None, :], axis=-1))
+        
+        return c_x
