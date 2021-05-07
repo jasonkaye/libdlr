@@ -80,4 +80,9 @@ if(with_python)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
     )
 
+  add_test(NAME python-test_convolution
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_convolution.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
 endif()
