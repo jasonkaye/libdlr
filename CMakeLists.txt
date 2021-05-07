@@ -19,7 +19,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 
 file(GLOB dlr_SRC CONFIGURE_DEPENDS "./src/*.f*" "./src/utils_external/*.f*")
 
-add_library(dlr SHARED ${dlr_SRC})
+add_library(dlr STATIC ${dlr_SRC})
 target_link_libraries(dlr PUBLIC id_dist BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS dlr LIBRARY)
 
