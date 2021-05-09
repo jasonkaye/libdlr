@@ -9,9 +9,7 @@ find_package(LAPACK REQUIRED)
 
 file(GLOB id_SRC CONFIGURE_DEPENDS "./src/*.f")
 
-add_library(id_dist STATIC ${id_SRC})
+add_library(id_dist ${id_SRC})
 target_link_libraries(id_dist PRIVATE BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS id_dist LIBRARY)
-
-#add_executable(hello-world hello-world.f90)
-#target_link_libraries(hello-world PRIVATE message)
+install(TARGETS id_dist ARCHIVE)
