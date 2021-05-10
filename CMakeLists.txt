@@ -5,23 +5,28 @@ cmake_minimum_required(VERSION 3.12)
 project(dlr LANGUAGES Fortran)
 
 option(with_python "Install python module: pydlr" OFF)
+option(BUILD_SHARED_LIBS "Build shared library, turn OFF for static." ON)
+option(POSITION_INDEPENDENT_CODE "Use -fPIC by default" ON)
 
 include(CTest)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ../lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../lib)
 add_subdirectory(./id_dist)
 
 # Fortran library: dlr
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
 file(GLOB dlr_SRC CONFIGURE_DEPENDS "./src/*.f*" "./src/utils_external/*.f*")
 
-add_library(dlr STATIC ${dlr_SRC})
+add_library(dlr ${dlr_SRC})
 target_link_libraries(dlr PUBLIC id_dist BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS dlr LIBRARY)
+install(TARGETS dlr ARCHIVE)
 
 # Test programs
 

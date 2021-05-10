@@ -27,6 +27,8 @@ Optional requirements for the Python module `pydlr`:
 
 To enable the python module and tests pass the additional flag `-Dwith_python=ON` to cmake below.
 
+To buld static Fortran libraries pass the flag `-DBUILD_SHARED_LIBS=OFF` to cmake.
+
 To build the library and the test programs run
 
 ```
