@@ -30,13 +30,13 @@ install(TARGETS dlr ARCHIVE)
 
 # Test programs
 
-add_executable(dlr_mf_sc_test ./test/dlr_mf_sc_test.f90)
-target_link_libraries(dlr_mf_sc_test PRIVATE dlr)
-add_test(NAME dlr_mf_sc_test COMMAND dlr_mf_sc_test)
+add_executable(dlr_it_ha_test ./test/dlr_it_ha_test.f90)
+target_link_libraries(dlr_it_ha_test PRIVATE dlr)
+add_test(NAME dlr_it_ha_test COMMAND dlr_it_ha_test)
 
-add_executable(dlr_it_sc_test ./test/dlr_it_sc_test.f90)
-target_link_libraries(dlr_it_sc_test PRIVATE dlr)
-add_test(NAME dlr_it_sc_test COMMAND dlr_it_sc_test)
+add_executable(dlr_mf_ha_test ./test/dlr_mf_ha_test.f90)
+target_link_libraries(dlr_mf_ha_test PRIVATE dlr)
+add_test(NAME dlr_mf_ha_test COMMAND dlr_mf_ha_test)
 
 # C-library: dlr_c
 

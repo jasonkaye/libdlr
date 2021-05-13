@@ -784,3 +784,43 @@
       call zgetrf(rank,rank,dlrmf2cf,rank,mf2cfpiv,info)
 
       end subroutine dlr_mf2cf1
+
+
+
+      subroutine eqpts_rel(n,t)
+
+      ! Get equispaced points on [0,1] in relative format
+      !
+      ! Relative format means that points 0.5<t<1 are computed and stored as the negative
+      ! distance from 1; that is, t* = t-1 in exact arithmetic. This is
+      ! to used to maintain full relative precision for calculations
+      ! with large lambda and small eps.
+      !
+      ! Input:
+      !
+      ! n - Number of points on [0,1]
+      !
+      ! Output :
+      !
+      ! t - n equispaced points on [0,1], including endpoints, in
+      !       relative format
+
+      implicit none
+      integer n
+      real *8 t(n)
+
+      integer i
+
+      do i=1,n-1
+
+        if (i.le.n/2) then
+          t(i) = (i-1)*1.0d0/(n-1)
+        else
+          t(i) = -(n-i)*1.0d0/(n-1)
+        endif
+
+      enddo
+
+      t(n) = 1.0d0
+
+      end subroutine eqpts_rel
