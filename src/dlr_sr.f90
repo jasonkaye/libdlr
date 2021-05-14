@@ -824,3 +824,95 @@
       t(n) = 1.0d0
 
       end subroutine eqpts_rel
+
+
+
+      subroutine rel2abs(n,t,tabs)
+
+      ! Convert points on [0,1] from relative format to absolute format
+      !
+      ! Relative format means that points 0.5<t<1 are computed and stored as the negative
+      ! distance from 1; that is, t* = t-1 in exact arithmetic. This is
+      ! to used to maintain full relative precision for calculations
+      ! with large lambda and small eps. Absolute format means that all
+      ! points are stored as normal.
+      !
+      ! Note: converting a point from relative to absolute format will,
+      ! in general, constitute a loss of relative accuracy in the
+      ! location of the point if the point is close to t = 1. For
+      ! example, in three-digit arithmetic, the point t = 0.999111 could
+      ! be stored as t* = -0.889e-3 in the relative format, but only as
+      ! t = 0.999 in the absolute format.
+      !
+      ! Input:
+      !
+      ! n     - Number of points
+      ! t     - Array of points on [0,1] stored in relative format
+      !
+      ! Output:
+      !
+      ! trel  - Array of points t in absolute format
+
+      implicit none
+      integer n
+      real *8 t(n),tabs(n)
+
+      integer i
+
+      do i=1,n
+
+        if (t(i).lt.0.0d0) then
+          tabs(i) = t(i)+1.0d0
+        else
+          tabs(i) = t(i)
+        endif
+
+      enddo
+
+      end subroutine rel2abs
+
+
+      subroutine abs2rel(tabs,t)
+
+      ! Convert a point on [0,1] from absolute format to relative format
+      !
+      ! Relative format means that points 0.5<t<1 are computed and stored as the negative
+      ! distance from 1; that is, t* = t-1 in exact arithmetic. This is
+      ! to used to maintain full relative precision for calculations
+      ! with large lambda and small eps. Absolute format means that all
+      ! points are stored as normal.
+      !
+      ! If the user wishes to specify points -- for example points at
+      ! which to sample or evaluate a DLR -- in absolute format, those
+      ! points must first be converted to relative format using this
+      ! subroutine before using them as inputs into any other
+      ! subroutines. Of course, in order to maintain full relative
+      ! precision in all calculations, the user must specify points in
+      ! relative format from the beginning, but in most cases at most a
+      ! mild loss of accuracy will result from using the absolute
+      ! format.
+      !
+      ! Input:
+      !
+      ! n     - Number of points
+      ! tabs  - Array of points on [0,1] stored in absolute format
+      !
+      ! Output:
+      !
+      ! t     - Array of points t in relative format
+
+      implicit none
+      real *8 t,tabs
+
+      do i=1,n
+
+        if (t(i).gt.0.5d0.and.t(i).lt.1.0d0) then
+          t(i) = tabs(i)-1.0d0
+        else
+          t(i) = tabs(i)
+        endif
+
+      enddo
+
+      end subroutine abs2rel
+
