@@ -872,7 +872,7 @@
       end subroutine rel2abs
 
 
-      subroutine abs2rel(tabs,t)
+      subroutine abs2rel(n,tabs,t)
 
       ! Convert a point on [0,1] from absolute format to relative format
       !
@@ -902,7 +902,10 @@
       ! t     - Array of points t in relative format
 
       implicit none
-      real *8 t,tabs
+      integer n
+      real *8 t(n),tabs(n)
+
+      integer i
 
       do i=1,n
 
