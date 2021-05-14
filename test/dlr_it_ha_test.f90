@@ -177,7 +177,7 @@
 
       ! Return failed status if error is not sufficiently small
 
-      if (errlinf.gt.1.0d-14) then
+      if (errlinf.gt.5.0d-14) then
         call exit(1)
       endif
 
