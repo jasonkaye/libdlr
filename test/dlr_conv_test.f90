@@ -1,10 +1,6 @@
-      program dlr_ha_test
+      program dlr_conv_test
 
-      ! Test discrete Lehmann representation using Green's function
-      ! generated from Lehmann representation with density which is a
-      ! sum of two delta functions. Recover DLR coefficients from
-      ! samples of Green's function at DLR grid points, and then measure
-      ! the error of the resulting expansion on a test grid.
+      ! Test convolution of two DLR expansions
       
       implicit none
       integer ntst
@@ -22,16 +18,15 @@
 
       ! --- Call main test subroutine ---
 
-      call dlr_ha_test_main(lambda,eps,ntst,beta,fb)
+      call dlr_conv_test_main(lambda,eps,ntst,beta,fb)
 
 
-      end program dlr_ha_test
+      end program dlr_conv_test
 
 
-      subroutine dlr_ha_test_main(lambda,eps,ntst,beta,fb)
+      subroutine dlr_conv_test_main(lambda,eps,ntst,beta,fb)
 
-      ! Main driver routine for test of DLR basis on Green's function
-      ! with two delta function density
+      ! Main driver routine for test
 
       implicit none
       integer ntst
@@ -40,10 +35,12 @@
 
       integer npt,npo,p,nt,no,i,j,rank,info,pg,npg
       integer, allocatable :: ipiv(:),tidx(:),oidx(:)
-      real *8 one,gtrue,gtest,errl2,errlinf,kerr(2),gmax,gl2
+      real *8 one,gtrue,gtest,errl2,errlinf,kerr(2),gmax,gl2,tabs
       real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:)
-      real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),gdlr(:)
-      real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:)
+      real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:)
+      real *8, allocatable :: g1(:),g2(:),g3(:) 
+
+      real *8, allocatable :: phi(:,:),gmat(:,:)
 
       one = 1.0d0
 
@@ -110,31 +107,52 @@
       write(6,*) 'DLR rank                          = ',rank
 
 
-      ! --- Sample Green's function and get DLR ---
+      ! --- Sample two Green's function and get DLR expansions ---
 
 
-      ! Sample G(tau) at DLR grid points
+      ! Sample G1 and G2 at DLR grid points
 
-      allocate(gdlr(rank))
+      allocate(g1(rank),g2(rank),g3(rank))
 
       do i=1,rank
 
-        call gfun(beta,dlrit(i),gdlr(i))
+        call gfun1(beta,dlrit(i),g1(i))
+        call gfun2(beta,dlrit(i),g2(i))
 
       enddo
 
 
-      ! Compute coefficients of DLR expansion from samples
+      ! Compute coefficients of DLR expansions from samples
 
-      call dlr_expnd(rank,it2cf,ipiv,gdlr)
+      call dlr_expnd(rank,it2cf,ipiv,g1)
+      call dlr_expnd(rank,it2cf,ipiv,g2)
 
 
-      ! --- Compare DLR with true Green's function ---
+      ! --- Compute convolution and measure error ---
+
+      ! Get convolution tensor
+
+      allocate(phi(rank*rank,rank))
+
+      call dlr_convtens(rank,dlrrf,dlrit,phi)
+      phi = beta*phi
+
+
+      ! Form matrix of convolution by G1
+
+      allocate(gmat(rank,rank))
+
+      call dlr_convmat(rank,phi,it2cf,ipiv,g1,gmat)
+
+
+      ! Apply matrix to obtain convolution G3
+
+      g3 = matmul(gmat,g2)
+
+      ! Get test points and compare computed G3 against exact
+      ! convolution
 
       allocate(ttst(ntst))
-
-      ! Get test points at which to measure error of Green's function;
-      ! test points given in relative format
 
       call eqpts_rel(ntst,ttst)
 
@@ -145,13 +163,13 @@
 
       do i=1,ntst
 
-        ! Evaluate Green's function
+        ! Evaluate true convolution
 
-        call gfun(beta,ttst(i),gtrue)
+        call gfun3(beta,ttst(i),gtrue)
 
         ! Evaluate DLR
 
-        call dlr_eval(fb,rank,dlrrf,gdlr,ttst(i),gtest)
+        call dlr_eval(fb,rank,dlrrf,g3,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 
@@ -181,28 +199,61 @@
         call exit(1)
       endif
 
-      end subroutine dlr_ha_test_main
+      end subroutine dlr_conv_test_main
 
 
 
-      subroutine gfun(beta,t,g)
+      subroutine gfun1(beta,t,g)
 
       ! Evaluate Green's function corresponding to
-      ! sum-of-delta-functions spectral density 
+      ! delta function spectral density 
 
       implicit none
       real *8 beta,t,g
       real *8, external :: kfunf2
 
-      real *8 a1,a2,a3,a4,a5
+      real *8 a1
 
-      a1 = -0.804d0
+      a1 = 0.804d0
+
+      g = kfunf2(t,beta*a1)
+
+      end subroutine gfun1
+
+      subroutine gfun2(beta,t,g)
+
+      ! Evaluate Green's function corresponding to
+      ! delta function spectral density 
+
+      implicit none
+      real *8 beta,t,g
+      real *8, external :: kfunf2
+
+      real *8 a2
+
       a2 = -0.443d0
-      a3 =  0.093d0
-      a4 =  0.915d0
-      a5 =  0.929d0
+      !a2 = 0.804d0
 
-      g = kfunf2(t,beta*a1) + kfunf2(t,beta*a2) + kfunf2(t,beta*a3) +&
-        kfunf2(t,beta*a4) + kfunf2(t,beta*a5)
+      g = kfunf2(t,beta*a2)
 
-      end subroutine gfun
+      end subroutine gfun2
+
+      subroutine gfun3(beta,t,g)
+
+      ! Evaluate Green's function corresponding to convolution of two 
+      ! delta function spectral densities 
+
+      implicit none
+      real *8 beta,t,g
+      real *8, external :: kfunf2
+
+      real *8 a1,a2
+
+      a1 = 0.804d0
+      a2 = -0.443d0
+
+      g = (kfunf2(t,beta*a2)-kfunf2(t,beta*a1))/(a1-a2)
+      
+      !g = beta*(t-kfunf2(beta*1.0d0,a1))*kfunf2(t,beta*a1)
+
+      end subroutine gfun3

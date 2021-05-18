@@ -30,8 +30,8 @@
 
       p = 24 ! Chebyshev degree of panels
       
-      npt = ceiling(log(lambda)/log(2.0d0))-2
-      npo = ceiling(log(lambda)/log(2.0d0))
+      npt = max(ceiling(log(lambda)/log(2.0d0))-2,1)
+      npo = max(ceiling(log(lambda)/log(2.0d0)),1)
 
       nt = 2*p*npt
       no = 2*p*npo
@@ -366,10 +366,54 @@
       end subroutine dlr_it
 
 
-      subroutine dlr_it2cf(nt,no,kmat,rank,oidx,tidx,dlrit2cf,it2cfpiv)
+      subroutine dlr_cf2it(nt,no,kmat,rank,oidx,tidx,cf2it)
+
+      ! Build transform matrix from DLR coefficients to samples on
+      ! imaginary time grid. To obtain the samples of a DLR expansion on
+      ! the imaginary time grid, apply the matrix cf2it to the vector of
+      ! DLR coefficients.
+      !
+      ! Input:
+      !
+      ! nt    - # fine grid points in tau
+      ! no    - # fine grid points in omega
+      ! kmat  - K(tau,omega) on fine grid
+      ! rank  - rank of DLR (# basis functions)
+      ! oidx  - column indices of kmat corresponding to selected
+      !           real frequency nodes
+      ! tidx  - row indices of kmat corresponding to selected imaginary
+      !           time nodes
+      !
+      ! Output :
+      !
+      ! cf2it - DLR coefficients -> imaginary time grid values transform
+      !           matrix
+
+
+      implicit none
+      integer nt,no,rank,tidx(rank),oidx(rank)
+      real *8 kmat(nt,no),cf2it(rank,rank)
+
+      integer j,k
+
+      ! Extract select rows and columns of fine grid K matrix
+
+      do k=1,rank
+        do j=1,rank
+          cf2it(j,k) = kmat(tidx(j),oidx(k))
+        enddo
+      enddo
+
+      end subroutine dlr_cf2it
+
+
+      subroutine dlr_it2cf(nt,no,kmat,rank,oidx,tidx,it2cf,it2cfpiv)
 
       ! Build transform matrix from samples on imaginary time grid to
-      ! DLR coefficients in LU form
+      ! DLR coefficients, stored in LU form. To obtain the coefficients
+      ! of a DLR expansion from samples on the imaginary time grid, use
+      ! the outputs of this subroutine in conjunction with the dlr_expnd
+      ! subroutine.
       !
       ! Input:
       !
@@ -384,14 +428,14 @@
       !
       ! Output :
       !
-      ! dlrit2cf  - imaginary time grid values -> DLR coefficients
+      ! it2cf     - imaginary time grid values -> DLR coefficients
       !               transform matrix in lapack LU storage format
-      ! it2cfpiv  - pivot matrix for dlrit2cf in lapack LU storage format
+      ! it2cfpiv  - pivot matrix for it2cf in lapack LU storage format
 
 
       implicit none
       integer nt,no,rank,tidx(rank),oidx(rank),it2cfpiv(rank)
-      real *8 kmat(nt,no),dlrit2cf(rank,rank)
+      real *8 kmat(nt,no),it2cf(rank,rank)
 
       integer j,k,info
 
@@ -399,27 +443,27 @@
 
       do k=1,rank
         do j=1,rank
-          dlrit2cf(j,k) = kmat(tidx(j),oidx(k))
+          it2cf(j,k) = kmat(tidx(j),oidx(k))
         enddo
       enddo
 
       ! LU factorize
 
-      call dgetrf(rank,rank,dlrit2cf,rank,it2cfpiv,info)
+      call dgetrf(rank,rank,it2cf,rank,it2cfpiv,info)
 
       end subroutine dlr_it2cf
 
 
-      subroutine dlr_expnd(rank,dlrit2cf,it2cfpiv,g)
+      subroutine dlr_expnd(rank,it2cf,it2cfpiv,g)
       
       ! Get coefficients of DLR from samples on imaginary time DLR grid
       !
       ! Input:
       !
       ! rank      - rank of DLR (# basis functions)
-      ! dlrit2cf  - imaginary time grid values -> DLR coefficients
+      ! it2cf     - imaginary time grid values -> DLR coefficients
       !               transform matrix in lapack LU storage format
-      ! it2cfpiv  - pivot matrix for dlrit2cf in lapack LU storage format
+      ! it2cfpiv  - pivot matrix for it2cf in lapack LU storage format
       ! g         - Samples of a function G at imaginary time grid
       !               points
       !
@@ -429,14 +473,14 @@
       
       implicit none
       integer rank,it2cfpiv(rank)
-      real *8 dlrit2cf(rank,rank),g(rank)
+      real *8 it2cf(rank,rank),g(rank)
 
       integer info
 
       ! Backsolve with imaginary time grid values -> DLR coefficients
       ! transform matrix stored in LU form
 
-      call dgetrs('N',rank,1,dlrit2cf,rank,it2cfpiv,g,rank,info)
+      call dgetrs('N',rank,1,it2cf,rank,it2cfpiv,g,rank,info)
 
       end subroutine dlr_expnd
 
@@ -784,6 +828,112 @@
       call zgetrf(rank,rank,dlrmf2cf,rank,mf2cfpiv,info)
 
       end subroutine dlr_mf2cf1
+
+
+      subroutine dlr_convtens(rank,dlrrf,dlrit,phi)
+
+      ! Get tensor phi_{jkl} used to take a set of DLR coefficients to
+      ! the matrix of convolution by the corresponding DLR expansion.
+      ! The matrix A of convolution on [0,beta] by a function
+      ! represented by a DLR expansion with coefficients rho_l is given
+      ! by
+      !
+      ! A_jk = beta * sum_l phi_jkl rho_l.
+      !
+      ! This is for the fermionic case only.
+      !
+      ! Input:
+      !
+      ! rank  - rank of DLR (# basis functions)
+      ! dlrrf - selected real frequency nodes (omega points)
+      ! dlrit - selected imaginary time nodes (tau points)
+      !
+      ! Output:
+      !
+      ! phi   - convolution tensor
+
+
+      implicit none
+      integer rank
+      real *8 dlrrf(rank),dlrit(rank)
+      real *8 phi(rank*rank,rank)
+      real *8, external :: kfun
+
+      integer j,k,l,ier,maxrec,numint
+      real *8 one,rint1,rint2
+      real *8, external :: kfunf,kfunf2
+
+      one = 1.0d0
+
+      do l=1,rank
+        do k=1,rank
+          do j=1,rank
+
+            if (k.ne.l) then
+
+              phi((k-1)*rank+j,l) = (kfunf2(dlrit(j),dlrrf(l)) -&
+                kfunf2(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
+
+            else
+
+              if (dlrit(j).gt.0.0d0) then
+
+                phi((k-1)*rank+j,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
+                  kfunf2(dlrit(j),dlrrf(k))
+
+              else
+
+                phi((k-1)*rank+j,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
+                  kfunf2(dlrit(j),dlrrf(k))
+
+              endif
+            endif
+
+          enddo
+        enddo
+      enddo
+
+      end subroutine dlr_convtens
+
+
+      subroutine dlr_convmat(rank,phi,it2cf,it2cfpiv,g,gmat)
+
+      ! Get matrix of convolution by a DLR expansion G in the DLR basis
+      ! -- that is, the matrix that this subroutine produces takes the
+      ! DLR coefficient representation of a function f to the DLR
+      ! coefficient representation of the convolution
+      !
+      ! int_0^1 G(t-t') f(t') dt'.
+      !
+      ! Input:
+      !
+      ! rank      - rank of DLR (# basis functions)
+      ! phi       - convolution tensor
+      ! it2cf  - imaginary time grid values -> DLR coefficients
+      !               transform matrix in lapack LU storage format
+      ! it2cfpiv  - pivot matrix for it2cf in lapack LU storage
+      !               format
+      ! g         - DLR coefficients of a function G
+      !
+      ! Output:
+      !
+      ! gmat      - matrix of convolution by G in the DLR basis
+
+      implicit none
+      integer rank,it2cfpiv(rank)
+      real *8 phi(rank*rank,rank),it2cf(rank,rank),g(rank)
+      real *8 gmat(rank,rank)
+
+      integer i,j,info
+
+      call dgemv('N',rank*rank,rank,1.0d0,phi,rank*rank,g,1,0.0d0,&
+        gmat,1)
+
+      call dgetrs('N',rank,rank,it2cf,rank,it2cfpiv,gmat,rank,info)
+
+      end subroutine dlr_convmat
+
+
 
 
 

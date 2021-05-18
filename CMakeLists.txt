@@ -38,6 +38,11 @@ add_executable(dlr_mf_ha_test ./test/dlr_mf_ha_test.f90)
 target_link_libraries(dlr_mf_ha_test PRIVATE dlr)
 add_test(NAME dlr_mf_ha_test COMMAND dlr_mf_ha_test)
 
+add_executable(dlr_conv_test ./test/dlr_conv_test.f90)
+target_link_libraries(dlr_conv_test PRIVATE dlr)
+add_test(NAME dlr_conv_test COMMAND dlr_conv_test)
+
+
 # C-library: dlr_c
 
 file(GLOB dlr_c_SRC CONFIGURE_DEPENDS "./src/dlr_c/*.f*")

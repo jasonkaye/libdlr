@@ -6,87 +6,6 @@
       !
 
 
-
-
-      subroutine dlr_convinit(rank,dlrrf,dlrit,phi)
-
-      ! Get matrix of convolutions of DLR basis functions,
-      ! evaluated on DLR grid
-      !
-      ! Fermionic case only
-      !
-      ! Entries will be given by
-      !
-      ! int_0^1 phi_j(t_i-t') phi_k(t') dt'
-      !
-      ! for t_i a DLR grid point, and phi_j, phi_k DLR basis functions. 
-
-      implicit none
-      integer rank
-      real *8 dlrrf(rank),dlrit(rank)
-      real *8 phi(rank,rank,rank)
-      real *8, external :: kfun
-
-      integer j,k,l,ier,maxrec,numint
-      real *8 one,rint1,rint2
-      real *8, external :: kfunf,kfunf2
-
-      one = 1.0d0
-
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-
-            if (k.ne.l) then
-
-              phi(j,k,l) = (kfunf2(dlrit(j),dlrrf(l)) -&
-                kfunf2(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
-
-            else
-
-              if (dlrit(j).gt.0.0d0) then
-
-                phi(j,k,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
-                  kfunf2(dlrit(j),dlrrf(k))
-
-              else
-
-                phi(j,k,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
-                  kfunf2(dlrit(j),dlrrf(k))
-
-              endif
-            endif
-
-          enddo
-        enddo
-      enddo
-
-      end subroutine dlr_convinit
-
-
-      subroutine dlr_conv(rank,phi,it2cf,ipiv,g,gmat)
-
-      ! Build matrix of convolution by a Green's function in its DLR
-      ! coefficient representation
-
-      implicit none
-      integer rank,ipiv(rank)
-      real *8 phi(rank,rank,rank),it2cf(rank,rank),g(rank)
-      real *8 gmat(rank,rank)
-
-      integer i,j,info
-
-      do j=1,rank
-        do i=1,rank
-          gmat(i,j) = sum(g*phi(i,:,j))
-        enddo
-      enddo
-
-      call dgetrs('N',rank,rank,it2cf,rank,ipiv,gmat,rank,info)
-
-      end subroutine dlr_conv
-
-
       subroutine dlr_dyson(rank,mu,dlrit,it2cf,ipiv,cf2it,phi,&
           g,numit,w,fptol,useg0,sigeval)
 
@@ -138,7 +57,7 @@
 
       allocate(g0mat(rank,rank))
 
-      call dlr_conv(rank,phi,it2cf,ipiv,g0,g0mat)
+      call dlr_convmat(rank,phi,it2cf,ipiv,g0,g0mat)
 
 
       ! --- Fixed point iteration for G ---
@@ -165,7 +84,7 @@
 
         ! Matrix of convolution by Sigma
 
-        call dlr_conv(rank,phi,it2cf,ipiv,sig,sigmat)
+        call dlr_convmat(rank,phi,it2cf,ipiv,sig,sigmat)
 
         ! Linear VIE system matrix
 

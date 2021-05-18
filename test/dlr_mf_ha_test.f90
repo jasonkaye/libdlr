@@ -14,7 +14,7 @@
       ! --- Input parameters ---
 
       lambda = 1000 ! Frequency cutoff
-      eps = 1.0d-15 ! Desired accuracy
+      eps = 1.0d-14 ! Desired accuracy
       nmax = lambda ! Matsubara frequency cutoff
       ntst = 10000 ! # test points to check representation of G
       beta = 1000 ! Inverse temp: controls support of rho
