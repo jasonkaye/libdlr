@@ -454,7 +454,7 @@
       end subroutine dlr_it2cf
 
 
-      subroutine dlr_expnd(rank,it2cf,it2cfpiv,g)
+      subroutine dlr_expnd(rank,it2cf,it2cfpiv,g,gc)
       
       ! Get coefficients of DLR from samples on imaginary time DLR grid
       !
@@ -469,24 +469,26 @@
       !
       ! Output :
       !
-      ! g         - DLR coefficients of G
+      ! gc        - DLR coefficients of G
       
       implicit none
       integer rank,it2cfpiv(rank)
-      real *8 it2cf(rank,rank),g(rank)
+      real *8 it2cf(rank,rank),g(rank),gc(rank)
 
       integer info
 
       ! Backsolve with imaginary time grid values -> DLR coefficients
       ! transform matrix stored in LU form
 
-      call dgetrs('N',rank,1,it2cf,rank,it2cfpiv,g,rank,info)
+      gc = g
+
+      call dgetrs('N',rank,1,it2cf,rank,it2cfpiv,gc,rank,info)
 
       end subroutine dlr_expnd
 
 
 
-      subroutine dlr_mfexpnd(rank,dlrmf2cf,mf2cfpiv,g)
+      subroutine dlr_mfexpnd(rank,dlrmf2cf,mf2cfpiv,g,gc)
 
       ! Get coefficients of DLR from samples on Matsubara frequency DLR
       ! grid
@@ -502,17 +504,25 @@
       !
       ! Output :
       !
-      ! g         - DLR coefficients of G
+      ! gc        - DLR coefficients of G
 
       implicit none
       integer rank,mf2cfpiv(rank)
+      real *8 gc(rank)
       complex *16 dlrmf2cf(rank,rank),g(rank)
 
       integer info
+      complex *16, allocatable :: tmp(:)
 
       ! Backsolve with DLR transform matrix in factored form
 
-      call zgetrs('N',rank,1,dlrmf2cf,rank,mf2cfpiv,g,rank,info)
+      allocate(tmp(rank))
+
+      tmp = g
+
+      call zgetrs('N',rank,1,dlrmf2cf,rank,mf2cfpiv,tmp,rank,info)
+
+      gc = real(tmp)
 
       end subroutine dlr_mfexpnd
 

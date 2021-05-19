@@ -43,8 +43,8 @@
       integer, allocatable :: oidx(:),dlrmf(:),ipiv(:)
       real *8 one,gtrue,errl2,errlinf,kerr(2),gmax,gl2,gtest
       real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:),dlrrf(:)
-      real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:)
-      complex *16, allocatable :: gdlr(:),mf2cf(:,:)
+      real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:),gc(:)
+      complex *16, allocatable :: g(:),mf2cf(:,:)
 
       one = 1.0d0
 
@@ -116,18 +116,18 @@
 
       ! Sample G(tau) at DLR grid points
 
-      allocate(gdlr(rank))
+      allocate(g(rank),gc(rank))
 
       do i=1,rank
 
-        call gfun_mf(beta,dlrmf(i),gdlr(i))
+        call gfun_mf(beta,dlrmf(i),g(i))
 
       enddo
 
 
       ! Compute coefficients of DLR expansion from samples
 
-      call dlr_mfexpnd(rank,mf2cf,ipiv,gdlr)
+      call dlr_mfexpnd(rank,mf2cf,ipiv,g,gc)
 
 
       ! --- Compare DLR with true Green's function ---
@@ -153,7 +153,7 @@
 
         ! Evaluate DLR
 
-        call dlr_eval(fb,rank,dlrrf,real(gdlr),ttst(i),gtest)
+        call dlr_eval(fb,rank,dlrrf,gc,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 
