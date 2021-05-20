@@ -6,33 +6,56 @@
       !
 
 
-      subroutine dlr_dyson(rank,mu,dlrit,it2cf,ipiv,cf2it,phi,&
-          g,numit,w,fptol,useg0,sigeval)
+      subroutine dlr_dyson_it(rank,dlrit,it2cf,it2cfpiv,cf2it,phi,mu,&
+          sigeval,w,fptol,numit,useg0,g,info)
 
-      ! Solve the Dyson equation self-consistently using the DLR in
-      ! imaginary time and weighted fixed point iteration
-
-      ! g: on input, initial guess, unless useg0==1. On output, DLR
-      ! coefficients of solution
+      ! Solve the Dyson equation by weighted fix point iteration using
+      ! the DLR in imaginary time
       !
-      ! numit: on input, max number of fixed point iterations. On
-      ! output, actual number of fixed point iterations.
+      ! Input:
       !
-      ! sigeval: subroutine with calling sequence sigeval(rank,g,sig),
-      ! which takes in DLR coefficients of a Green's function G, and
-      ! returns values of Sigma on the DLR imaginary time grid.
+      ! rank      - rank of DLR (# basis functions)
+      ! dlrit     - selected imaginary time nodes (tau points)
+      ! it2cf     - imaginary time grid values -> DLR coefficients
+      !               transform matrix in lapack LU storage format
+      ! it2cfpiv  - pivot matrix for it2cf in lapack LU storage
+      !               format
+      ! cf2it     - DLR coefficients -> imaginary time grid values
+      !               transform
+      ! phi       - tensor taking a set of DLR coefficients to matrix of
+      !               convolution by corresponding DLR expansion
+      ! mu        - single particle energy parameter
+      ! sigeval   - subroutine with calling sequence
+      !               sigeval(rank,g,sig), which takes in DLR
+      !               coefficients of Green's function G and returns
+      !               values of Sigma at DLR imaginary time grid points.
+      ! w         - weighting parameter for weighted fixed point
+      !               iteration
+      ! fptol     - fixed point iteration tolerance
+      ! numit     - max number of fixed point iterations
+      ! useg0     - useg0==1, use G0(tau) as initial guess in fixed
+      !               point iteration
+      ! g         - if useg0/=0, DLR coefficients of initial guess for
+      !               fixed point iteration
+      !
+      ! Output:
+      !
+      ! numit     - Number of fixed point iterations taken
+      ! g         - DLR coefficients of self-consistent solution of
+      !               Dyson equation
+      ! info      - info=0: iteration converged to tolerance fptol;
+      !               info=-1 iteration did not converge
 
       implicit none
-      integer rank,numit,useg0,ipiv(rank)
-      real *8 dlrit(rank),mu,it2cf(rank,rank)
-      real *8 cf2it(rank,rank),g(rank),w,fptol,phi(rank,rank,rank)
+      integer rank,numit,useg0,it2cfpiv(rank),info
+      real *8 dlrit(rank),it2cf(rank,rank),mu
+      real *8 cf2it(rank,rank),g(rank),w,fptol,phi(rank*rank,rank)
 
-      integer i,j,info
-      integer, allocatable :: ipiv1(:)
+      integer i,j,info1
+      integer, allocatable :: ipiv(:)
       real *8 one
       real *8, allocatable :: g0(:),g0mat(:,:),sig(:),sigmat(:,:)
       real *8, allocatable :: sysmat(:,:),gnew(:)
-      real *8, allocatable :: tmp(:)
       real *8, external :: kfunf2
 
       one = 1.0d0
@@ -51,13 +74,13 @@
 
       ! DLR coefficient representation of G0
 
-      call dlr_expnd(rank,it2cf,ipiv,g0)
+      call dlr_expnd(rank,it2cf,it2cfpiv,g0,g0)
 
       ! Matrix of convolution by G0
 
       allocate(g0mat(rank,rank))
 
-      call dlr_convmat(rank,phi,it2cf,ipiv,g0,g0mat)
+      call dlr_convmat(rank,phi,it2cf,it2cfpiv,g0,g0mat)
 
 
       ! --- Fixed point iteration for G ---
@@ -69,7 +92,7 @@
       endif
 
       allocate(sig(rank),sigmat(rank,rank),gnew(rank))
-      allocate(sysmat(rank,rank),ipiv1(rank))
+      allocate(sysmat(rank,rank),ipiv(rank))
 
       do i=1,numit
 
@@ -80,13 +103,13 @@
 
         ! DLR coefficient representation of Sigma
 
-        call dlr_expnd(rank,it2cf,ipiv,sig)
+        call dlr_expnd(rank,it2cf,it2cfpiv,sig,sig)
 
         ! Matrix of convolution by Sigma
 
-        call dlr_convmat(rank,phi,it2cf,ipiv,sig,sigmat)
+        call dlr_convmat(rank,phi,it2cf,it2cfpiv,sig,sigmat)
 
-        ! Linear VIE system matrix
+        ! System matrix for linear Dyson equation
 
         sysmat = -matmul(g0mat,sigmat)
 
@@ -94,13 +117,13 @@
           sysmat(j,j) = one + sysmat(j,j)
         enddo
 
-        ! Solve linear VIE
+        ! Solve linear equation by LU factorization + backsolve
 
-        call dgetrf(rank,rank,sysmat,rank,ipiv1,info)
+        call dgetrf(rank,rank,sysmat,rank,ipiv,info1)
 
         gnew = g0
 
-        call dgetrs('N',rank,1,sysmat,rank,ipiv1,gnew,rank,info)
+        call dgetrs('N',rank,1,sysmat,rank,ipiv,gnew,rank,info1)
 
         ! Check self-consistency
 
@@ -108,19 +131,26 @@
 
           g = gnew
           numit = i
+          info = 0
 
           return
 
         else
+
+          ! Next G is weighted linear combination of previous and
+          ! current iterates
 
           g = w*gnew + (one-w)*g
 
         endif
       enddo
 
-      write(6,*) 'Warning: fixed point iteration did not converge.'
+      info = -1
 
-      end subroutine dlr_dyson
+      end subroutine dlr_dyson_it
+
+
+
 
       subroutine dlr_dyson_mf(beta,rank,mu,dlrit,it2cf,ipiv1,cf2it,&
           dlrmf,dlrmf2cf,ipiv2,cf2mf,g,numit,w,fptol,useg0,sigeval)
@@ -422,5 +452,3 @@
       convmat = matmul(convmat,legf)
           
       end subroutine leg_conv
-
-
