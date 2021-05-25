@@ -488,7 +488,7 @@
 
 
 
-      subroutine dlr_mfexpnd(rank,dlrmf2cf,mf2cfpiv,g,gc)
+      subroutine dlr_mfexpnd(rank,mf2cf,mf2cfpiv,g,gc)
 
       ! Get coefficients of DLR from samples on Matsubara frequency DLR
       ! grid
@@ -496,9 +496,9 @@
       ! Input:
       !
       ! rank      - rank of DLR (# basis functions)
-      ! dlrmf2cf  - Matsubara frequency grid values -> DLR coefficients
+      ! mf2cf     - Matsubara frequency grid values -> DLR coefficients
       !               transform matrix in lapack LU storage format
-      ! mf2cfpiv  - pivot matrix for dlrmf2cf in lapack LU storage format
+      ! mf2cfpiv  - pivot matrix for mf2cf in lapack LU storage format
       ! g         - Samples of a function G at Matsubara frequency grid
       !               points
       !
@@ -509,7 +509,7 @@
       implicit none
       integer rank,mf2cfpiv(rank)
       real *8 gc(rank)
-      complex *16 dlrmf2cf(rank,rank),g(rank)
+      complex *16 mf2cf(rank,rank),g(rank)
 
       integer info
       complex *16, allocatable :: tmp(:)
@@ -520,7 +520,7 @@
 
       tmp = g
 
-      call zgetrs('N',rank,1,dlrmf2cf,rank,mf2cfpiv,tmp,rank,info)
+      call zgetrs('N',rank,1,mf2cf,rank,mf2cfpiv,tmp,rank,info)
 
       gc = real(tmp)
 
@@ -764,7 +764,7 @@
 
 
 
-      subroutine dlr_mf2cf(fb,nmax,rank,dlrrf,dlrmf,dlrmf2cf,mf2cfpiv)
+      subroutine dlr_mf2cf(fb,nmax,rank,dlrrf,dlrmf,mf2cf,mf2cfpiv)
 
       ! Build transform matrix from samples on Matsubara frequency grid
       ! to DLR coefficients in LU form
@@ -779,9 +779,9 @@
       !
       ! Output :
       !
-      ! dlrmf2cf  - Matsubara frequency grid values -> DLR coefficients
+      ! mf2cf   - Matsubara frequency grid values -> DLR coefficients
       !               transform matrix in lapack LU storage format
-      ! mf2cfpiv  - pivot matrix for dlrmf2cf in lapack LU storage format
+      ! mf2cfpiv  - pivot matrix for mf2cf in lapack LU storage format
       !
       !
       ! This is a wrapper for the main subroutine, dlr_mf2cf1
@@ -789,16 +789,16 @@
       implicit none
       integer nmax,rank,dlrmf(rank),mf2cfpiv(rank)
       real *8 dlrrf(rank)
-      complex *16 dlrmf2cf(rank,rank)
+      complex *16 mf2cf(rank,rank)
       character :: fb
 
       complex *16, external :: kfunf_mf
 
       if (fb.eq.'f') then
-        call dlr_mf2cf1(kfunf_mf,nmax,rank,dlrrf,dlrmf,dlrmf2cf,&
+        call dlr_mf2cf1(kfunf_mf,nmax,rank,dlrrf,dlrmf,mf2cf,&
           mf2cfpiv)
       !elseif (fb.eq.'b') then
-        !call dlr_mf2cf1(kfunb_mf,nmax,rank,dlrrf,dlrmf,dlrmf2cf,&
+        !call dlr_mf2cf1(kfunb_mf,nmax,rank,dlrrf,dlrmf,mf2cf,&
         ! mf2cfpiv)
       else
         stop 'choose fb = f or b'
@@ -807,7 +807,7 @@
       end subroutine dlr_mf2cf
 
 
-      subroutine dlr_mf2cf1(kfun,nmax,rank,dlrrf,dlrmf,dlrmf2cf,&
+      subroutine dlr_mf2cf1(kfun,nmax,rank,dlrrf,dlrmf,mf2cf,&
           mf2cfpiv)
 
       ! Main subroutine for dlr_mf2cf
@@ -819,7 +819,7 @@
       implicit none
       integer nmax,rank,dlrmf(rank),mf2cfpiv(rank)
       real *8 dlrrf(rank)
-      complex *16 dlrmf2cf(rank,rank)
+      complex *16 mf2cf(rank,rank)
       complex *16, external :: kfun
 
       integer j,k,info
@@ -829,15 +829,57 @@
 
       do k=1,rank
         do j=1,rank
-          dlrmf2cf(j,k) = kfun(dlrmf(j),dlrrf(k))
+          mf2cf(j,k) = kfun(dlrmf(j),dlrrf(k))
         enddo
       enddo
 
       ! LU factorize
 
-      call zgetrf(rank,rank,dlrmf2cf,rank,mf2cfpiv,info)
+      call zgetrf(rank,rank,mf2cf,rank,mf2cfpiv,info)
 
       end subroutine dlr_mf2cf1
+
+
+      subroutine dlr_cf2mf(rank,dlrrf,dlrmf,cf2mf)
+
+      ! Build transform matrix from DLR coefficients to samples on
+      ! Matsubara frequency grid. To obtain the samples of a DLR
+      ! expansion on the Matsubara frequency grid, apply the matrix
+      ! cf2mf to the vector of DLR coefficients.
+      !
+      ! Input:
+      !
+      ! rank  - rank of DLR (# basis functions)
+      ! dlrrf - selected real frequency nodes (omega points)
+      ! dlrmf - selected Matsubara frequency nodes
+      !
+      ! Output :
+      !
+      ! cf2mf - DLR coefficients -> Matsubara frequency grid values
+      !           transform matrix
+
+
+      implicit none
+      integer rank,dlrmf(rank)
+      real *8 dlrrf(rank)
+      complex *16 cf2mf(rank,rank)
+
+      complex *16, external :: kfunf_mf
+
+      integer i,j
+
+      ! Evaluated Matsubara frequency kernel at selected real
+      ! frequencies and Matsubara frequencies 
+
+      do j=1,rank
+        do i=1,rank
+          cf2mf(i,j) = kfunf_mf(dlrmf(i),dlrrf(j))
+        enddo
+      enddo
+
+      end subroutine dlr_cf2mf
+
+
 
 
       subroutine dlr_convtens(rank,dlrrf,dlrit,phi)

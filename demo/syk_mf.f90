@@ -1,7 +1,8 @@
-      program dlr_syk_it
+      program dlr_syk_mf
 
       ! Solve SYK equation self-consistently by weighted fixed point
-      ! iteration in imaginary time
+      ! iteration, transforming back and forth between imaginary time
+      ! and Matsubara frequency
       !
       ! The SYK equation is the Dyson equation corresponding to
       ! self-energy
@@ -10,7 +11,10 @@
       !
       ! We solve the Dyson equation self-consistently by a weighted
       ! fixed point iteration, with weight w assigned to the new iterate
-      ! and weight 1-w assigned to the previous iterate.
+      ! and weight 1-w assigned to the previous iterate. The Dyson
+      ! equation is inverted in the Matsubara frequency domain, where it
+      ! is diagonal, and the self-energy is computed in the imaginary
+      ! time domain.
       !
       ! Furthermore, to solve the equation with a desired single
       ! particle energy mu, we pick a number nmu>1, and solve a sequence
@@ -25,16 +29,18 @@
       ! imaginary time, in a file "gfun". The first column of gfun
       ! contains the imaginary time points, and the second column
       ! contains the corresponding values of the Green's function.
-
       
       implicit none
-      integer nout,maxit,nmu
+      integer nout,maxit,nmu,nmax
       real *8 lambda,eps,fptol,w,beta,mu,c
+
+      integer i
 
       ! --- Input parameters ---
 
       lambda = 500.0d0 ! DLR cutoff
       eps = 1.0d-14 ! Desired accuracy
+      nmax = ceiling(lambda) ! Matsubara frequency cutoff
 
       beta = 100.0d0 ! Inverse temperature
       mu = 1.0d-1 ! Single particle energy
@@ -51,28 +57,31 @@
 
       ! --- Call main test subroutine ---
 
-      call dlr_syk_it_main(lambda,eps,nout,fptol,maxit,w,beta,mu,c,nmu)
+      call dlr_syk_mf_main(lambda,eps,nmax,nout,fptol,maxit,w,beta,mu,&
+        c,nmu)
 
 
-      end program dlr_syk_it
+      end program dlr_syk_mf
 
 
-      subroutine dlr_syk_it_main(lambda,eps,nout,fptol,maxit,w,beta,&
-          mu,c,nmu)
+      subroutine dlr_syk_mf_main(lambda,eps,nmax,nout,fptol,maxit,w,&
+          beta,mu,c,nmu)
 
       ! Main driver routine for imaginary time SYK solver 
 
       implicit none
-      integer nout,maxit,nmu
+      integer nout,maxit,nmu,nmax
       real *8 lambda,eps,fptol,w,beta,mu,c
 
       integer npt,npo,p,nt,no,i,j,rank,info,pg,npg,numit
-      integer, allocatable :: it2cfpiv(:),tidx(:),oidx(:)
+      integer, allocatable :: dlrmf(:),it2cfpiv(:),mf2cfpiv(:),tidx(:),oidx(:)
       real *8 one,gtest,kerr(2),gtest2
       real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:)
       real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),g(:)
-      real *8, allocatable :: cf2it(:,:),cf2itr(:,:),phi(:,:)
+      real *8, allocatable :: cf2it(:,:),cf2itr(:,:)
+      complex *16, allocatable :: mf2cf(:,:),cf2mf(:,:)
       real *8, external :: kfunf,kfunf2
+      complex *16, external :: kfunf_mf
 
       one = 1.0d0
 
@@ -113,26 +122,36 @@
       call dlr_it2cf(nt,no,kmat,rank,oidx,tidx,it2cf,it2cfpiv)
 
 
-      ! Get DLR coefficients -> imaginary time values transform matrix,
-      ! and DLR coefficients -> reflected imaginary time values
-      ! transform matrix
+      ! Get DLR Matsubara frequency grid
 
-      allocate(cf2it(rank,rank),cf2itr(rank,rank))
+      allocate(dlrmf(rank))
+
+      call dlr_mf('f',nmax,rank,dlrrf,dlrmf)
+
+
+      ! Get Matsubara frequency values -> DLR coefficients transform matrix in LU form
+
+      allocate(mf2cf(rank,rank),mf2cfpiv(rank))
+
+      call dlr_mf2cf('f',nmax,rank,dlrrf,dlrmf,mf2cf,mf2cfpiv)
+
+
+
+      ! Get DLR coefficients -> imaginary time values transform matrix,
+      ! DLR coefficients -> reflected imaginary time values
+      ! transform matrix, and DLR coefficients -> Matsubara frequency
+      ! values transform matrix
+
+      allocate(cf2it(rank,rank),cf2itr(rank,rank),cf2mf(rank,rank))
 
       call dlr_cf2it(nt,no,kmat,rank,oidx,tidx,cf2it)
 
       call dlr_cf2itr(rank,dlrrf,dlrit,cf2itr)
 
+      call dlr_cf2mf(rank,dlrrf,dlrmf,cf2mf)
+      
 
       ! --- Solve SYK equation ---
-
-      ! Get tensor used to form matrix of convolution by a Green's
-      ! function
-
-      allocate(phi(rank*rank,rank))
-
-      call dlr_convtens(rank,dlrrf,dlrit,phi)
-      phi = phi*beta
 
 
       ! Solve Dyson equation by marching in mu
@@ -141,8 +160,8 @@
 
       numit = maxit
 
-      call dlr_dyson_it(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,phi,mu,&
-        sigeval,w,fptol,numit,1,g,info)
+      call dlr_dyson_mf(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,&
+        dlrmf,mf2cf,mf2cfpiv,cf2mf,0*one,sigeval,w,fptol,numit,1,g,info)
 
       write(6,*) 'mu = ',0.0d0
 
@@ -156,8 +175,9 @@
 
         numit = maxit
 
-        call dlr_dyson_it(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,phi,&
-          i*mu/nmu,sigeval,w,fptol,numit,0,g,info)
+        call dlr_dyson_mf(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,&
+          dlrmf,mf2cf,mf2cfpiv,cf2mf,i*mu/nmu,sigeval,w,fptol,numit,0,&
+          g,info)
 
         write(6,*) 'mu = ',i*mu/nmu
 
@@ -191,6 +211,7 @@
       close(1)
 
 
+
       contains
 
         subroutine sigeval(rank,g,sig)
@@ -205,7 +226,9 @@
 
         end subroutine sigeval
       
-      end subroutine dlr_syk_it_main
+      end subroutine dlr_syk_mf_main
+
+
 
 
       subroutine dlr_cf2itr(rank,dlrrf,dlrit,cf2itr)
