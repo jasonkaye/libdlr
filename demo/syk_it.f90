@@ -141,7 +141,7 @@
 
       numit = maxit
 
-      call dlr_dyson_it(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,phi,mu,&
+      call dlr_dyson_it(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,phi,0*one,&
         sigeval,w,fptol,numit,1,g,info)
 
       write(6,*) 'mu = ',0.0d0
