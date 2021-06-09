@@ -68,6 +68,12 @@ def test_dimer(verbose=False):
     G00_q_ref = d.matsubara_from_dlr(G00_x_ref, beta)
     np.testing.assert_array_almost_equal(G00_q, G00_q_ref)
 
+    # -- Dyson solution
+    
+    g2_qaa = d.free_greens_function_matsubara(np.array([[e2]]), beta)
+    G00_q_dyson_ref = d.dyson_matsubara(np.array([[e1]]), V**2 * g2_qaa, beta)
+    np.testing.assert_array_almost_equal(G00_q, G00_q_dyson_ref)
+    
     if verbose:
         
         # -- Viz

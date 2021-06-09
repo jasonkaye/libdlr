@@ -340,5 +340,26 @@ class dlr(object):
         return g_qaa    
 
     
-    def dyson(self, H_aa, Sigma_xaa, beta):
-        raise NotImplementedError
+    def dyson_matsubara(self, H_aa, Sigma_qaa, beta, S_aa=None):
+
+        if S_aa is None: S_aa = np.eye(H_aa.shape[0])
+
+        w_q = self.get_matsubara_frequencies(beta)
+
+        G_qaa = np.linalg.inv(w_q[:, None, None] * S_aa[None, ...] - H_aa[None, ...] - Sigma_qaa)
+
+        return G_qaa
+
+    
+    def volterra_matsubara(self, g_qaa, Sigma_qaa, beta):
+
+        Nq = Sigma_qaa.shape[0]
+        N = Sigma_qaa.shape[-1]
+    
+        A_qaa = np.eye(N) - np.matmul(g_qaa, Sigma_qaa)
+        b_qaa = g_qaa
+        
+        G_qaa = np.linalg.solve(A_qaa, b_qaa)
+
+        return G_qaa
+    
