@@ -11,6 +11,18 @@ import numpy as np
 import numpy.polynomial.legendre as leg
 
 from scipy.linalg import lu_solve
+from scipy.linalg import eigh as scipy_eigh 
+
+
+def fermi_function(E, beta):
+
+    f = np.zeros_like(E)
+    p, m = np.argwhere(E > 0), np.argwhere(E <= 0)
+
+    f[p] = np.exp(-beta*E[p]) / (1. + np.exp(-beta*E[p]))
+    f[m] = 1. / (np.exp(beta*E[m]) + 1.)
+
+    return f
 
 
 def kernel(tau, omega):
@@ -201,6 +213,10 @@ class dlr(object):
             print(f'mf2cfpiv = {self.mf2cfpiv}')
             #print(f'dlrmf2cf = \n{self.dlrmf2cf}')
 
+        self.T_lx = get_A(self.dlrit2cf, self.it2cfpiv - 1)
+        self.T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv - 1)
+
+    # -- Imaginary time
 
     def get_tau_over_beta(self):
         tt = self.t.copy()
@@ -213,44 +229,23 @@ class dlr(object):
         return tau_l
 
 
-    def get_matsubara_frequencies(self, beta=1.):
-        zeta = (1 - self.xi)/2
-        w_q = 1.j * np.pi/beta * (2*self.dlrmf + zeta)
-        return w_q
+    def dlr_from_tau(self, G_laa):
+        G_xaa = lu_solve((self.dlrit2cf, self.it2cfpiv - 1), G_laa)
+        return G_xaa
 
 
-    def tau_from_legendre(self, G_n):
+    def tau_from_dlr(self, G_xaa):
+        G_laa = np.tensordot(self.T_lx, G_xaa, axes=(1, 0))
+        return G_laa
+
+
+    def tau_from_legendre(self, G_naa):
         x = 2 * self.get_tau_over_beta() - 1
-        G_l = np.rollaxis(leg.legval(x, G_n), -1)
-        return G_l
+        G_laa = np.rollaxis(leg.legval(x, G_naa), -1)
+        return G_laa
 
 
-    def dlr_from_tau(self, G_l):
-        G_x = lu_solve((self.dlrit2cf, self.it2cfpiv - 1), G_l)
-        return G_x
-
-
-    def matsubara_from_dlr(self, G_x, beta=1.):
-        T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv - 1)
-        G_q = beta * np.tensordot(T_qx, G_x, axes=(1, 0)).conj()        
-        return G_q
-
-
-    def dlr_from_matsubara(self, G_q, beta=1.):
-        G_x = lu_solve((self.dlrmf2cf, self.mf2cfpiv - 1), G_q.conj() / beta)
-        #print('--> Test!')
-        #G_q_ref = self.matsubara_from_dlr(G_x, beta)
-        #np.testing.assert_array_almost_equal(G_q, G_q_ref)
-        return G_x
-
-
-    def tau_from_dlr(self, G_x):
-        T_lx = get_A(self.dlrit2cf, self.it2cfpiv - 1)
-        G_l = np.tensordot(T_lx, G_x, axes=(1, 0))
-        return G_l
-
-
-    def eval_dlr_tau(self, G_x, tau, beta):
+    def eval_dlr_tau(self, G_xaa, tau, beta):
         assert( self.xi == -1. ) # Not implemented for bosons, yet
         
         w_x = self.om[self.oidx - 1] / beta
@@ -258,17 +253,36 @@ class dlr(object):
         p = np.argwhere(w_x > 0.)
         m = np.argwhere(w_x <= 0.)
         
-        w_p, G_p = w_x[p].T, G_x[p].T
-        w_m, G_m = w_x[m].T, G_x[m].T
+        w_p, G_paa = w_x[p].T, np.squeeze(G_xaa[p])
+        w_m, G_maa = w_x[m].T, np.squeeze(G_xaa[m])
 
         tau = tau[:, None]
 
-        G_t = np.sum(G_p * np.exp(-tau*w_p) / (1 + np.exp(-beta*w_p)), axis=-1)
-        G_t += np.sum(G_m * np.exp((beta - tau)*w_m) / ( np.exp(beta*w_m) + 1 ), axis=-1)
+        G_taa = np.einsum('pab,tp->tab', G_paa, np.exp(-tau*w_p) / (1 + np.exp(-beta*w_p))) + \
+                np.einsum('mab,tm->tab', G_maa, np.exp((beta - tau)*w_m) / ( np.exp(beta*w_m) + 1 ))
 
-        return G_t
+        return G_taa
+
+    # -- Matsubara Frequency
+
+    def get_matsubara_frequencies(self, beta=1.):
+        zeta = (1 - self.xi)/2
+        w_q = 1.j * np.pi/beta * (2*self.dlrmf + zeta)
+        return w_q
 
 
+    def matsubara_from_dlr(self, G_xaa, beta=1.):
+        #G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0)).conj()        
+        G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0))
+        G_qaa = np.transpose(G_qaa, axes=(0, 2, 1)).conj()
+        return G_qaa
+
+
+    def dlr_from_matsubara(self, G_qaa, beta=1.):
+        G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv - 1), G_qaa.conj() / beta)
+        return G_xaa
+    
+    
     def eval_dlr_freq(self, G_x, iwn, beta):
         
         w_x = self.om[self.oidx - 1] / beta
@@ -276,7 +290,8 @@ class dlr(object):
         
         return G_q
     
-    
+    # -- Mathematical operations
+
     def convolution(self, a_x, b_x):
 
         tau_l = self.get_tau(1.)
@@ -295,3 +310,23 @@ class dlr(object):
             self.dlr_from_tau(tau_l * np.sum(k_lx * (a_x * b_x)[None, :], axis=-1))
         
         return c_x
+
+
+    def free_greens_function_tau(self, H_aa, beta, S_aa=None):
+
+        w_x = self.om[self.oidx - 1]
+
+        if S_aa is None:
+            E, U = np.linalg.eigh(H_aa)
+        else:
+            E, U = scipy_eigh(H_aa, S_aa)
+
+        tau_l = self.get_tau(1.)
+        g_lE = -kernel(tau_l, E*beta)
+        g_laa = np.einsum('lE,aE,Eb->lab', g_lE, U, U.T.conj())
+
+        return g_laa    
+
+    
+    def dyson(self, H_aa, Sigma_xaa, beta):
+        raise NotImplementedError
