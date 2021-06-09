@@ -353,13 +353,9 @@ class dlr(object):
     
     def volterra_matsubara(self, g_qaa, Sigma_qaa, beta):
 
-        Nq = Sigma_qaa.shape[0]
-        N = Sigma_qaa.shape[-1]
-    
-        A_qaa = np.eye(N) - np.matmul(g_qaa, Sigma_qaa)
-        b_qaa = g_qaa
-        
-        G_qaa = np.linalg.solve(A_qaa, b_qaa)
+        N = Sigma_qaa.shape[-1]    
+        A_qaa = np.eye(N) - np.matmul(g_qaa, Sigma_qaa)        
+        G_qaa = np.linalg.solve(A_qaa, g_qaa)
 
         return G_qaa
     
