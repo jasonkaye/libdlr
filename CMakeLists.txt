@@ -90,4 +90,19 @@ if(with_python)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
     )
 
+  add_test(NAME python-test_free_greens_function
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_free_greens_function.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
+  add_test(NAME python-test_convolution
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_convolution.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
+  add_test(NAME python-test_dimer
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_dimer.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
 endif()
