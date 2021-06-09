@@ -21,7 +21,6 @@ def test_free_greens_function(verbose=False):
         [0.2, 0.3, 1],
         ])
         
-    
     d = dlr(lamb=lamb)
 
     tau_l = d.get_tau(beta)

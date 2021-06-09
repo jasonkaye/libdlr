@@ -258,8 +258,8 @@ class dlr(object):
 
         tau = tau[:, None]
 
-        G_taa = np.einsum('pab,tp->tab', G_paa, np.exp(-tau*w_p) / (1 + np.exp(-beta*w_p))) + \
-                np.einsum('mab,tm->tab', G_maa, np.exp((beta - tau)*w_m) / ( np.exp(beta*w_m) + 1 ))
+        G_taa = np.einsum('p...,tp->t...', G_paa, np.exp(-tau*w_p) / (1 + np.exp(-beta*w_p))) + \
+                np.einsum('m...,tm->t...', G_maa, np.exp((beta - tau)*w_m) / ( np.exp(beta*w_m) + 1 ))
 
         return G_taa
 
@@ -272,9 +272,9 @@ class dlr(object):
 
 
     def matsubara_from_dlr(self, G_xaa, beta=1.):
-        #G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0)).conj()        
         G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0))
-        G_qaa = np.transpose(G_qaa, axes=(0, 2, 1)).conj()
+        if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
+        G_qaa = G_qaa.conj()
         return G_qaa
 
 
@@ -286,14 +286,15 @@ class dlr(object):
     def eval_dlr_freq(self, G_xaa, iwn, beta):
         
         w_x = self.om[self.oidx - 1] / beta
-        G_qaa = np.einsum('xab,qx->qab', G_xaa, 1./(iwn[:, None] + w_x[None, :]))
-        G_qaa = np.transpose(G_qaa, axes=(0, 2, 1)).conj()
+        G_qaa = np.einsum('x...,qx->q...', G_xaa, 1./(iwn[:, None] + w_x[None, :]))
+        if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
+        G_qaa = G_qaa.conj()
         
         return G_qaa
     
     # -- Mathematical operations
 
-    def convolution(self, a_x, b_x):
+    def convolution(self, A_xaa, B_xaa):
 
         tau_l = self.get_tau(1.)
         w_x = self.om[self.oidx - 1]
@@ -305,13 +306,13 @@ class dlr(object):
 
         k1_x = -np.squeeze(kernel(np.ones(1), w_x))
 
-        c_x = a_x * b_x * k1_x + \
-            b_x * np.sum(a_x[:, None] * W_xx, axis=0) + \
-            a_x * np.sum(b_x[:, None] * W_xx, axis=0) + \
-            self.dlr_from_tau(tau_l * np.sum(k_lx * (a_x * b_x)[None, :], axis=-1))
+        C_xaa = np.einsum('xab,xbc,x->xac', A_xaa, B_xaa, k1_x) + \
+                np.einsum('yab,xbc,yx->xac', A_xaa, B_xaa, W_xx) + \
+                np.einsum('xab,ybc,yx->xac', A_xaa, B_xaa, W_xx) + \
+               self.dlr_from_tau(np.einsum('l,lx,xab,xbc->lac', tau_l, k_lx, A_xaa, B_xaa))
         
-        return c_x
-
+        return C_xaa
+    
 
     def free_greens_function_tau(self, H_aa, beta, S_aa=None):
 
