@@ -38,7 +38,8 @@ def test_dimer(verbose=False):
     d = dlr(lamb=lamb)
 
     tau_l = d.get_tau(beta)
-    G00_l = d.free_greens_function_tau(E_aa, beta)[:, 0, 0]
+    shape = (len(tau_l), 1, 1)
+    G00_l = d.free_greens_function_tau(E_aa, beta)[:, 0, 0].reshape(shape)
     
     G00_x = d.dlr_from_tau(G00_l)
 
@@ -56,6 +57,7 @@ def test_dimer(verbose=False):
     np.testing.assert_array_almost_equal(G00_q, d.eval_dlr_freq(G00_x, w_q, beta))
 
     G00_q_anal = 1./ ( w_q - e1 - V**2/( w_q - e2 ) )
+    G00_q_anal = G00_q_anal.reshape(shape)
     np.testing.assert_array_almost_equal(G00_q, G00_q_anal)
 
     G00_x_ref = d.dlr_from_matsubara(G00_q_anal, beta)
@@ -69,6 +71,12 @@ def test_dimer(verbose=False):
     if verbose:
         
         # -- Viz
+
+        G00_i = np.squeeze(G00_i)
+        G00_l = np.squeeze(G00_l)
+        G00_q = np.squeeze(G00_q)
+        G00_x = np.squeeze(G00_x)
+        G00_x_ref = np.squeeze(G00_x_ref)
 
         import matplotlib.pyplot as plt
 

@@ -253,8 +253,8 @@ class dlr(object):
         p = np.argwhere(w_x > 0.)
         m = np.argwhere(w_x <= 0.)
         
-        w_p, G_paa = w_x[p].T, np.squeeze(G_xaa[p])
-        w_m, G_maa = w_x[m].T, np.squeeze(G_xaa[m])
+        w_p, G_paa = w_x[p].T, G_xaa[p][:, 0]
+        w_m, G_maa = w_x[m].T, G_xaa[m][:, 0]
 
         tau = tau[:, None]
 
@@ -283,12 +283,13 @@ class dlr(object):
         return G_xaa
     
     
-    def eval_dlr_freq(self, G_x, iwn, beta):
+    def eval_dlr_freq(self, G_xaa, iwn, beta):
         
         w_x = self.om[self.oidx - 1] / beta
-        G_q = np.sum(G_x[None, :]/(iwn[:, None] + w_x[None, :]), axis=-1).conj()
+        G_qaa = np.einsum('xab,qx->qab', G_xaa, 1./(iwn[:, None] + w_x[None, :]))
+        G_qaa = np.transpose(G_qaa, axes=(0, 2, 1)).conj()
         
-        return G_q
+        return G_qaa
     
     # -- Mathematical operations
 
