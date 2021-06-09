@@ -328,6 +328,16 @@ class dlr(object):
 
         return g_laa    
 
+
+    def free_greens_function_matsubara(self, H_aa, beta, S_aa=None):
+
+        if S_aa is None: S_aa = np.eye(H_aa.shape[0])
+            
+        w_q = self.get_matsubara_frequencies(beta)
+        g_qaa = np.linalg.inv(w_q[:, None, None] * S_aa[None, ...] - H_aa[None, ...])
+
+        return g_qaa    
+
     
     def dyson(self, H_aa, Sigma_xaa, beta):
         raise NotImplementedError

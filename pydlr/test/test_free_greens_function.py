@@ -9,16 +9,23 @@ def test_free_greens_function(verbose=False):
     lamb = 30.
     beta = 10.234
     
-    E_aa = np.array([
+    H_aa = np.array([
         [1, 0.4, 0.1],
         [0.4, 2, 0.5],
         [0.1, 0.5, 3],
         ])
+
+    S_aa = np.array([
+        [1, 0.1, 0.2],
+        [0.1, 1, 0.3],
+        [0.2, 0.3, 1],
+        ])
+        
     
     d = dlr(lamb=lamb)
 
     tau_l = d.get_tau(beta)
-    G_laa = d.free_greens_function_tau(E_aa, beta)
+    G_laa = d.free_greens_function_tau(H_aa, beta, S_aa=S_aa)
     G_xaa = d.dlr_from_tau(G_laa)
     G_qaa_ref = d.matsubara_from_dlr(G_xaa, beta)
 
@@ -27,8 +34,7 @@ def test_free_greens_function(verbose=False):
 
     w_q = d.get_matsubara_frequencies(beta)
 
-    I = np.eye(3)
-    G_qaa = np.linalg.inv(w_q[:, None, None] * I[None, ...] - E_aa[None, ...])
+    G_qaa = d.free_greens_function_matsubara(H_aa, beta, S_aa=S_aa)
     G_xaa_ref = d.dlr_from_matsubara(G_qaa, beta)
     G_laa_ref = d.tau_from_dlr(G_xaa_ref).real
 
