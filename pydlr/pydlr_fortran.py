@@ -29,7 +29,7 @@ lib = ffi.dlopen(libname)
 
 import numpy as np
 
-from pydlr import dlrBase
+from .pydlr import dlrBase
 
 
 def get_P(piv):
@@ -151,7 +151,7 @@ class dlrFortran(dlrBase):
 
         lib.c_dlr_it2cf(nt,no,kmat,rank,oidx,tidx,dlrit2cf,it2cfpiv)
 
-        self.it2cfpiv = np.frombuffer(ffi.buffer(it2cfpiv), dtype=np.int32)
+        self.it2cfpiv = np.frombuffer(ffi.buffer(it2cfpiv), dtype=np.int32) - 1
         self.dlrit2cf = np.frombuffer(
             ffi.buffer(dlrit2cf), dtype=np.float).reshape((self.rank, self.rank)).T
         
@@ -177,13 +177,13 @@ class dlrFortran(dlrBase):
 
         lib.c_dlr_mf2cf(fb,nmax,rank,dlrrf,dlrmf,dlrmf2cf,mf2cfpiv)
 
-        self.mf2cfpiv = np.frombuffer(ffi.buffer(mf2cfpiv), dtype=np.int32)
+        self.mf2cfpiv = np.frombuffer(ffi.buffer(mf2cfpiv), dtype=np.int32) - 1
         self.dlrmf2cf = np.frombuffer(ffi.buffer(dlrmf2cf), dtype=np.complex).reshape((self.rank, self.rank)).T
             
         if verbose:
             print(f'mf2cfpiv = {self.mf2cfpiv}')
             #print(f'dlrmf2cf = \n{self.dlrmf2cf}')
 
-        self.T_lx = get_A(self.dlrit2cf, self.it2cfpiv - 1)
-        self.T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv - 1)
+        self.T_lx = get_A(self.dlrit2cf, self.it2cfpiv)
+        self.T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv)
         

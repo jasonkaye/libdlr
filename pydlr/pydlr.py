@@ -29,13 +29,11 @@ class dlrBase(object):
 
         if nmax is None: nmax = int(lamb)
         
-        #self.p, self.npt, self.npo, self.nt, self.no = gridparams(self.lamb)
         self.kmat, self.t, self.om, self.err = kernel_discretization(self.lamb)  
         
-        # -- Select real frequency points
-        # -- Select imaginary time points
-
         self.rank = np.linalg.matrix_rank(self.kmat, tol=eps * lamb) 
+
+        # -- Select real frequency points
 
         _, P_o = scipy_qr(self.kmat, pivoting=True, mode='r')
         P_o = P_o[:self.rank]
@@ -43,24 +41,18 @@ class dlrBase(object):
         self.dlrrf = self.om[P_o]
         self.oidx = P_o + 1
 
+        # -- Select imaginary time points
+
         _, P_t = scipy_qr(self.kmat[:, P_o].T, pivoting=True, mode='r')
         P_t = P_t[:self.rank]
 
         self.dlrit = self.t[P_t]        
         self.tidx = P_t + 1
-
-        #self.oidx, self.tidx, self.rank = dlr_decomp(self.kmat, self.eps, self.lamb)
-
-        #self.dlrrf = self.om[self.oidx]
-        #self.dlrit = self.t[self.tidx]
-        
-        #self.oidx += 1
-        #self.tidx += 1
         
         # -- Transform matrix (LU-decomposed)
 
         self.dlrit2cf, self.it2cfpiv = lu_factor(self.kmat[self.tidx - 1][:, self.oidx - 1])
-        self.it2cfpiv += 1 # one based Fortran indexing
+        #self.it2cfpiv += 1 # one based Fortran indexing
 
         # -- Matsubara frequency points
 
@@ -78,7 +70,7 @@ class dlrBase(object):
         # -- Transform matrix (LU-decomposed)
 
         self.dlrmf2cf, self.mf2cfpiv = lu_factor(self.kmat_mf[P_mf, :])
-        self.mf2cfpiv += 1 # one based Fortran indexing
+        #self.mf2cfpiv += 1 # one based Fortran indexing
             
         self.T_lx = self.kmat[self.tidx - 1][:, self.oidx - 1]
         self.T_qx = self.kmat_mf[P_mf, :]
@@ -98,7 +90,7 @@ class dlrBase(object):
 
 
     def dlr_from_tau(self, G_laa):
-        G_xaa = lu_solve((self.dlrit2cf, self.it2cfpiv - 1), G_laa)
+        G_xaa = lu_solve((self.dlrit2cf, self.it2cfpiv), G_laa)
         return G_xaa
 
 
@@ -116,7 +108,7 @@ class dlrBase(object):
     def eval_dlr_tau(self, G_xaa, tau, beta):
         assert( self.xi == -1. ) # Not implemented for bosons, yet
         
-        w_x = self.om[self.oidx - 1] / beta
+        w_x = self.dlrrf / beta
         
         p = np.argwhere(w_x > 0.)
         m = np.argwhere(w_x <= 0.)
@@ -147,13 +139,13 @@ class dlrBase(object):
 
 
     def dlr_from_matsubara(self, G_qaa, beta=1.):
-        G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv - 1), G_qaa.conj() / beta)
+        G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv), G_qaa.conj() / beta)
         return G_xaa
     
     
     def eval_dlr_freq(self, G_xaa, iwn, beta):
         
-        w_x = self.om[self.oidx - 1] / beta
+        w_x = self.dlrrf / beta
         G_qaa = np.einsum('x...,qx->q...', G_xaa, 1./(iwn[:, None] + w_x[None, :]))
         if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
         G_qaa = G_qaa.conj()
@@ -165,7 +157,7 @@ class dlrBase(object):
     def convolution(self, A_xaa, B_xaa, beta=1.):
 
         tau_l = self.get_tau(1.)
-        w_x = self.om[self.oidx - 1]
+        w_x = self.dlrrf
 
         I = np.eye(len(w_x))
         W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
@@ -186,7 +178,7 @@ class dlrBase(object):
 
     def free_greens_function_tau(self, H_aa, beta, S_aa=None):
 
-        w_x = self.om[self.oidx - 1]
+        w_x = self.dlrrf
 
         if S_aa is None:
             E, U = np.linalg.eigh(H_aa)
@@ -229,4 +221,5 @@ class dlrBase(object):
 
 dlr = dlrBase
 
+#from .pydlr_fortran import dlrFortran as dlr
         
