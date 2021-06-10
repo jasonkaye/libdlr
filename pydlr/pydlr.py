@@ -294,22 +294,24 @@ class dlr(object):
     
     # -- Mathematical operations
 
-    def convolution(self, A_xaa, B_xaa):
+    def convolution(self, A_xaa, B_xaa, beta=1.):
 
         tau_l = self.get_tau(1.)
         w_x = self.om[self.oidx - 1]
-
-        k_lx = self.kmat[self.tidx - 1][:, self.oidx - 1]
 
         I = np.eye(len(w_x))
         W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
 
         k1_x = -np.squeeze(kernel(np.ones(1), w_x))
 
-        C_xaa = np.einsum('xab,xbc,x->xac', A_xaa, B_xaa, k1_x) + \
-                np.einsum('yab,xbc,yx->xac', A_xaa, B_xaa, W_xx) + \
-                np.einsum('xab,ybc,yx->xac', A_xaa, B_xaa, W_xx) + \
-               self.dlr_from_tau(np.einsum('l,lx,xab,xbc->lac', tau_l, k_lx, A_xaa, B_xaa))
+        AB_xaa = np.matmul(A_xaa, B_xaa)
+
+        C_xaa = k1_x[:, None, None] * AB_xaa + \
+            self.dlr_from_tau(tau_l[:, None, None] * self.tau_from_dlr(AB_xaa)) + \
+            np.matmul(np.tensordot(W_xx, A_xaa, axes=(0, 0)), B_xaa) + \
+            np.matmul(A_xaa, np.tensordot(W_xx, B_xaa, axes=(0, 0)))        
+
+        C_xaa *= beta
         
         return C_xaa
     

@@ -7,7 +7,7 @@ import numpy as np
 from pydlr import dlr
 
 
-def test_dyson():
+def test_dyson_and_volterra_matsubara():
 
     beta = 3.421
     d = dlr(lamb=20.)
@@ -37,4 +37,4 @@ def test_dyson():
 
 if __name__ == '__main__':
 
-    test_dyson()
+    test_dyson_and_volterra_matsubara()

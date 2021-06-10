@@ -7,12 +7,12 @@ import numpy as np
 from pydlr import dlr
 
 
-def test_convolution_scalar():
+def test_convolution_scalar(verbose=False):
 
-    beta = 1.337
+    beta = 3.337
     e1, e2 = 3., 3.3
 
-    d = dlr(lamb=10)
+    d = dlr(lamb=30.)
 
     g1_q = d.free_greens_function_matsubara(np.array([[e1]]), beta)
     g2_q = d.free_greens_function_matsubara(np.array([[e2]]), beta)
@@ -21,26 +21,45 @@ def test_convolution_scalar():
 
     gg_q = np.einsum('qab,qbc->qac', g1_q, g2_q)
 
-    gg_x = d.dlr_from_matsubara(gg_q)
+    gg_x = d.dlr_from_matsubara(gg_q, beta)
     gg_l = d.tau_from_dlr(gg_x)
 
     # -- DLR coeff convolution
 
-    g1_x = d.dlr_from_matsubara(g1_q)
-    g2_x = d.dlr_from_matsubara(g2_q)
+    g1_x = d.dlr_from_matsubara(g1_q, beta)
+    g2_x = d.dlr_from_matsubara(g2_q, beta)
 
-    gg_x_ref = d.convolution(g1_x, g2_x)
-    gg_l_ref = d.tau_from_dlr(gg_x_ref)
+    gg_x_dlr = d.convolution(g1_x, g2_x, beta=beta)
+    gg_l_dlr = d.tau_from_dlr(gg_x_dlr)
+
+    if verbose:
+
+        # -- Viz
+
+        tau_l = d.get_tau(beta)
+
+        import matplotlib.pyplot as plt
+
+        plt.figure(figsize=(6, 6))
+        subp = [1, 1, 1]
+
+        plt.subplot(*subp); subp[-1] += 1
+        plt.plot(tau_l, gg_l_dlr[:, 0, 0].real, '+', label='DLR conv')
+        plt.plot(tau_l, gg_l[:, 0, 0].real, 'x', label='Matsub conv')
+        plt.ylabel(r'$(g_1 \ast g_2)(\tau)$')
+        plt.xlabel(r'$\tau$')
+        plt.legend(loc='best')
+        plt.show()
 
     # -- Test
 
-    print(f'diff scalar = {np.max(np.abs(gg_l - gg_l_ref))}')
-    np.testing.assert_array_almost_equal(gg_l, gg_l_ref, decimal=9)
+    print(f'diff scalar = {np.max(np.abs(gg_l - gg_l_dlr))}')
+    np.testing.assert_array_almost_equal(gg_l, gg_l_dlr, decimal=9)
 
 
 def test_convolution_matrix():
 
-    beta = 1.337
+    beta = 5.337
 
     E1_aa = np.array([
         [-1., 0.2, 0.4 + 1.j],
@@ -58,7 +77,7 @@ def test_convolution_matrix():
 
     np.testing.assert_array_almost_equal(E2_aa, E2_aa.conj().T)
     
-    d = dlr(lamb=10)
+    d = dlr(lamb=40.)
     w_q = d.get_matsubara_frequencies(beta=beta)
 
     g1_qaa = d.free_greens_function_matsubara(E1_aa, beta)
@@ -68,15 +87,15 @@ def test_convolution_matrix():
 
     gg_qaa = np.einsum('qab,qbc->qac', g1_qaa, g2_qaa)
 
-    gg_xaa = d.dlr_from_matsubara(gg_qaa)
+    gg_xaa = d.dlr_from_matsubara(gg_qaa, beta)
     gg_laa = d.tau_from_dlr(gg_xaa)
 
     # -- DLR coeff convolution
     
-    g1_xaa = d.dlr_from_matsubara(g1_qaa)
-    g2_xaa = d.dlr_from_matsubara(g2_qaa)
+    g1_xaa = d.dlr_from_matsubara(g1_qaa, beta)
+    g2_xaa = d.dlr_from_matsubara(g2_qaa, beta)
 
-    gg_xaa_ref = d.convolution(g1_xaa, g2_xaa)
+    gg_xaa_ref = d.convolution(g1_xaa, g2_xaa, beta)
     gg_laa_ref = d.tau_from_dlr(gg_xaa_ref)
 
     # -- Test
@@ -87,5 +106,5 @@ def test_convolution_matrix():
 
 if __name__ == '__main__':
 
-    test_convolution_scalar()
+    test_convolution_scalar(verbose=True)
     test_convolution_matrix()
