@@ -122,7 +122,7 @@ class dlrFortran(dlrBase):
         lib.c_dlr_rf(lamb, eps, nt, no, om, kmat, rank, dlrrf, oidx)
 
         self.rank = rank[0]
-        self.oidx = np.frombuffer(ffi.buffer(oidx), dtype=np.int32)[:self.rank]
+        self.oidx = np.frombuffer(ffi.buffer(oidx), dtype=np.int32)[:self.rank] - 1
         self.dlrrf = np.frombuffer(ffi.buffer(dlrrf), dtype=np.float)[:self.rank]
 
         if verbose:
@@ -137,7 +137,7 @@ class dlrFortran(dlrBase):
 
         lib.c_dlr_it(lamb, nt, no, t, kmat, rank, oidx, dlrit, tidx)
 
-        self.tidx = np.frombuffer(ffi.buffer(tidx), dtype=np.int32)
+        self.tidx = np.frombuffer(ffi.buffer(tidx), dtype=np.int32) - 1
         self.dlrit = np.frombuffer(ffi.buffer(dlrit), dtype=np.float)
 
         if verbose:

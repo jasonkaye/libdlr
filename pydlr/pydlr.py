@@ -35,45 +35,38 @@ class dlrBase(object):
 
         # -- Select real frequency points
 
-        _, P_o = scipy_qr(self.kmat, pivoting=True, mode='r')
-        P_o = P_o[:self.rank]
-
-        self.dlrrf = self.om[P_o]
-        self.oidx = P_o + 1
+        _, oidx = scipy_qr(self.kmat, pivoting=True, mode='r')
+        self.oidx = oidx[:self.rank]
+        self.dlrrf = self.om[self.oidx]
 
         # -- Select imaginary time points
 
-        _, P_t = scipy_qr(self.kmat[:, P_o].T, pivoting=True, mode='r')
-        P_t = P_t[:self.rank]
-
-        self.dlrit = self.t[P_t]        
-        self.tidx = P_t + 1
+        _, tidx = scipy_qr(self.kmat[:, self.oidx].T, pivoting=True, mode='r')
+        self.tidx = tidx[:self.rank]
+        self.dlrit = self.t[self.tidx]
         
         # -- Transform matrix (LU-decomposed)
 
-        self.dlrit2cf, self.it2cfpiv = lu_factor(self.kmat[self.tidx - 1][:, self.oidx - 1])
-        #self.it2cfpiv += 1 # one based Fortran indexing
+        self.T_lx = self.kmat[self.tidx][:, self.oidx]
+        self.dlrit2cf, self.it2cfpiv = lu_factor(self.T_lx)
 
         # -- Matsubara frequency points
 
         n = np.arange(-nmax, nmax+1)
         iwn = 1.j * np.pi * (2*n + 1)
 
-        self.kmat_mf = 1./(iwn[:, None] + self.dlrrf)
+        self.kmat_mf = 1./(iwn[:, None] + self.dlrrf[None, :])
 
-        _, P_mf = scipy_qr(self.kmat_mf.T, pivoting=True, mode='r')
-        P_mf = P_mf[:self.rank]
+        _, mfidx = scipy_qr(self.kmat_mf.T, pivoting=True, mode='r')
+        self.mfidx = mfidx[:self.rank]
 
         self.nmax = nmax
-        self.dlrmf = n[P_mf]
+        self.dlrmf = n[self.mfidx]
                     
         # -- Transform matrix (LU-decomposed)
 
-        self.dlrmf2cf, self.mf2cfpiv = lu_factor(self.kmat_mf[P_mf, :])
-        #self.mf2cfpiv += 1 # one based Fortran indexing
-            
-        self.T_lx = self.kmat[self.tidx - 1][:, self.oidx - 1]
-        self.T_qx = self.kmat_mf[P_mf, :]
+        self.T_qx = self.kmat_mf[self.mfidx, :]
+        self.dlrmf2cf, self.mf2cfpiv = lu_factor(self.T_qx)
 
 
     # -- Imaginary time
@@ -81,7 +74,7 @@ class dlrBase(object):
     def get_tau_over_beta(self):
         tt = self.t.copy()
         tt += (self.t[::-1] > 0) * (1 - self.t[::-1])
-        return tt[self.tidx - 1]
+        return tt[self.tidx]
 
     
     def get_tau(self, beta=1.):
