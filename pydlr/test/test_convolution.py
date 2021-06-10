@@ -1,4 +1,7 @@
 
+""" Author: Hugo U.R. Strand (2021) """
+
+
 import numpy as np
 
 from pydlr import dlr
@@ -10,7 +13,6 @@ def test_convolution_scalar():
     e1, e2 = 3., 3.3
 
     d = dlr(lamb=10)
-    w_q = d.get_matsubara_frequencies(beta=beta)
 
     g1_q = d.free_greens_function_matsubara(np.array([[e1]]), beta)
     g2_q = d.free_greens_function_matsubara(np.array([[e2]]), beta)

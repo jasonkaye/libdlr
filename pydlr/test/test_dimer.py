@@ -1,7 +1,11 @@
 
+""" Author: Hugo U.R. Strand (2021) """
+
+
 import numpy as np
 
 from pydlr import dlr, fermi_function
+
 
 def test_dimer(verbose=False):
     
