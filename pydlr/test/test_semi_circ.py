@@ -91,6 +91,7 @@ def test_semi_cirular_G_tau(verbose=False):
         plt.legend(loc='best')    
 
         plt.tight_layout()
+        plt.savefig('figure_test_semi_circ.pdf')
 
         plt.show()
 

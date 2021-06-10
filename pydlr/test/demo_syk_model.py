@@ -149,6 +149,7 @@ if __name__ == '__main__':
     plt.ylabel(r'Density $n$')
     
     plt.tight_layout()
+    plt.savefig('figure_demo_syk_model.pdf')
     
     plt.show()
     
