@@ -50,4 +50,4 @@ def test_kernel(verbose=False):
 
 if __name__ == '__main__':
 
-    test_kernel(verbose=False)
+    test_kernel(verbose=True)

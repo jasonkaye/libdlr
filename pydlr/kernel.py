@@ -1,4 +1,6 @@
 
+""" Author: Hugo U.R. Strand (2021) """
+
 
 import numpy as np
 
@@ -130,17 +132,3 @@ def kernel_discretization(lamb):
             err = np.max([err, perr])            
             
     return kmat, t, w, err
-
-
-def dlr_decomp(kmat, eps, lamb, eps_rank=None):
-
-    if eps_rank is None:
-        eps_rank = np.linalg.matrix_rank(kmat, tol=eps * lamb) 
-
-    _, P_o = scipy_qr(kmat, pivoting=True, mode='r')
-    P_o = P_o[:eps_rank]
-
-    _, P_t = scipy_qr(kmat[:, P_o].T, pivoting=True, mode='r')
-    P_t = P_t[:eps_rank]
-
-    return P_o, P_t, eps_rank

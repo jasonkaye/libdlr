@@ -14,7 +14,7 @@ from scipy.linalg import eigh as scipy_eigh
 from scipy.linalg import lu_solve, lu_factor
 
 
-from .kernel import kernel, kernel_discretization, dlr_decomp, fermi_function
+from .kernel import kernel, kernel_discretization, fermi_function
 
 
 class dlrBase(object):
@@ -35,13 +35,27 @@ class dlrBase(object):
         # -- Select real frequency points
         # -- Select imaginary time points
 
-        self.oidx, self.tidx, self.rank = dlr_decomp(self.kmat, self.eps, self.lamb)
+        self.rank = np.linalg.matrix_rank(self.kmat, tol=eps * lamb) 
 
-        self.dlrrf = self.om[self.oidx]
-        self.dlrit = self.t[self.tidx]
+        _, P_o = scipy_qr(self.kmat, pivoting=True, mode='r')
+        P_o = P_o[:self.rank]
+
+        self.dlrrf = self.om[P_o]
+        self.oidx = P_o + 1
+
+        _, P_t = scipy_qr(self.kmat[:, P_o].T, pivoting=True, mode='r')
+        P_t = P_t[:self.rank]
+
+        self.dlrit = self.t[P_t]        
+        self.tidx = P_t + 1
+
+        #self.oidx, self.tidx, self.rank = dlr_decomp(self.kmat, self.eps, self.lamb)
+
+        #self.dlrrf = self.om[self.oidx]
+        #self.dlrit = self.t[self.tidx]
         
-        self.oidx += 1
-        self.tidx += 1
+        #self.oidx += 1
+        #self.tidx += 1
         
         # -- Transform matrix (LU-decomposed)
 
