@@ -332,8 +332,7 @@ class dlr(object):
 
     def free_greens_function_matsubara(self, H_aa, beta, S_aa=None):
 
-        if S_aa is None: S_aa = np.eye(H_aa.shape[0])
-            
+        if S_aa is None: S_aa = np.eye(H_aa.shape[0])    
         w_q = self.get_matsubara_frequencies(beta)
         g_qaa = np.linalg.inv(w_q[:, None, None] * S_aa[None, ...] - H_aa[None, ...])
 
@@ -343,9 +342,7 @@ class dlr(object):
     def dyson_matsubara(self, H_aa, Sigma_qaa, beta, S_aa=None):
 
         if S_aa is None: S_aa = np.eye(H_aa.shape[0])
-
         w_q = self.get_matsubara_frequencies(beta)
-
         G_qaa = np.linalg.inv(w_q[:, None, None] * S_aa[None, ...] - H_aa[None, ...] - Sigma_qaa)
 
         return G_qaa

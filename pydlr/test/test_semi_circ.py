@@ -49,9 +49,9 @@ def test_semi_cirular_G_tau(verbose=False):
 
     # -- Iterative determination using the Dyson equation
 
-    w_q = d.get_matsubara_frequencies()
     max_iter = 20
-    G_q = np.zeros_like(w_q)
+    G_q = np.zeros(len(tau_l), dtype=complex)
+    
     for iter in range(max_iter):
         G_q = d.dyson_matsubara(np.array([[0.]]), 0.25 * G_q.reshape(shape), 1.)[:, 0, 0]
         G_x_ref = d.dlr_from_matsubara(G_q)
