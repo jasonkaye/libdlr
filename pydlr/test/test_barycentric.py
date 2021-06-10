@@ -1,9 +1,12 @@
 
+""" Author: Hugo U.R. Strand (2021) """
+
+
 import numpy as np
 
-from pydlr import chebyschev_collocation_points_1st_kind
-from pydlr import chebyschev_barycentric_weights_1st_kind
-from pydlr import barycentric_interpolation
+from pydlr.kernel import chebyschev_collocation_points_1st_kind
+from pydlr.kernel import chebyschev_barycentric_weights_1st_kind
+from pydlr.kernel import barycentric_interpolation
 
 
 def test_barycentric_interp(verbose=False):

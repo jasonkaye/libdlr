@@ -85,6 +85,8 @@ if(with_python)
   endforeach()
   install(FILES pydlr/pydlr.py DESTINATION pydlr)
   install(FILES pydlr/pydlr_fortran.py DESTINATION pydlr)
+  install(FILES pydlr/kernel.py DESTINATION pydlr)
+  install(FILES pydlr/__init__.py DESTINATION pydlr)
 
   add_test(NAME python-test_kernel
     COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_kernel.py -v

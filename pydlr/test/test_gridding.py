@@ -1,4 +1,6 @@
 
+""" Author: Hugo U.R. Strand (2021) """
+
 
 import numpy as np
 

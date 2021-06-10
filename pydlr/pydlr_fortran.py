@@ -1,3 +1,10 @@
+""" 
+
+Python wrapper module for dlrcode 
+
+Author: Hugo U.R. Strand (2021) 
+
+"""
 
 import os
 import glob
@@ -22,7 +29,34 @@ lib = ffi.dlopen(libname)
 
 import numpy as np
 
-from pydlr import dlrBase, get_A
+from pydlr import dlrBase
+
+
+def get_P(piv):
+    """ Permutation matrix corresponding to Lapack piv index vector """
+    P = np.eye(len(piv))
+    for i, p in enumerate(piv):
+        a = P[:, i].copy()
+        b = P[:, p].copy()
+        P[:, i], P[:, p] = b, a
+    return P
+
+
+def get_idx(piv):
+    """ Numpy index vector corresponding to Lapack piv index vector """
+    P = get_P(piv)
+    idx = np.zeros_like(piv)
+    for i in range(len(piv)):
+        idx[i] = np.argwhere(P==1)
+
+    return idx
+
+
+def get_A(lu, piv):
+    L, U = np.tril(lu, k=-1) + np.eye(lu.shape[0]), np.triu(lu)
+    P = get_P(piv)
+    A = P @ L @ U
+    return A
 
 
 class dlrFortran(dlrBase):
