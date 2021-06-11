@@ -179,12 +179,9 @@ class dlrBase(object):
         w_x = self.dlrrf
         n = len(w_x)
 
-        D_xaa = w_x[:, None, None]/beta * S_aa[None, ...] - H_aa[None, ...]
-        D_lxaa = self.T_lx[:, :, None, None] * D_xaa[None, ...]
-
-        D_laxa = np.moveaxis(D_lxaa, 2, 1)
-        D_AA = D_lxaa.reshape(n*na, n*na)
-        
+        D_lx = self.T_lx * w_x[None, :] / beta
+        D_AA = np.kron(D_lx, S_aa) - np.kron(self.T_lx, H_aa)
+                
         bc_x = kernel(np.array([0.]), w_x) + kernel(np.array([1.]), w_x)
         D_AA[(n-1)*na:, :] = np.kron(bc_x, S_aa)
 
