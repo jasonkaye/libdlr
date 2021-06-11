@@ -169,6 +169,33 @@ class dlrBase(object):
         return C_xaa
     
 
+    def free_greens_function_dlr(self, H_aa, beta, S_aa=None):
+
+        na = H_aa.shape[0]
+        I_aa = np.eye(na)
+
+        if S_aa is None: S_aa = I_aa
+
+        w_x = self.dlrrf
+        n = len(w_x)
+
+        D_xaa = w_x[:, None, None]/beta * S_aa[None, ...] - H_aa[None, ...]
+        D_lxaa = self.T_lx[:, :, None, None] * D_xaa[None, ...]
+
+        D_laxa = np.moveaxis(D_lxaa, 2, 1)
+        D_AA = D_lxaa.reshape(n*na, n*na)
+        
+        bc_x = kernel(np.array([0.]), w_x) + kernel(np.array([1.]), w_x)
+        D_AA[(n-1)*na:, :] = np.kron(bc_x, S_aa)
+
+        b_Aa = np.zeros((n*na, na))
+        b_Aa[(n-1)*na:, :] = -I_aa
+
+        g_xaa = np.linalg.solve(D_AA, b_Aa).reshape((n, na, na))
+
+        return g_xaa
+        
+        
     def free_greens_function_tau(self, H_aa, beta, S_aa=None):
 
         w_x = self.dlrrf
