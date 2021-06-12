@@ -108,4 +108,24 @@ if(with_python)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
     )
 
+  add_test(NAME python-test_barycentric
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_barycentric.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
+add_test(NAME python-test_gridding
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_gridding.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
+  add_test(NAME python-test_dyson
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_dyson.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
+  add_test(NAME python-test_semi_circ
+    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_semi_circ.py -v
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
+    )
+
 endif()
