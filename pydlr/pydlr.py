@@ -167,7 +167,30 @@ class dlrBase(object):
         C_xaa *= beta
         
         return C_xaa
-    
+
+
+    def convolution_matrix(self, A_xaa, beta=1.):
+
+        w_x = self.dlrrf
+        tau_l = self.get_tau(1.)
+
+        n = len(w_x)        
+        I = np.eye(n)
+        
+        W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
+
+        k1_x = -np.squeeze(kernel(np.ones(1), w_x))
+
+        C_xxaa = A_xaa[:, None, ...] * W_xx.T[:, :, None, None] + \
+            self.dlr_from_tau(np.einsum('l,lx,x...->lx...', tau_l, self.T_lx, A_xaa))
+        C_xaa = k1_x[:, None, None] * A_xaa + np.tensordot(W_xx, A_xaa, axes=(0, 0))
+        for i in range(n): C_xxaa[i, i, :, :] += C_xaa[i]    
+        C_xxaa *= beta
+
+        C_xaxa = np.moveaxis(C_xxaa, 2, 1)
+        
+        return C_xaxa
+        
 
     def free_greens_function_dlr(self, H_aa, beta, S_aa=None):
 
