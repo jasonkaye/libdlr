@@ -249,6 +249,32 @@ class dlrBase(object):
 
         return G_qaa
 
+
+    def dyson_dlr(self, H_aa, Sigma_xaa, beta, S_aa=None):
+
+        na = H_aa.shape[0]
+        I_aa = np.eye(na)
+
+        if S_aa is None: S_aa = I_aa
+
+        w_x = self.dlrrf
+        n = len(w_x)
+
+        D_lx = self.T_lx * w_x[None, :] / beta
+
+        D_AA = -self.tau_from_dlr(self.convolution_matrix(Sigma_xaa, beta)).reshape((n*na, n*na))
+        D_AA += np.kron(D_lx, S_aa) - np.kron(self.T_lx, H_aa)
+        
+        bc_x = kernel(np.array([0.]), w_x) + kernel(np.array([1.]), w_x)
+        D_AA[(n-1)*na:, :] = np.kron(bc_x, S_aa)
+
+        b_Aa = np.zeros((n*na, na))
+        b_Aa[(n-1)*na:, :] = -I_aa
+
+        g_xaa = np.linalg.solve(D_AA, b_Aa).reshape((n, na, na))
+
+        return g_xaa
+
     
     def volterra_matsubara(self, g_qaa, Sigma_qaa, beta):
 

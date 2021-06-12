@@ -28,11 +28,16 @@ def test_dyson_and_volterra_matsubara():
     G_qaa = d.free_greens_function_matsubara(E_aa, beta)[:, 0, 0].reshape((len(w_q), 1, 1))
 
     G_qaa_dyson = d.dyson_matsubara(np.array([[e0]]), V**2 * g1_qaa, beta)
-
     G_qaa_volterra = d.volterra_matsubara(g0_qaa, V**2 * g1_qaa, beta)
 
     np.testing.assert_array_almost_equal(G_qaa, G_qaa_dyson)
     np.testing.assert_array_almost_equal(G_qaa, G_qaa_volterra)
+
+    g1_xaa = d.dlr_from_matsubara(g1_qaa, beta)
+    G_xaa_dyson_dlr = d.dyson_dlr(np.array([[e0]]), V**2 * g1_xaa, beta)
+    G_qaa_dyson_dlr = d.matsubara_from_dlr(G_xaa_dyson_dlr, beta)
+
+    np.testing.assert_array_almost_equal(G_qaa, G_qaa_dyson_dlr)
     
 
 if __name__ == '__main__':
