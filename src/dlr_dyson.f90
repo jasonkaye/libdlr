@@ -217,13 +217,13 @@
       real *8 g0(rank),g0mat(rank,rank)
 
       integer i
-      real *8, external :: kfunf2
+      real *8, external :: kfunf_rel
 
       ! Imaginary time grid representation of G0
 
       do i=1,rank
 
-        g0(i) = -kfunf2(dlrit(i),beta*mu)
+        g0(i) = -kfunf_rel(dlrit(i),beta*mu)
 
       enddo
 
@@ -504,7 +504,7 @@
 !      real *8 one
 !      real *8, allocatable :: g0(:),g0mat(:,:),sig(:),sigmat(:,:)
 !      real *8, allocatable :: sysmat(:,:),gnew(:)
-!      real *8, external :: kfunf2
+!      real *8, external :: kfunf_rel
 !
 !      one = 1.0d0
 !
@@ -516,7 +516,7 @@
 !
 !      do i=1,rank
 !
-!        g0(i) = -kfunf2(dlrit(i),beta*mu)
+!        g0(i) = -kfunf_rel(dlrit(i),beta*mu)
 !
 !      enddo
 !

@@ -36,17 +36,17 @@
       lambda = 500.0d0 ! DLR cutoff
       eps = 1.0d-14 ! Desired accuracy
 
-      beta = 100.0d0 ! Inverse temperature
-      mu = 1.0d-1 ! Single particle energy
+      beta = 50.0d0 ! Inverse temperature
+      mu = 0.1d0 ! Single particle energy
       c = 1.0d0 ! Self-energy strength
 
       maxit = 1000 ! Max # fixed point iterations
       fptol = 1.0d-12 ! Fixed point tolerance
       w = 0.5d0 ! Fixed point iteration weighting
       
-      nmu = 2 ! # intermediate problems to solve
+      nmu = 1 ! # intermediate problems to solve
       
-      nout = 1000 ! # points at which to output solution
+      nout = 10000 ! # points at which to output solution
 
 
       ! --- Call main test subroutine ---
@@ -72,7 +72,6 @@
       real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:)
       real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),g(:)
       real *8, allocatable :: cf2it(:,:),cf2itr(:,:),phi(:,:)
-      real *8, external :: kfunf,kfunf2
 
       one = 1.0d0
 
@@ -87,7 +86,7 @@
 
       allocate(kmat(nt,no),t(nt),om(no))
 
-      call kfine_cc('f',lambda,p,npt,npo,t,om,kmat,kerr)
+      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
 
 
       ! Select real frequency points for DLR basis
@@ -180,7 +179,7 @@
 
       do i=1,nout
 
-        call dlr_eval('f',rank,dlrrf,g,ttst(i),gtest)
+        call dlr_eval(rank,dlrrf,g,ttst(i),gtest)
 
         call rel2abs(1,ttst(i),ttst(i))
 
@@ -215,14 +214,14 @@
       real *8 dlrrf(rank),dlrit(rank),cf2itr(rank,rank)
 
       integer i,j
-      real *8, external :: kfunf2
+      real *8, external :: kfunf_rel
 
       ! Get matrix taking DLR coefficients to values of DLR expansion at
       ! imaginary time points reflected about tau = 1/2.
 
       do j=1,rank
         do i=1,rank
-          cf2itr(i,j) = kfunf2(-dlrit(i),dlrrf(j))
+          cf2itr(i,j) = kfunf_rel(-dlrit(i),dlrrf(j))
         enddo
       enddo
 

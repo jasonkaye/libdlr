@@ -39,16 +39,13 @@
       end subroutine gridparams
 
 
-      subroutine kfine_cc(fb,lambda,p,npt,npo,t,om,kmat,err)
+      subroutine kfine_cc(lambda,p,npt,npo,t,om,kmat,err)
 
       ! Discretization of kernel K(tau,omega) on composite Chebyshev
       ! fine grids in tau and omega
       !
-      ! Note: this is a wrapper for the main subroutine, kfine_cc1
-      !
       ! Input:
       !
-      ! fb      - Fermionic (f) or bosonic (b) kernel
       ! lambda  - cutoff parameter
       ! p       - Chebyshev degree in each subinterval
       ! npt     - # subintervals on [0,1/2] in tau space (# subintervals
@@ -70,33 +67,7 @@
       integer p,npt,npo
       real *8 lambda,t(npt*p),om(2*npo*p)
       real *8 kmat(2*npt*p,2*npo*p),err(2)
-      real *8, external :: kfunf,kfunb
-      character :: fb
-
-      if (fb.eq.'f') then
-        call kfine_cc1(kfunf,lambda,p,npt,npo,t,om,kmat,err)
-      elseif (fb.eq.'b') then
-        call kfine_cc1(kfunb,lambda,p,npt,npo,t,om,kmat,err)
-      else
-        stop 'choose fb = f or b'
-      endif
-
-      end subroutine kfine_cc
-
-
-      subroutine kfine_cc1(kfun,lambda,p,npt,npo,t,om,kmat,err)
-
-      ! Main subroutine for kfine_cc
-      !
-      ! See subroutine kfine_cc for description of arguments, except for
-      ! kfun, which indicates the kernel evaluator to be used, and
-      ! depends on whether fb = 'f' or fb = 'b'.
-
-      implicit none
-      integer p,npt,npo
-      real *8 lambda,t(npt*p),om(2*npo*p)
-      real *8 kmat(2*npt*p,2*npo*p),err(2)
-      real *8, external :: kfun
+      real *8, external :: kfunf
 
       integer nt,no,i,j,k
       real *8 one,a,b,start,finish,xx,ktrue,ktest,errtmp
@@ -162,7 +133,7 @@
       do j=1,no
         do i=1,nt/2
 
-          kmat(i,j) = kfun(t(i),om(j))
+          kmat(i,j) = kfunf(t(i),om(j))
 
         enddo
       enddo
@@ -198,7 +169,7 @@
 
             xx = a+(b-a)*(xc2(k)+one)/2
             
-            ktrue = kfun(xx,om(j))
+            ktrue = kfunf(xx,om(j))
 
             call barycheb(p,xc2(k),kmat((i-1)*p+1:i*p,j),wc,xc,ktest)
 
@@ -225,7 +196,7 @@
 
             xx = a+(b-a)*(xc2(k)+one)/2
             
-            ktrue = kfun(t(j),xx)
+            ktrue = kfunf(t(j),xx)
 
             call barycheb(p,xc2(k),kmat(j,(i-1)*p+1:i*p),wc,xc,ktest)
 
@@ -238,7 +209,8 @@
 
       enddo
 
-      end subroutine kfine_cc1
+
+      end subroutine kfine_cc
 
 
       
@@ -527,13 +499,12 @@
       end subroutine dlr_mfexpnd
 
 
-      subroutine dlr_eval(fb,rank,dlrrf,g,t,val)
+      subroutine dlr_eval(rank,dlrrf,g,t,val)
 
       ! Evaluate DLR expansion at a point t
       !
       ! Input:
       !
-      ! fb      - Fermionic (f) or bosonic (b) kernel
       ! rank    - rank of DLR (# basis functions)
       ! dlrrf   - selected real frequency nodes (omega points)
       ! g       - DLR coefficients of a function G
@@ -547,42 +518,14 @@
       ! If t' has been computed to high relative precision, this
       ! subroutine will avoid loss of digits for t very close to 1 by
       ! evaluating the kernel K using its symmetries.
-      !
-      ! This is a wrapper for the main subroutine, dlr_eval1
 
       implicit none
       integer rank
       real *8 dlrrf(rank),g(rank),t,val
-      character :: fb
-
-      real *8, external :: kfunf,kfunb
-
-      if (fb.eq.'f') then
-        call dlr_eval1(rank,kfunf,dlrrf,g,t,val)
-      elseif (fb.eq.'b') then
-        call dlr_eval1(rank,kfunb,dlrrf,g,t,val)
-      else
-        stop 'choose fb = f or b'
-      endif
-
-      end subroutine dlr_eval
-
-
-      subroutine dlr_eval1(rank,kfun,dlrrf,g,t,val)
-
-      ! Main subroutine for dlr_eval
-      !
-      ! See subroutine dlr_eval for description of arguments, except for
-      ! kfun, which indicates the kernel evaluator to be used, and
-      ! depends on whether fb = 'f' or fb = 'b'.
-
-      implicit none
-      integer rank
-      real *8 dlrrf(rank),g(rank),t,val
-      real *8, external :: kfun
 
       integer i
       real *8 kval
+      real *8, external :: kfunf
 
       val = 0.0d0
       do i=1,rank
@@ -591,26 +534,25 @@
         ! to evaluate basis functions
 
         if (t.ge.0.0d0) then
-          kval = kfun(t,dlrrf(i))
+          kval = kfunf(t,dlrrf(i))
         else
-          kval = kfun(-t,-dlrrf(i))
+          kval = kfunf(-t,-dlrrf(i))
         endif
 
         val = val + g(i)*kval
 
       enddo
 
-      end subroutine dlr_eval1
+      end subroutine dlr_eval
 
 
 
-      subroutine dlr_mf_eval(fb,rank,dlrrf,g,n,val)
+      subroutine dlr_mf_eval(rank,dlrrf,g,n,val)
 
       ! Evaluate DLR expansion at a point t
       !
       ! Input:
       !
-      ! fb      - Fermionic (f) or bosonic (b) kernel
       ! rank    - rank of DLR (# basis functions)
       ! dlrrf   - selected real frequency nodes (omega points)
       ! g       - DLR coefficients of a function G
@@ -619,66 +561,34 @@
       ! Output:
       !
       ! val     - value of DLR of G at n
-      !
-      ! This is a wrapper for the main subroutine, dlr_mf_eval1
 
       implicit none
       integer rank,n
       real *8 dlrrf(rank),g(rank)
       complex *16 val
-      character :: fb
-
-      complex *16, external :: kfunf_mf
-
-      if (fb.eq.'f') then
-        call dlr_mf_eval1(rank,kfunf_mf,dlrrf,g,n,val)
-      elseif (fb.eq.'b') then
-        stop 'choose fb = b not supported yet'
-        !call dlr_mf_eval1(rank,kfunb,dlrrf,g,n,val)
-      else
-        stop 'choose fb = f or b'
-      endif
-
-      end subroutine dlr_mf_eval
-
-
-      subroutine dlr_mf_eval1(rank,kfun,dlrrf,g,n,val)
-
-      ! Main subroutine for dlr_mf_eval
-      !
-      ! See subroutine dlr_mf_eval for description of arguments, except for
-      ! kfun, which indicates the kernel evaluator to be used, and
-      ! depends on whether fb = 'f' or fb = 'b'.
-
-      implicit none
-      integer rank,n
-      real *8 dlrrf(rank),g(rank)
-      complex *16 val
-      complex *16, external :: kfun
 
       integer i
       complex *16 kval
+      complex *16, external :: kfunf_mf
 
       val = 0.0d0
       do i=1,rank
 
-        kval = kfun(n,dlrrf(i))
+        kval = kfunf_mf(n,dlrrf(i))
 
         val = val + g(i)*kval
 
       enddo
 
-      end subroutine dlr_mf_eval1
+      end subroutine dlr_mf_eval
 
 
-
-      subroutine dlr_mf(fb,nmax,rank,dlrrf,dlrmf)
+      subroutine dlr_mf(nmax,rank,dlrrf,dlrmf)
 
       ! Select Matsubara frequency DLR nodes
       !      
       ! Input:
       !
-      ! fb      - Fermionic (f) or bosonic (b) kernel
       ! nmax    - Matsubara frequency cutoff
       ! rank    - rank of DLR (# basis functions)
       ! dlrrf   - selected real frequency nodes (omega points)
@@ -686,45 +596,16 @@
       ! Output :
       !
       ! dlrmf   - selected Matsubara frequency nodes
-      !
-      !
-      ! This is a wrapper for the main subroutine, dlr_mf1
 
       implicit none
       integer nmax,rank,dlrmf(rank)
       real *8 dlrrf(rank)
-      character :: fb
-
-      complex *16, external :: kfunf_mf
-
-      if (fb.eq.'f') then
-        call dlr_mf1(kfunf_mf,nmax,rank,dlrrf,dlrmf)
-      !elseif (fb.eq.'b') then
-        !call dlr_mf1(kfunb_mf,nmax,rank,dlrrf,dlrmf)
-      else
-        stop 'choose fb = f or b'
-      endif
-
-      end subroutine dlr_mf
-
-
-      subroutine dlr_mf1(kfun,nmax,rank,dlrrf,dlrmf)
-
-      ! Main subroutine for dlr_mf
-      !
-      ! See subroutine dlr_mf for description of arguments, except for
-      ! kfun, which indicates the kernel evaluator to be used, and
-      ! depends on whether fb = 'f' or fb = 'b'.
-
-      implicit none
-      integer rank,nmax,dlrmf(rank)
-      real *8 dlrrf(rank)
-      complex *16, external :: kfun
 
       integer i,k,info
       integer, allocatable :: ns(:),list(:)
       real *8, allocatable :: work(:)
       complex *16, allocatable :: poles(:,:)
+      complex *16, external :: kfunf_mf
 
       ! Get matrix of Fourier transforms of DLR basis functions
 
@@ -735,7 +616,7 @@
       do i=1,2*nmax+1
         do k=1,rank
           
-          poles(k,i) = kfun(ns(i),dlrrf(k))
+          poles(k,i) = kfunf_mf(ns(i),dlrrf(k))
           
         enddo
       enddo
@@ -757,21 +638,16 @@
 
       dlrmf = ns(list(1:rank))
 
-      end subroutine dlr_mf1
+      end subroutine dlr_mf
 
 
-
-
-
-
-      subroutine dlr_mf2cf(fb,nmax,rank,dlrrf,dlrmf,mf2cf,mf2cfpiv)
+      subroutine dlr_mf2cf(nmax,rank,dlrrf,dlrmf,mf2cf,mf2cfpiv)
 
       ! Build transform matrix from samples on Matsubara frequency grid
       ! to DLR coefficients in LU form
       !
       ! Input:
       !
-      ! fb      - Fermionic (f) or bosonic (b) kernel
       ! nmax    - Matsubara frequency cutoff
       ! rank      - rank of DLR (# basis functions)
       ! dlrrf   - selected real frequency nodes (omega points)
@@ -782,54 +658,21 @@
       ! mf2cf   - Matsubara frequency grid values -> DLR coefficients
       !               transform matrix in lapack LU storage format
       ! mf2cfpiv  - pivot matrix for mf2cf in lapack LU storage format
-      !
-      !
-      ! This is a wrapper for the main subroutine, dlr_mf2cf1
 
       implicit none
       integer nmax,rank,dlrmf(rank),mf2cfpiv(rank)
       real *8 dlrrf(rank)
       complex *16 mf2cf(rank,rank)
-      character :: fb
-
-      complex *16, external :: kfunf_mf
-
-      if (fb.eq.'f') then
-        call dlr_mf2cf1(kfunf_mf,nmax,rank,dlrrf,dlrmf,mf2cf,&
-          mf2cfpiv)
-      !elseif (fb.eq.'b') then
-        !call dlr_mf2cf1(kfunb_mf,nmax,rank,dlrrf,dlrmf,mf2cf,&
-        ! mf2cfpiv)
-      else
-        stop 'choose fb = f or b'
-      endif
-
-      end subroutine dlr_mf2cf
-
-
-      subroutine dlr_mf2cf1(kfun,nmax,rank,dlrrf,dlrmf,mf2cf,&
-          mf2cfpiv)
-
-      ! Main subroutine for dlr_mf2cf
-      !
-      ! See subroutine dlr_mf2cf for description of arguments, except for
-      ! kfun, which indicates the kernel evaluator to be used, and
-      ! depends on whether fb = 'f' or fb = 'b'.
-
-      implicit none
-      integer nmax,rank,dlrmf(rank),mf2cfpiv(rank)
-      real *8 dlrrf(rank)
-      complex *16 mf2cf(rank,rank)
-      complex *16, external :: kfun
 
       integer j,k,info
+      complex *16, external :: kfunf_mf
 
       ! Extract selected rows and columns of Fourier transformed K
       ! matrix
 
       do k=1,rank
         do j=1,rank
-          mf2cf(j,k) = kfun(dlrmf(j),dlrrf(k))
+          mf2cf(j,k) = kfunf_mf(dlrmf(j),dlrrf(k))
         enddo
       enddo
 
@@ -837,7 +680,7 @@
 
       call zgetrf(rank,rank,mf2cf,rank,mf2cfpiv,info)
 
-      end subroutine dlr_mf2cf1
+      end subroutine dlr_mf2cf
 
 
       subroutine dlr_cf2mf(rank,dlrrf,dlrmf,cf2mf)
@@ -913,7 +756,7 @@
 
       integer j,k,l,ier,maxrec,numint
       real *8 one,rint1,rint2
-      real *8, external :: kfunf,kfunf2
+      real *8, external :: kfunf,kfunf_rel
 
       one = 1.0d0
 
@@ -923,20 +766,20 @@
 
             if (k.ne.l) then
 
-              phi((k-1)*rank+j,l) = (kfunf2(dlrit(j),dlrrf(l)) -&
-                kfunf2(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
+              phi((k-1)*rank+j,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
+                kfunf_rel(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
 
             else
 
               if (dlrit(j).gt.0.0d0) then
 
                 phi((k-1)*rank+j,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
-                  kfunf2(dlrit(j),dlrrf(k))
+                  kfunf_rel(dlrit(j),dlrrf(k))
 
               else
 
                 phi((k-1)*rank+j,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
-                  kfunf2(dlrit(j),dlrrf(k))
+                  kfunf_rel(dlrit(j),dlrrf(k))
 
               endif
             endif

@@ -18,7 +18,6 @@
       implicit none
       integer ntst_it,ntst_mf
       real *8 lambda,eps,beta
-      character :: fb
 
       ! --- Input parameters ---
 
@@ -29,18 +28,16 @@
       ntst_it = 1000 ! # test points to check representation of G(tau)
       ntst_mf = 1000 ! Max |n| at which to test G(i omega_n)
 
-      fb = 'f' ! Fermion or Boson? (this switch isn't working yet)
-
 
       ! --- Call main test subroutine ---
 
-      call dlr_sc_it_test_main(lambda,eps,ntst_it,ntst_mf,beta,fb)
+      call dlr_sc_it_test_main(lambda,eps,ntst_it,ntst_mf,beta)
 
 
       end program dlr_sc_it_test
 
 
-      subroutine dlr_sc_it_test_main(lambda,eps,ntst_it,ntst_mf,beta,fb)
+      subroutine dlr_sc_it_test_main(lambda,eps,ntst_it,ntst_mf,beta)
 
       ! Main driver routine for test of DLR basis on Green's function
       ! with semi-circular density
@@ -48,7 +45,6 @@
       implicit none
       integer ntst_it,ntst_mf
       real *8 lambda,eps,beta
-      character :: fb
 
       integer npt,npo,p,nt,no,i,j,rank,info,pg,npg
       integer, allocatable :: ipiv(:),tidx(:),oidx(:),mf_tst(:)
@@ -72,7 +68,7 @@
 
       allocate(kmat(nt,no),t(nt),om(no))
 
-      call kfine_cc(fb,lambda,p,npt,npo,t,om,kmat,kerr)
+      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
 
 
       ! Select real frequency points for DLR basis
@@ -117,7 +113,7 @@
 
       do i=1,rank
 
-        call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,fb,beta,dlrit(i),&
+        call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,dlrit(i),&
           g(i))
 
       enddo
@@ -144,7 +140,7 @@
 
       do i=1,ntst_it
 
-        call dlr_eval(fb,rank,dlrrf,gc,it_tst(i),gtst_it(i))
+        call dlr_eval(rank,dlrrf,gc,it_tst(i),gtst_it(i))
 
       enddo
 
@@ -164,7 +160,7 @@
 
       do i=1,2*ntst_mf+1
 
-        call dlr_mf_eval(fb,rank,dlrrf,gc,mf_tst(i),gtst_mf(i))
+        call dlr_mf_eval(rank,dlrrf,gc,mf_tst(i),gtst_mf(i))
 
       enddo
 
@@ -180,7 +176,7 @@
 
       do i=1,ntst_it
 
-        call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,fb,beta,it_tst(i),&
+        call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,it_tst(i),&
           gtrue_it(i))
 
       enddo
@@ -192,7 +188,7 @@
 
       do i=1,2*ntst_mf+1
 
-        call gfun_mf(pg,npg,pbpg,xgl,wgl,xgj,wgj,fb,beta,mf_tst(i),&
+        call gfun_mf(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,mf_tst(i),&
           gtrue_mf(i))
 
       enddo
@@ -244,42 +240,17 @@
       end subroutine gfun_init
 
 
-      subroutine gfun_it(n,np,pbp,xgl,wgl,xgj,wgj,fb,beta,t,val)
+      subroutine gfun_it(n,np,pbp,xgl,wgl,xgj,wgj,beta,t,val)
 
       ! Evaluate Green's function with semi-circular density
-      !
-      ! This is a wrapper for the main subroutine, gfun_it1
 
       implicit none
       integer n,np
       real *8 pbp(2*np+1),xgl(n),wgl(n),xgj(n),wgj(n),beta,t,val
-      real *8, external :: kfunf,kfunb
-      character :: fb
-
-      if (fb.eq.'f') then
-        call gfun_it1(n,np,pbp,xgl,wgl,xgj,wgj,kfunf,beta,t,val)
-      elseif (fb.eq.'b') then
-        call gfun_it1(n,np,pbp,xgl,wgl,xgj,wgj,kfunb,beta,t,val)
-      else
-        stop 'choose fb = f or b'
-      endif
-
-      end subroutine gfun_it
-
-
-      subroutine gfun_it1(n,np,pbp,xgl,wgl,xgj,wgj,kfun,beta,t,val)
-
-      ! Evaluate Green's function with semi-circular density
-      !
-      ! Main subroutine
-
-      implicit none
-      integer n,np
-      real *8 pbp(2*np+1),xgl(n),wgl(n),xgj(n),wgj(n),beta,t,val
-      real *8, external :: kfun
 
       integer ii,jj
       real *8 one,a,b,x,tt
+      real *8, external :: kfunf
 
       one = 1.0d0
 
@@ -295,7 +266,7 @@
         b = pbp(ii+1)
         do jj=1,n
           x = a+(b-a)*(xgl(jj)+one)/2
-          val = val + (b-a)/2*wgl(jj)*kfun(tt,beta*x)*&
+          val = val + (b-a)/2*wgl(jj)*kfunf(tt,beta*x)*&
             sqrt(one-x**2)
         enddo
       enddo
@@ -305,7 +276,7 @@
       do jj=1,n
         x = a+(b-a)*(xgj(jj)+one)/2
         val = val + ((b-a)/2)**(1.5d0)*wgj(jj)*&
-          kfun(tt,beta*x)*sqrt(one+x)
+          kfunf(tt,beta*x)*sqrt(one+x)
       enddo
 
       a = -one
@@ -313,55 +284,26 @@
       do jj=1,n
         x = a+(b-a)*(-xgj(n-jj+1)+one)/2
         val = val + ((b-a)/2)**(1.5d0)*wgj(n-jj+1)*&
-          kfun(tt,beta*x)*sqrt(one-x)
+          kfunf(tt,beta*x)*sqrt(one-x)
       enddo
-        
-
-      end subroutine gfun_it1
 
 
+      end subroutine gfun_it
 
 
-      subroutine gfun_mf(n,np,pbp,xgl,wgl,xgj,wgj,fb,beta,m,val)
+      subroutine gfun_mf(n,np,pbp,xgl,wgl,xgj,wgj,beta,m,val)
 
       ! Evaluate Green's function with semi-circular density in
       ! Matsubara frequency domain
-      !
-      ! This is a wrapper for the main subroutine, gfunsc1
 
       implicit none
       integer n,np,m
       real *8 pbp(2*np+1),xgl(n),wgl(n),xgj(n),wgj(n),beta
       complex *16 val
-      complex *16, external :: kfunf_mf
-      character :: fb
-
-      if (fb.eq.'f') then
-        call gfun_mf1(n,np,pbp,xgl,wgl,xgj,wgj,kfunf_mf,beta,m,val)
-      !elseif (fb.eq.'b') then
-      !  call gfun_mf1(n,np,pbp,xgl,wgl,xgj,wgj,kfunb,beta,t,val)
-      else
-        stop 'choose fb = f or b'
-      endif
-
-      end subroutine gfun_mf
-
-
-      subroutine gfun_mf1(n,np,pbp,xgl,wgl,xgj,wgj,kfun,beta,m,val)
-
-      ! Evaluate Green's function with semi-circular density in
-      ! Matsubara frequency domain
-      !
-      ! Main subroutine
-
-      implicit none
-      integer n,np,m
-      real *8 pbp(2*np+1),xgl(n),wgl(n),xgj(n),wgj(n),beta
-      complex *16 val
-      complex *16, external :: kfun
 
       integer ii,jj
       real *8 one,a,b,x
+      complex *16, external :: kfunf_mf
 
       one = 1.0d0
 
@@ -371,7 +313,7 @@
         b = pbp(ii+1)
         do jj=1,n
           x = a+(b-a)*(xgl(jj)+one)/2
-          val = val + (b-a)/2*wgl(jj)*kfun(m,beta*x)*&
+          val = val + (b-a)/2*wgl(jj)*kfunf_mf(m,beta*x)*&
             sqrt(one-x**2)
         enddo
       enddo
@@ -381,7 +323,7 @@
       do jj=1,n
         x = a+(b-a)*(xgj(jj)+one)/2
         val = val + ((b-a)/2)**(1.5d0)*wgj(jj)*&
-          kfun(m,beta*x)*sqrt(one+x)
+          kfunf_mf(m,beta*x)*sqrt(one+x)
       enddo
 
       a = -one
@@ -389,8 +331,7 @@
       do jj=1,n
         x = a+(b-a)*(-xgj(n-jj+1)+one)/2
         val = val + ((b-a)/2)**(1.5d0)*wgj(n-jj+1)*&
-          kfun(m,beta*x)*sqrt(one-x)
+          kfunf_mf(m,beta*x)*sqrt(one-x)
       enddo
-        
 
-      end subroutine gfun_mf1
+      end subroutine gfun_mf

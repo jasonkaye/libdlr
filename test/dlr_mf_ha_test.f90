@@ -9,7 +9,6 @@
       implicit none
       integer ntst,nmax
       real *8 lambda,eps,beta
-      character :: fb
 
       ! --- Input parameters ---
 
@@ -18,18 +17,17 @@
       nmax = lambda ! Matsubara frequency cutoff
       ntst = 10000 ! # test points to check representation of G
       beta = 1000 ! Inverse temp: controls support of rho
-      fb = 'f' ! Fermion or Boson? (this switch isn't working yet)
 
 
       ! --- Call main test subroutine ---
 
-      call dlr_sc_mf_test_main(lambda,eps,nmax,ntst,beta,fb)
+      call dlr_sc_mf_test_main(lambda,eps,nmax,ntst,beta)
 
 
       end program dlr_sc_mf_test
 
 
-      subroutine dlr_sc_mf_test_main(lambda,eps,nmax,ntst,beta,fb)
+      subroutine dlr_sc_mf_test_main(lambda,eps,nmax,ntst,beta)
 
       ! Main driver routine for test of DLR basis on Green's function
       ! with semi-circular density
@@ -37,7 +35,6 @@
       implicit none
       integer ntst,nmax
       real *8 lambda,eps,beta
-      character :: fb
 
       integer npt,npo,p,nt,no,i,j,rank,info,pg,npg
       integer, allocatable :: oidx(:),dlrmf(:),ipiv(:)
@@ -56,7 +53,6 @@
       write(6,*) 'Matsubara freq cutoff nmax = ',nmax
       write(6,*) 'Inverse temp beta          = ',beta
       write(6,*) '# test points              = ',ntst
-      write(6,*) 'Fermion (f) or boson (b)   = ',fb
 
 
       ! --- Build DLR basis, grid, transform matrix ---
@@ -69,7 +65,7 @@
 
       allocate(kmat(nt,no),t(nt),om(no))
 
-      call kfine_cc(fb,lambda,p,npt,npo,t,om,kmat,kerr)
+      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
 
       write(6,*) ''
       write(6,*) '-------------- Fine K discretization --------------'
@@ -93,14 +89,14 @@
 
       allocate(dlrmf(rank))
 
-      call dlr_mf(fb,nmax,rank,dlrrf,dlrmf)
+      call dlr_mf(nmax,rank,dlrrf,dlrmf)
 
 
       ! Get Matsubara frequency values -> DLR coefficients transform matrix in LU form
 
       allocate(mf2cf(rank,rank),ipiv(rank))
 
-      call dlr_mf2cf(fb,nmax,rank,dlrrf,dlrmf,mf2cf,ipiv)
+      call dlr_mf2cf(nmax,rank,dlrrf,dlrmf,mf2cf,ipiv)
 
 
       ! --- Compute actual eps-rank of fine grid K matrix by SVD ---
@@ -153,7 +149,7 @@
 
         ! Evaluate DLR
 
-        call dlr_eval(fb,rank,dlrrf,gc,ttst(i),gtest)
+        call dlr_eval(rank,dlrrf,gc,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 
@@ -221,7 +217,7 @@
 
       implicit none
       real *8 beta,t,g
-      real *8, external :: kfunf2
+      real *8, external :: kfunf_rel
 
       real *8 a1,a2,a3,a4,a5
 
@@ -231,7 +227,8 @@
       a4 =  0.915d0
       a5 =  0.929d0
 
-      g = kfunf2(t,beta*a1) + kfunf2(t,beta*a2) + kfunf2(t,beta*a3) +&
-        kfunf2(t,beta*a4) + kfunf2(t,beta*a5)
+      g = kfunf_rel(t,beta*a1) + kfunf_rel(t,beta*a2) &
+        + kfunf_rel(t,beta*a3) + kfunf_rel(t,beta*a4) &
+        + kfunf_rel(t,beta*a5)
 
       end subroutine gfun_it
