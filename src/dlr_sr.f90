@@ -6,10 +6,18 @@
       !
 
 
+      !> Set parameters for composite Chebyshev fine grid
+      !! @param[in] lambda cutoff parameter
+      !! @param[out] p Chebyshev degree in each subinterval
+      !! @param[out] npt # subintervals on [0,1/2] in tau space (#
+      !!  subintervals on [0,1] is 2*npt
+      !! @param[out] npo # subintervals on [0,lambda] in omega space
+      !!  subintervals on [-lambda,lambda] is 2*npo)
+      !! @param[out] nt # fine grid points in tau = 2*npt*p
+      !! @param[out] no # fine grid points in omega = 2*npo*p
+
       subroutine gridparams(lambda,p,npt,npo,nt,no)
 
-      ! Set parameters for composite Chebyshev fine grid
-      !
       ! Input:
       !
       ! lambda  - cutoff parameter
@@ -38,6 +46,23 @@
 
       end subroutine gridparams
 
+
+      !> Discretization of kernel K(tau,omega) on composite Chebyshev
+      !! fine grids in tau and omega
+      !! @param[in] lambda cutoff parameter
+      !! @param[in] p Chebyshev degree in each subinterval
+      !! @param[in] npt # subintervals on [0,1/2] in tau space (#
+      !!  subintervals on [0,1] is 2*npt)
+      !! @param[in] npo # subintervals on [0,lambda] in omega space
+      !!  subintervals on [-lambda,lambda] is 2*npo)
+      !! @param[out] t tau fine grid points on (0,1/2) (half of full grid)
+      !! @param[out] om omega fine grid points
+      !! @param[out] kmat K(tau,omega) on fine grid
+      !! @param[out] om omega fine grid points
+      !! @param[out] err Error of composite Chebyshev interpolant of
+      !!  K(tau,omega). err(1) is ~= max relative L^inf error
+      !!  in tau over all omega in fine grid. err(2) is ~= max
+      !!  L^inf error in omega over all tau in fine grid.
 
       subroutine kfine_cc(lambda,p,npt,npo,t,om,kmat,err)
 
