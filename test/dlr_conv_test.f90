@@ -35,7 +35,7 @@
       real *8 one,gtrue,gtest,errl2,errlinf,kerr(2),gmax,gl2,tabs
       real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:)
       real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:)
-      real *8, allocatable :: g1(:),g2(:),g1c(:),g2c(:),g3c(:)
+      real *8, allocatable :: g1(:),g2(:),g3(:)
 
       real *8, allocatable :: phi(:,:),gmat(:,:)
 
@@ -108,7 +108,7 @@
 
       ! Sample G1 and G2 at DLR grid points
 
-      allocate(g1(rank),g2(rank),g1c(rank),g2c(rank),g3c(rank))
+      allocate(g1(rank),g2(rank),g3(rank))
 
       do i=1,rank
 
@@ -118,32 +118,31 @@
       enddo
 
 
-      ! Compute coefficients of DLR expansions from samples
-
-      call dlr_expnd(rank,it2cf,ipiv,g1,g1c)
-      call dlr_expnd(rank,it2cf,ipiv,g2,g2c)
-
-
       ! --- Compute convolution and measure error ---
 
       ! Get convolution tensor
 
       allocate(phi(rank*rank,rank))
 
-      call dlr_convtens(rank,dlrrf,dlrit,phi)
-      phi = beta*phi
+      call dlr_convtens(beta,rank,dlrrf,dlrit,phi)
 
 
       ! Form matrix of convolution by G1
 
       allocate(gmat(rank,rank))
 
-      call dlr_convmat(rank,phi,it2cf,ipiv,g1c,gmat)
+      call dlr_convmat(rank,phi,it2cf,ipiv,g1,gmat)
 
 
       ! Apply matrix to obtain convolution G3
 
-      g3c = matmul(gmat,g2c)
+      g3 = matmul(gmat,g2)
+
+      
+      ! Get DLR coefficients of g3
+
+      call dlr_expnd(rank,it2cf,ipiv,g3,g3)
+
 
       ! Get test points and compare computed G3 against exact
       ! convolution
@@ -165,7 +164,7 @@
 
         ! Evaluate DLR
 
-        call dlr_eval(rank,dlrrf,g3c,ttst(i),gtest)
+        call dlr_eval(rank,dlrrf,g3,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 

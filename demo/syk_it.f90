@@ -46,7 +46,7 @@
       
       nmu = 1 ! # intermediate problems to solve
       
-      nout = 10000 ! # points at which to output solution
+      nout = 1000 ! # points at which to output solution
 
 
       ! --- Call main test subroutine ---
@@ -71,7 +71,7 @@
       real *8 one,gtest,kerr(2),gtest2
       real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:)
       real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),g(:)
-      real *8, allocatable :: cf2it(:,:),cf2itr(:,:),phi(:,:)
+      real *8, allocatable :: cf2it(:,:),it2itr(:,:),phi(:,:)
 
       one = 1.0d0
 
@@ -116,11 +116,11 @@
       ! and DLR coefficients -> reflected imaginary time values
       ! transform matrix
 
-      allocate(cf2it(rank,rank),cf2itr(rank,rank))
+      allocate(cf2it(rank,rank),it2itr(rank,rank))
 
       call dlr_cf2it(nt,no,kmat,rank,oidx,tidx,cf2it)
 
-      call dlr_cf2itr(rank,dlrrf,dlrit,cf2itr)
+      call dlr_it2itr(rank,dlrrf,dlrit,it2cf,it2cfpiv,it2itr)
 
 
       ! --- Solve SYK equation ---
@@ -130,8 +130,7 @@
 
       allocate(phi(rank*rank,rank))
 
-      call dlr_convtens(rank,dlrrf,dlrit,phi)
-      phi = phi*beta
+      call dlr_convtens(beta,rank,dlrrf,dlrit,phi)
 
 
       ! Solve Dyson equation by marching in mu
@@ -175,6 +174,8 @@
 
       call eqpts_rel(nout,ttst)
 
+      call dlr_expnd(rank,it2cf,it2cfpiv,g,g)
+
       open(1,file='gfun')
 
       do i=1,nout
@@ -200,30 +201,8 @@
         integer rank
         real *8 g(rank),sig(rank)
 
-        sig = c**2*matmul(cf2it,g)**2*matmul(cf2itr,g)
+        sig = c**2*g**2*matmul(it2itr,g)
 
         end subroutine sigeval
       
       end subroutine dlr_syk_it_main
-
-
-      subroutine dlr_cf2itr(rank,dlrrf,dlrit,cf2itr)
-
-      implicit none
-      integer rank
-      real *8 dlrrf(rank),dlrit(rank),cf2itr(rank,rank)
-
-      integer i,j
-      real *8, external :: kfunf_rel
-
-      ! Get matrix taking DLR coefficients to values of DLR expansion at
-      ! imaginary time points reflected about tau = 1/2.
-
-      do j=1,rank
-        do i=1,rank
-          cf2itr(i,j) = kfunf_rel(-dlrit(i),dlrrf(j))
-        enddo
-      enddo
-
-      end subroutine dlr_cf2itr
-

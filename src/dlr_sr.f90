@@ -451,6 +451,54 @@
       end subroutine dlr_it2cf
 
 
+      subroutine dlr_it2itr(rank,dlrrf,dlrit,it2cf,it2cfpiv,it2itr)
+
+      ! Build matrix taking values of G(tau) at imaginary time DLR nodes
+      ! to values of G(beta-tau) at imaginary time DLR nodes, or
+      ! equivalently, at "reversed" DLR imaginary time nodes.
+      !
+      ! Input:
+      !
+      ! rank      - rank of DLR (# basis functions)
+      ! dlrrf     - selected real frequency nodes (omega points)
+      ! dlrit     - selected imaginary time nodes (tau points)
+      ! it2cf     - imaginary time grid values -> DLR coefficients
+      !               transform matrix in lapack LU storage format
+      ! it2cfpiv  - pivot matrix for it2cf in lapack LU storage format
+      !
+      ! Output :
+      !
+      ! it2itr    - Matrix taking vector of G(tau) values to G(beta-tau)
+      !               values at imaginary time DLR nodes
+
+      implicit none
+      integer rank,it2cfpiv(rank)
+      real *8 dlrrf(rank),dlrit(rank),it2cf(rank,rank),it2itr(rank,rank)
+
+      integer i,j,info
+      real *8, external :: kfunf_rel
+
+      ! Get matrix taking DLR coefficients to values of DLR expansion at
+      ! imaginary time nodes reflected about tau = beta/2.
+
+      do j=1,rank
+        do i=1,rank
+          it2itr(i,j) = kfunf_rel(-dlrit(i),dlrrf(j))
+        enddo
+      enddo
+
+      ! Precompose with matrix taking DLR imaginary time grid values ->
+      ! DLR coefficients
+
+      it2itr = transpose(it2itr)
+
+      call dgetrs('T',rank,rank,it2cf,rank,it2cfpiv,it2itr,rank,info)
+
+      it2itr = transpose(it2itr)
+
+      end subroutine dlr_it2itr
+
+
       subroutine dlr_expnd(rank,it2cf,it2cfpiv,g,gc)
       
       ! Get coefficients of DLR from samples on imaginary time DLR grid
@@ -750,7 +798,7 @@
 
 
 
-      subroutine dlr_convtens(rank,dlrrf,dlrit,phi)
+      subroutine dlr_convtens(beta,rank,dlrrf,dlrit,phi)
 
       ! Get tensor phi_{jkl} used to take a set of DLR coefficients to
       ! the matrix of convolution by the corresponding DLR expansion.
@@ -758,12 +806,11 @@
       ! represented by a DLR expansion with coefficients rho_l is given
       ! by
       !
-      ! A_jk = beta * sum_l phi_jkl rho_l.
-      !
-      ! This is for the fermionic case only.
+      ! A_jk = sum_l phi_jkl rho_l.
       !
       ! Input:
       !
+      ! beta  - inverse temperature
       ! rank  - rank of DLR (# basis functions)
       ! dlrrf - selected real frequency nodes (omega points)
       ! dlrit - selected imaginary time nodes (tau points)
@@ -775,7 +822,7 @@
 
       implicit none
       integer rank
-      real *8 dlrrf(rank),dlrit(rank)
+      real *8 beta,dlrrf(rank),dlrit(rank)
       real *8 phi(rank*rank,rank)
       real *8, external :: kfun
 
@@ -813,15 +860,55 @@
         enddo
       enddo
 
+      phi = beta*phi
+
       end subroutine dlr_convtens
+
+
+!      subroutine dlr_convmat(rank,phi,it2cf,it2cfpiv,g,gmat)
+!
+!      ! Get matrix of convolution by a DLR expansion G in the DLR basis
+!      ! -- that is, the matrix that this subroutine produces takes the
+!      ! DLR coefficient representation of a function f to the DLR
+!      ! coefficient representation of the convolution
+!      !
+!      ! int_0^1 G(t-t') f(t') dt'.
+!      !
+!      ! Input:
+!      !
+!      ! rank      - rank of DLR (# basis functions)
+!      ! phi       - convolution tensor
+!      ! it2cf  - imaginary time grid values -> DLR coefficients
+!      !               transform matrix in lapack LU storage format
+!      ! it2cfpiv  - pivot matrix for it2cf in lapack LU storage
+!      !               format
+!      ! g         - DLR coefficients of a function G
+!      !
+!      ! Output:
+!      !
+!      ! gmat      - matrix of convolution by G in the DLR basis
+!
+!      implicit none
+!      integer rank,it2cfpiv(rank)
+!      real *8 phi(rank*rank,rank),it2cf(rank,rank),g(rank)
+!      real *8 gmat(rank,rank)
+!
+!      integer i,j,info
+!
+!      call dgemv('N',rank*rank,rank,1.0d0,phi,rank*rank,g,1,0.0d0,&
+!        gmat,1)
+!
+!      call dgetrs('N',rank,rank,it2cf,rank,it2cfpiv,gmat,rank,info)
+!
+!      end subroutine dlr_convmat
 
 
       subroutine dlr_convmat(rank,phi,it2cf,it2cfpiv,g,gmat)
 
-      ! Get matrix of convolution by a DLR expansion G in the DLR basis
+      ! Get matrix of convolution by a DLR expansion G
       ! -- that is, the matrix that this subroutine produces takes the
-      ! DLR coefficient representation of a function f to the DLR
-      ! coefficient representation of the convolution
+      ! DLR imaginary time grid values of a function f to the DLR
+      ! imaginary time grid values of the convolution
       !
       ! int_0^1 G(t-t') f(t') dt'.
       !
@@ -833,11 +920,11 @@
       !               transform matrix in lapack LU storage format
       ! it2cfpiv  - pivot matrix for it2cf in lapack LU storage
       !               format
-      ! g         - DLR coefficients of a function G
+      ! g         - DLR imaginary time values of a Green's function G
       !
       ! Output:
       !
-      ! gmat      - matrix of convolution by G in the DLR basis
+      ! gmat      - matrix of convolution by G
 
       implicit none
       integer rank,it2cfpiv(rank)
@@ -845,14 +932,28 @@
       real *8 gmat(rank,rank)
 
       integer i,j,info
+      real *8, allocatable :: gc(:)
 
-      call dgemv('N',rank*rank,rank,1.0d0,phi,rank*rank,g,1,0.0d0,&
+      ! Get DLR coefficients of G
+
+      allocate(gc(rank))
+
+       call dlr_expnd(rank,it2cf,it2cfpiv,g,gc)
+
+      ! Get convolution matrix taking coefficients -> values
+
+      call dgemv('N',rank*rank,rank,1.0d0,phi,rank*rank,gc,1,0.0d0,&
         gmat,1)
 
-      call dgetrs('N',rank,rank,it2cf,rank,it2cfpiv,gmat,rank,info)
+      ! Precompose with matrix taking values -> coefficients
+
+      gmat = transpose(gmat)
+
+      call dgetrs('T',rank,rank,it2cf,rank,it2cfpiv,gmat,rank,info)
+
+      gmat = transpose(gmat)
 
       end subroutine dlr_convmat
-
 
 
 
