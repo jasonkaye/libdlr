@@ -160,7 +160,9 @@
 
       ! Matrix of convolution by Sigma
 
-      call dlr_convmat(rank,phi,it2cf,it2cfpiv,sig,sysmat)
+      !call dlr_convmat(rank,phi,it2cf,it2cfpiv,sig,sysmat)
+      call dlr_convmat2(rank,phi,it2cf,it2cfpiv,sig,sysmat)
+      !call dlr_convmat3(rank,phi,sig,sysmat)
 
       ! System matrix for linear Dyson equation
 
@@ -224,7 +226,9 @@
 
       ! Matrix of convolution by G0
 
-      call dlr_convmat(rank,phi,it2cf,it2cfpiv,g0,g0mat)
+      !call dlr_convmat(rank,phi,it2cf,it2cfpiv,g0,g0mat)
+      call dlr_convmat2(rank,phi,it2cf,it2cfpiv,g0,g0mat)
+      !call dlr_convmat3(rank,phi,g0,g0mat)
 
       end subroutine g0init_it
 

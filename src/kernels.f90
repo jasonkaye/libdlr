@@ -79,6 +79,46 @@
 
 
 
+      real *16 function qkfunf(t,om)
+
+      ! Fermionic kernel K(tau,omega), tau in absolute format
+      ! Quad precision
+
+      implicit none
+      real *16 t,om
+
+      if (om.ge.0.0q0) then
+        qkfunf = exp(-t*om)/(1.0q0+exp(-om))
+      else
+        qkfunf = exp((1.0q0-t)*om)/(1.0q0+exp(om))
+      endif
+
+      end function qkfunf
+
+
+
+
+      real *16 function qkfunf_rel(t,om)
+
+      ! Fermionic kernel K(tau,omega), tau in relative format
+      ! Quad precision
+
+      implicit none
+      real *16 t,om
+
+      real *16, external :: qkfunf
+
+        if (t.ge.0.0q0) then
+          qkfunf_rel = qkfunf(t,om)
+        else
+          qkfunf_rel = qkfunf(-t,-om)
+        endif
+
+      end function qkfunf_rel
+
+
+
+
 !      real *8 function kfunb(t,om)
 !
 !      implicit none

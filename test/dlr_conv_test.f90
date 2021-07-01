@@ -124,14 +124,18 @@
 
       allocate(phi(rank*rank,rank))
 
-      call dlr_convtens(beta,rank,dlrrf,dlrit,phi)
+      !call dlr_convtens(beta,rank,dlrrf,dlrit,phi)
+      call dlr_convtens2(beta,rank,dlrrf,dlrit,it2cf,ipiv,phi)
+      !call dlr_convtens3(beta,rank,dlrrf,dlrit,phi)
 
 
       ! Form matrix of convolution by G1
 
       allocate(gmat(rank,rank))
 
-      call dlr_convmat(rank,phi,it2cf,ipiv,g1,gmat)
+      !call dlr_convmat(rank,phi,it2cf,ipiv,g1,gmat)
+      call dlr_convmat2(rank,phi,it2cf,ipiv,g1,gmat)
+      !call dlr_convmat3(rank,phi,g1,gmat)
 
 
       ! Apply matrix to obtain convolution G3
