@@ -46,53 +46,30 @@
       integer ntst_it,ntst_mf
       real *8 lambda,eps,beta
 
-      integer npt,npo,p,nt,no,i,j,rank,info,pg,npg
-      integer, allocatable :: ipiv(:),tidx(:),oidx(:),mf_tst(:)
-      real *8 one,kerr(2)
-      real *8, allocatable :: kmat(:,:),t(:),om(:),it_tst(:)
+      integer npg,npo,pg,i,j,rank
+      integer, allocatable :: it2cfpiv(:),mf_tst(:)
+      real *8 one
       real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),g(:),gc(:)
       real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:)
-      real *8, allocatable :: gtst_it(:),gtrue_it(:)
+      real *8, allocatable :: it_tst(:),gtst_it(:),gtrue_it(:)
       complex *16, allocatable :: gtst_mf(:),gtrue_mf(:)
 
       one = 1.0d0
 
-      ! --- Build DLR basis, imaginary time grid, transform matrix ---
+      ! Build DLR basis, grid
 
-      ! Set parameters for the fine grid based on lambda
+      rank = 500 ! Upper bound on rank
 
-      call gridparams(lambda,p,npt,npo,nt,no)
+      allocate(dlrrf(rank),dlrit(rank))
 
-
-      ! Get fine composite Chebyshev discretization of K(tau,omega)
-
-      allocate(kmat(nt,no),t(nt),om(no))
-
-      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
-
-
-      ! Select real frequency points for DLR basis
-
-      rank = 500 ! Upper bound on possible rank
-
-      allocate(dlrrf(rank),oidx(rank))
-
-      call dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
-
-
-      ! Get DLR imaginary time grid
-
-      allocate(dlrit(rank),tidx(rank))
-
-      call dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
+      call dlr_buildit(lambda,eps,rank,dlrrf,dlrit)
 
 
       ! Get imaginary time values -> DLR coefficients transform matrix in LU form
 
-      allocate(it2cf(rank,rank),ipiv(rank))
+      allocate(it2cf(rank,rank),it2cfpiv(rank))
 
-      call dlr_it2cf(nt,no,kmat,rank,oidx,tidx,it2cf,ipiv)
-
+      call dlr_it2cf(rank,dlrrf,dlrit,it2cf,it2cfpiv)
 
 
       ! --- Sample Green's function and obtain DLR coefficients ---
@@ -102,7 +79,7 @@
       pg = 24
       npg = npo
       
-      allocate(xgl(pg),wgl(pg),xgj(pg),wgj(pg),pbpg(2*no+1))
+      allocate(xgl(pg),wgl(pg),xgj(pg),wgj(pg),pbpg(2*npg+1))
 
       call gfun_init(pg,npg,pbpg,xgl,wgl,xgj,wgj)
 
@@ -121,7 +98,7 @@
 
       ! Compute coefficients of DLR expansion from samples
 
-      call dlr_expnd(rank,it2cf,ipiv,g,gc)
+      call dlr_expnd(rank,it2cf,it2cfpiv,g,gc)
 
 
       ! --- Evaluate DLR in imaginary time and Matsubara frequency

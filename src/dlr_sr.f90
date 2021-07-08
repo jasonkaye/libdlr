@@ -291,7 +291,7 @@
       end subroutine dlr_rf
 
 
-      subroutine dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
+      subroutine dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit)
 
       ! Select imaginary time DLR nodes
       !
@@ -309,15 +309,13 @@
       ! Output :
       !
       ! dlrit   - selected imaginary time nodes (tau points)
-      ! tidx    - row indices of kmat corresponding to selected
-      !             imaginary time nodes
 
       implicit none
-      integer nt,no,rank,oidx(rank),tidx(rank)
+      integer nt,no,rank,oidx(rank)
       real *8 lambda,t(nt),kmat(nt,no),dlrit(rank)
 
       integer j,k
-      integer, allocatable :: list(:)
+      integer, allocatable :: list(:),tidx(:)
       real *8, allocatable :: tmp(:,:),work(:)
 
       ! --- Select imaginary time nodes by pivoted QR on rows of 
@@ -325,7 +323,7 @@
 
       ! Matrix of selected columns
 
-      allocate(tmp(rank,nt),list(nt),work(nt))
+      allocate(tmp(rank,nt),list(nt),work(nt),tidx(rank))
 
       do j=1,nt
         do k=1,rank
@@ -363,7 +361,7 @@
       end subroutine dlr_it
 
 
-      subroutine dlr_cf2it(nt,no,kmat,rank,oidx,tidx,cf2it)
+      subroutine dlr_cf2it(rank,dlrrf,dlrit,cf2it)
 
       ! Build transform matrix from DLR coefficients to samples on
       ! imaginary time grid. To obtain the samples of a DLR expansion on
@@ -372,14 +370,9 @@
       !
       ! Input:
       !
-      ! nt    - # fine grid points in tau
-      ! no    - # fine grid points in omega
-      ! kmat  - K(tau,omega) on fine grid
       ! rank  - rank of DLR (# basis functions)
-      ! oidx  - column indices of kmat corresponding to selected
-      !           real frequency nodes
-      ! tidx  - row indices of kmat corresponding to selected imaginary
-      !           time nodes
+      ! dlrrf   - selected real frequency nodes (omega points)
+      ! dlrit   - selected imaginary time nodes (tau points)
       !
       ! Output :
       !
@@ -388,23 +381,24 @@
 
 
       implicit none
-      integer nt,no,rank,tidx(rank),oidx(rank)
-      real *8 kmat(nt,no),cf2it(rank,rank)
+      integer rank
+      real *8 dlrrf(rank),dlrit(rank),cf2it(rank,rank)
 
       integer j,k
+      real *8, external :: kfunf_rel
 
-      ! Extract select rows and columns of fine grid K matrix
+      ! Get the matrix K(tau_j,omega_k)
 
       do k=1,rank
         do j=1,rank
-          cf2it(j,k) = kmat(tidx(j),oidx(k))
+          cf2it(j,k) = kfunf_rel(dlrit(j),dlrrf(k))
         enddo
       enddo
 
       end subroutine dlr_cf2it
 
 
-      subroutine dlr_it2cf(nt,no,kmat,rank,oidx,tidx,it2cf,it2cfpiv)
+      subroutine dlr_it2cf(rank,dlrrf,dlrit,it2cf,it2cfpiv)
 
       ! Build transform matrix from samples on imaginary time grid to
       ! DLR coefficients, stored in LU form. To obtain the coefficients
@@ -414,14 +408,9 @@
       !
       ! Input:
       !
-      ! nt        - # fine grid points in tau
-      ! no        - # fine grid points in omega
-      ! kmat      - K(tau,omega) on fine grid
       ! rank      - rank of DLR (# basis functions)
-      ! oidx      - column indices of kmat corresponding to selected
-      !               real frequency nodes
-      ! tidx      - row indices of kmat corresponding to selected
-      !               imaginary time nodes
+      ! dlrrf   - selected real frequency nodes (omega points)
+      ! dlrit   - selected imaginary time nodes (tau points)
       !
       ! Output :
       !
@@ -431,16 +420,17 @@
 
 
       implicit none
-      integer nt,no,rank,tidx(rank),oidx(rank),it2cfpiv(rank)
-      real *8 kmat(nt,no),it2cf(rank,rank)
+      integer rank,it2cfpiv(rank)
+      real *8 dlrrf(rank),dlrit(rank),it2cf(rank,rank)
 
       integer j,k,info
+      real *8, external :: kfunf_rel
 
-      ! Extract select rows and columns of fine grid K matrix
+      ! Get the matrix K(tau_j,omega_k)
 
       do k=1,rank
         do j=1,rank
-          it2cf(j,k) = kmat(tidx(j),oidx(k))
+          it2cf(j,k) = kfunf_rel(dlrit(j),dlrrf(k))
         enddo
       enddo
 
@@ -722,7 +712,7 @@
       ! Input:
       !
       ! nmax    - Matsubara frequency cutoff
-      ! rank      - rank of DLR (# basis functions)
+      ! rank    - rank of DLR (# basis functions)
       ! dlrrf   - selected real frequency nodes (omega points)
       ! dlrmf   - selected Matsubara frequency nodes
       !
@@ -1304,6 +1294,120 @@
 
 
       end subroutine dlr_convmat3
+
+
+      subroutine dlr_buildit(lambda,eps,rank,dlrrf,dlrit)
+
+      ! Build DLR by getting selected real frequencies, and build
+      ! imaginary time grid.
+      !
+      ! Input:
+      !
+      ! lambda  - cutoff parameter
+      ! eps     - DLR error tolerance
+      ! rank    - max possible rank of DLR, defining input size of some
+      !             arrays
+      !
+      ! Output :
+      !
+      ! rank    - rank of DLR (# basis functions)
+      ! dlrrf   - selected real frequency nodes (omega points)
+      ! dlrit   - selected imaginary time nodes (tau points)
+
+      implicit none
+      integer rank
+      real *8 lambda,eps,dlrrf(rank),dlrit(rank)
+
+      integer p,npt,npo,nt,no
+      integer, allocatable :: oidx(:)
+      real *8 kerr(2)
+      real *8, allocatable :: kmat(:,:),t(:),om(:)
+
+
+      ! Set parameters for the fine grid based on lambda
+
+      call gridparams(lambda,p,npt,npo,nt,no)
+
+
+      ! Get fine composite Chebyshev discretization of K(tau,omega)
+
+      allocate(kmat(nt,no),t(nt),om(no))
+
+      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
+
+
+      ! Select real frequency points for DLR basis
+
+      rank = 500 ! Upper bound on possible rank
+
+      allocate(oidx(rank))
+
+      call dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
+
+
+      ! Get DLR imaginary time grid
+
+      call dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit)
+
+      end subroutine dlr_buildit
+
+
+      subroutine dlr_buildmf(lambda,eps,nmax,rank,dlrrf,dlrmf)
+
+      ! Build DLR by getting selected real frequencies, and build
+      ! Matsubara frequency grid.
+      !
+      ! Input:
+      !
+      ! lambda  - cutoff parameter
+      ! eps     - DLR error tolerance
+      ! nmax    - Matsubara frequency cutoff
+      ! rank    - max possible rank of DLR, defining input size of some
+      !             arrays
+      !
+      ! Output :
+      !
+      ! rank    - rank of DLR (# basis functions)
+      ! dlrrf   - selected real frequency nodes (omega points)
+      ! dlrmf   - selected Matsubara frequency nodes
+
+      implicit none
+      integer nmax,rank,dlrmf(rank)
+      real *8 lambda,eps,dlrrf(rank)
+
+      integer p,npt,npo,nt,no
+      integer, allocatable :: oidx(:)
+      real *8 kerr(2)
+      real *8, allocatable :: kmat(:,:),t(:),om(:)
+
+
+      ! Set parameters for the fine grid based on lambda
+
+      call gridparams(lambda,p,npt,npo,nt,no)
+
+
+      ! Get fine composite Chebyshev discretization of K(tau,omega)
+
+      allocate(kmat(nt,no),t(nt),om(no))
+
+      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
+
+
+      ! Select real frequency points for DLR basis
+
+      rank = 500 ! Upper bound on possible rank
+
+      allocate(oidx(rank))
+
+      call dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
+
+
+      ! Get DLR Matsubara frequency grid
+
+      call dlr_mf(nmax,rank,dlrrf,dlrmf)
+
+      end subroutine dlr_buildmf
+
 
 
 

@@ -36,10 +36,10 @@
       integer ntst,nmax
       real *8 lambda,eps,beta
 
-      integer npt,npo,p,nt,no,i,j,rank,info,pg,npg
-      integer, allocatable :: oidx(:),dlrmf(:),ipiv(:)
-      real *8 one,gtrue,errl2,errlinf,kerr(2),gmax,gl2,gtest
-      real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:),dlrrf(:)
+      integer i,j,rank
+      integer, allocatable :: dlrmf(:),mf2cfpiv(:)
+      real *8 one,gtrue,errl2,errlinf,gmax,gl2,gtest
+      real *8, allocatable :: ttst(:),dlrrf(:)
       real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:),gc(:)
       complex *16, allocatable :: g(:),mf2cf(:,:)
 
@@ -55,48 +55,26 @@
       write(6,*) '# test points              = ',ntst
 
 
-      ! --- Build DLR basis, grid, transform matrix ---
+      ! Build DLR basis, grid
 
-      ! Set parameters for the fine grid based on lambda
+      rank = 500 ! Upper bound on rank
 
-      call gridparams(lambda,p,npt,npo,nt,no)
+      allocate(dlrrf(rank),dlrmf(rank))
 
-      ! Get fine composite Chebyshev discretization of K(tau,omega)
+      call dlr_buildmf(lambda,eps,nmax,rank,dlrrf,dlrmf)
 
-      allocate(kmat(nt,no),t(nt),om(no))
-
-      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
 
       write(6,*) ''
-      write(6,*) '-------------- Fine K discretization --------------'
+      write(6,*) '-------------------- DLR basis --------------------'
       write(6,*) ''
-      write(6,*) '# fine grid pts in tau     = ',nt
-      write(6,*) '# fine grid pts in omega   = ',no
-      write(6,*) 'Max rel L^inf err in tau   = ',kerr(1)
-      write(6,*) 'Max rel L^inf err in omega = ',kerr(2)
-
-
-      ! Select real frequency points for DLR basis
-
-      rank = 500 ! Upper bound on possible rank
-
-      allocate(dlrrf(rank),oidx(rank))
-
-      call dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
-
-
-      ! Get DLR Matsubara frequency grid
-
-      allocate(dlrmf(rank))
-
-      call dlr_mf(nmax,rank,dlrrf,dlrmf)
+      write(6,*) 'DLR rank                          = ',rank
 
 
       ! Get Matsubara frequency values -> DLR coefficients transform matrix in LU form
 
-      allocate(mf2cf(rank,rank),ipiv(rank))
+      allocate(mf2cf(rank,rank),mf2cfpiv(rank))
 
-      call dlr_mf2cf(nmax,rank,dlrrf,dlrmf,mf2cf,ipiv)
+      call dlr_mf2cf(nmax,rank,dlrrf,dlrmf,mf2cf,mf2cfpiv)
 
 
       ! --- Compute actual eps-rank of fine grid K matrix by SVD ---
@@ -123,7 +101,7 @@
 
       ! Compute coefficients of DLR expansion from samples
 
-      call dlr_mfexpnd(rank,mf2cf,ipiv,g,gc)
+      call dlr_mfexpnd(rank,mf2cf,mf2cfpiv,g,gc)
 
 
       ! --- Compare DLR with true Green's function ---

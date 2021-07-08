@@ -30,11 +30,10 @@
       integer ntst
       real *8 lambda,eps,beta
 
-      integer npt,npo,p,nt,no,i,j,rank,info,pg,npg
-      integer, allocatable :: ipiv(:),tidx(:),oidx(:)
-      real *8 one,gtrue,gtest,errl2,errlinf,kerr(2),gmax,gl2,tabs
-      real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:)
-      real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:)
+      integer i,j,rank
+      integer, allocatable :: it2cfpiv(:)
+      real *8 one,gtrue,gtest,errl2,errlinf,gmax,gl2
+      real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:)
       real *8, allocatable :: g1(:),g2(:),g3(:)
 
       real *8, allocatable :: phi(:,:),gmat(:,:)
@@ -50,52 +49,20 @@
       write(6,*) '# test points            = ',ntst
 
 
-      ! --- Build DLR basis, grid, transform matrix ---
+      ! Build DLR basis, grid
 
-      ! Set parameters for the fine grid based on lambda
+      rank = 500 ! Upper bound on rank
 
-      call gridparams(lambda,p,npt,npo,nt,no)
+      allocate(dlrrf(rank),dlrit(rank))
 
-      ! Get fine composite Chebyshev discretization of K(tau,omega)
-
-      allocate(kmat(nt,no),t(nt),om(no))
-
-      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
-
-      write(6,*) ''
-      write(6,*) '-------------- Fine K discretization --------------'
-      write(6,*) ''
-      write(6,*) '# fine grid pts in tau     = ',nt
-      write(6,*) '# fine grid pts in omega   = ',no
-      write(6,*) 'Max rel L^inf err in tau   = ',kerr(1)
-      write(6,*) 'Max rel L^inf err in omega = ',kerr(2)
-
-
-      ! Select real frequency points for DLR basis
-
-      rank = 500 ! Upper bound on possible rank
-
-      allocate(dlrrf(rank),oidx(rank))
-
-      call dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
-
-
-      ! Get DLR imaginary time grid
-
-      allocate(dlrit(rank),tidx(rank))
-
-      call dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
-
+      call dlr_buildit(lambda,eps,rank,dlrrf,dlrit)
 
       ! Get imaginary time values -> DLR coefficients transform matrix in LU form
 
-      allocate(it2cf(rank,rank),ipiv(rank))
+      allocate(it2cf(rank,rank),it2cfpiv(rank))
 
-      call dlr_it2cf(nt,no,kmat,rank,oidx,tidx,it2cf,ipiv)
+      call dlr_it2cf(rank,dlrrf,dlrit,it2cf,it2cfpiv)
 
-
-
-      ! --- Compute actual eps-rank of fine grid K matrix by SVD ---
 
       write(6,*) ''
       write(6,*) '-------------------- DLR basis --------------------'
@@ -125,7 +92,7 @@
       allocate(phi(rank*rank,rank))
 
       !call dlr_convtens(beta,rank,dlrrf,dlrit,phi)
-      call dlr_convtens2(beta,rank,dlrrf,dlrit,it2cf,ipiv,phi)
+      call dlr_convtens2(beta,rank,dlrrf,dlrit,it2cf,it2cfpiv,phi)
       !call dlr_convtens3(beta,rank,dlrrf,dlrit,phi)
 
 
@@ -133,8 +100,8 @@
 
       allocate(gmat(rank,rank))
 
-      !call dlr_convmat(rank,phi,it2cf,ipiv,g1,gmat)
-      call dlr_convmat2(rank,phi,it2cf,ipiv,g1,gmat)
+      !call dlr_convmat(rank,phi,it2cf,it2cfpiv,g1,gmat)
+      call dlr_convmat2(rank,phi,it2cf,it2cfpiv,g1,gmat)
       !call dlr_convmat3(rank,phi,g1,gmat)
 
 
@@ -145,7 +112,7 @@
       
       ! Get DLR coefficients of g3
 
-      call dlr_expnd(rank,it2cf,ipiv,g3,g3)
+      call dlr_expnd(rank,it2cf,it2cfpiv,g3,g3)
 
 
       ! Get test points and compare computed G3 against exact

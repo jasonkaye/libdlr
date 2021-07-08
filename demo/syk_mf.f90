@@ -52,7 +52,7 @@
       
       nmu = 1 ! # intermediate problems to solve
       
-      nout = 10000 ! # points at which to output solution
+      nout = 1000 ! # points at which to output solution
 
 
       ! --- Call main test subroutine ---
@@ -73,51 +73,30 @@
       integer nout,maxit,nmu,nmax
       real *8 lambda,eps,fptol,w,beta,mu,c
 
-      integer npt,npo,p,nt,no,i,j,rank,info,pg,npg,numit
-      integer, allocatable :: dlrmf(:),it2cfpiv(:),mf2cfpiv(:),tidx(:),oidx(:)
-      real *8 one,gtest,kerr(2),gtest2
-      real *8, allocatable :: kmat(:,:),t(:),om(:),ttst(:)
-      real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),g(:)
+      integer i,j,rank,info,numit
+      integer, allocatable :: dlrmf(:),it2cfpiv(:),mf2cfpiv(:)
+      real *8 one,gtest,gtest2
+      real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:),g(:)
       real *8, allocatable :: cf2it(:,:),cf2itr(:,:)
       complex *16, allocatable :: mf2cf(:,:),cf2mf(:,:)
 
       one = 1.0d0
 
-      ! --- Build DLR basis, grid, transform matrix ---
 
-      ! Set parameters for the fine grid based on lambda
+      ! Build DLR basis, grid
 
-      call gridparams(lambda,p,npt,npo,nt,no)
+      rank = 500 ! Upper bound on rank
 
+      allocate(dlrrf(rank),dlrit(rank))
 
-      ! Get fine composite Chebyshev discretization of K(tau,omega)
-
-      allocate(kmat(nt,no),t(nt),om(no))
-
-      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
-
-
-      ! Select real frequency points for DLR basis
-
-      rank = 500 ! Upper bound on possible rank
-
-      allocate(dlrrf(rank),oidx(rank))
-
-      call dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
-
-
-      ! Get DLR imaginary time grid
-
-      allocate(dlrit(rank),tidx(rank))
-
-      call dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
+      call dlr_buildit(lambda,eps,rank,dlrrf,dlrit)
 
 
       ! Get imaginary time values -> DLR coefficients transform matrix in LU form
 
       allocate(it2cf(rank,rank),it2cfpiv(rank))
 
-      call dlr_it2cf(nt,no,kmat,rank,oidx,tidx,it2cf,it2cfpiv)
+      call dlr_it2cf(rank,dlrrf,dlrit,it2cf,it2cfpiv)
 
 
       ! Get DLR Matsubara frequency grid
@@ -142,7 +121,7 @@
 
       allocate(cf2it(rank,rank),cf2itr(rank,rank),cf2mf(rank,rank))
 
-      call dlr_cf2it(nt,no,kmat,rank,oidx,tidx,cf2it)
+      call dlr_cf2it(rank,dlrrf,dlrit,cf2it)
 
       call dlr_cf2itr(rank,dlrrf,dlrit,cf2itr)
 

@@ -58,27 +58,6 @@
       end function kfunf_mf
 
 
-
-      real *8 function kfunf2(t,om)
-
-      ! Fermionic kernel K(tau,omega), tau in relative format
-
-      implicit none
-      real *8 t,om
-
-      real *8, external :: kfunf
-
-        if (t.ge.0.0d0) then
-          kfunf2 = kfunf(t,om)
-        else
-          kfunf2 = kfunf(-t,-om)
-        endif
-
-      end function kfunf2
-
-
-
-
       real *16 function qkfunf(t,om)
 
       ! Fermionic kernel K(tau,omega), tau in absolute format
@@ -94,8 +73,6 @@
       endif
 
       end function qkfunf
-
-
 
 
       real *16 function qkfunf_rel(t,om)
