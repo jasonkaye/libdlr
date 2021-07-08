@@ -4,6 +4,7 @@ using Numpy and Scipy.
 
 Author: Hugo U.R. Strand (2021) """
 
+import time
 
 import numpy as np
 import numpy.polynomial.legendre as leg
@@ -37,28 +38,38 @@ class dlrBase(object):
     def __init__(self, lamb, eps=1e-15, fb=b'f',
                  max_rank=500, nmax=None, verbose=False, python_impl=False):
 
+        t_start = time.time()
+        
         self.xi = {b'f':-1., b'b':1.}[fb]
         
         self.lamb = lamb
         self.eps = eps
 
         if nmax is None: nmax = int(lamb)
+
+        t = time.time()
+        self.kmat, self.t, self.om, self.err = kernel_discretization(self.lamb)
+        print(f'kernel {time.time() - t} s')
         
-        self.kmat, self.t, self.om, self.err = kernel_discretization(self.lamb)  
-        
+        t = time.time()
         self.rank = np.linalg.matrix_rank(self.kmat, tol=eps * lamb) 
+        print(f'rank {time.time() - t} s')
 
         # -- Select real frequency points
 
+        t = time.time()
         _, oidx = scipy_qr(self.kmat, pivoting=True, mode='r')
         self.oidx = oidx[:self.rank]
         self.dlrrf = self.om[self.oidx]
+        print(f'qr w {time.time() - t} s')
 
         # -- Select imaginary time points
 
+        t = time.time()
         _, tidx = scipy_qr(self.kmat[:, self.oidx].T, pivoting=True, mode='r')
         self.tidx = tidx[:self.rank]
         self.dlrit = self.t[self.tidx]
+        print(f'qr t {time.time() - t} s')
         
         # -- Transform matrix (LU-decomposed)
 
@@ -82,6 +93,7 @@ class dlrBase(object):
 
         self.T_qx = self.kmat_mf[self.mfidx, :]
         self.dlrmf2cf, self.mf2cfpiv = lu_factor(self.T_qx)
+        print(f'dlr init done {time.time() - t_start} s')
 
 
     # -- Imaginary time
@@ -257,7 +269,7 @@ class dlrBase(object):
         return C_xaa
 
 
-    def convolution(self, A_xaa, B_xaa, beta=1.):
+    def convolution_dense(self, A_xaa, B_xaa, beta=1.):
         
         n, na, _ = A_xaa.shape
         A_AA = self.convolution_matrix(A_xaa, beta).reshape((n*na, n*na))
@@ -268,7 +280,7 @@ class dlrBase(object):
         return C_xaa
     
 
-    def convolution_stab_lo_mem(self, A_xaa, B_xaa, beta=1.):
+    def convolution(self, A_xaa, B_xaa, beta=1.):
         
         n, na, _ = A_xaa.shape
 
@@ -277,15 +289,12 @@ class dlrBase(object):
 
         I = np.eye(len(w_x))
         W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
-
         k1_x = -np.squeeze(kernel(np.ones(1), w_x))
 
-        AB_xaa = np.matmul(A_xaa, B_xaa)
-
-        C_xaa = k1_x[:, None, None] * AB_xaa + \
-            np.matmul(np.tensordot(W_xx, A_xaa, axes=(0, 0)), B_xaa) + \
-            np.matmul(A_xaa, np.tensordot(W_xx, B_xaa, axes=(0, 0)))
-
+        WA_xaa = np.matmul(W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
+        WB_xaa = np.matmul(W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
+        C_xaa = np.matmul(k1_x[:, None, None] * A_xaa + WA_xaa, B_xaa) + np.matmul(A_xaa, WB_xaa)
+        
         for a in range(na):
             for b in range(na):
                 t_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx * A_xaa[:, a, b][None, :])
@@ -403,7 +412,7 @@ class dlrBase(object):
         return g_xaa
 
 
-    def dyson_dlr_integro(self, H_aa, Sigma_xaa, beta, S_aa=None, iterative=False):
+    def dyson_dlr_integro(self, H_aa, Sigma_xaa, beta, S_aa=None, iterative=False, lomem=False):
 
         na = H_aa.shape[0]
         n = Sigma_xaa.shape[0]
@@ -418,18 +427,46 @@ class dlrBase(object):
 
             from scipy.sparse.linalg import LinearOperator
             from scipy.sparse.linalg import gmres as scipy_gmres
-            
-            def Amatvec(x_Aa):
-                x_xaa = x_Aa.reshape((n, na, na))
-                y_xaa = x_xaa.copy()
-                y_xaa -= self.convolution(g0Sigma_xaa, x_xaa, beta)
+
+            if lomem:
+                def Amatvec(x_Aa):
+                    x_xaa = x_Aa.reshape((n, na, na))
+                    y_xaa = x_xaa.copy()
+                    y_xaa -= self.convolution(g0Sigma_xaa, x_xaa, beta)
+                    return self.tau_from_dlr(y_xaa).reshape((n*na, na))
+            else:
+                C_AA = self.convolution_matrix(g0Sigma_xaa, beta).reshape((n*na, n*na))
+                def Amatvec(x_Aa):
+                    #return x_Aa - C_AA @ x_Aa
+                    y_Aa = x_Aa - C_AA @ x_Aa
+                    return self.tau_from_dlr(y_Aa.reshape((n, na, na))).reshape((n*na, na))
+
+            I_aa = np.eye(na)
+            g0Sigma_qaa = self.matsubara_from_dlr(g0Sigma_xaa, beta)
+            M_qaa = np.linalg.inv(I_aa[None, ...] - g0Sigma_qaa)
+
+            def Mmatvec(x_Aa):
+                x_iaa = x_Aa.reshape((n, na, na))
+                x_qaa = self.matsubara_from_dlr(self.dlr_from_tau(x_iaa), beta)
+                y_qaa = M_qaa @ x_qaa
+                y_xaa = self.dlr_from_matsubara(y_qaa, beta)
                 return y_xaa.reshape((n*na, na))
 
             D_AA = LinearOperator(matvec=Amatvec, shape=(n * na, n * na), dtype=complex)
-            b_Aa = g0_xaa.reshape((n*na, na))
+            M_AA = LinearOperator(matvec=Mmatvec, shape=(n * na, n * na), dtype=complex)
+            #b_Aa = g0_xaa.reshape((n*na, na))
+            b_Aa = g0_iaa.reshape((n*na, na))
 
-            g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, tol=1e-14)
+            x0_Aa = M_AA.matvec(g0_iaa.reshape((n*na, na)))
+            #x0_Aa = M_AA.matvec(g0_xaa.reshape((n*na, na)))
+            
+            #g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, tol=1e-14)
+            #g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, x0=x0_Aa, tol=1e-14)
+            g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, x0=x0_Aa, M=M_AA, tol=1e-14)
+            #g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, x0=x0_Aa*0, M=M_AA, tol=1e-14)
             g_xaa = g_Aa.reshape((n, na, na))
+
+            print(f'diff x0 = {np.max(np.abs(self.tau_from_dlr(x0_Aa.reshape((n, na, na))) - self.tau_from_dlr(g_Aa.reshape((n,na,na)))))}')
 
         else:
 

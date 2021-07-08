@@ -10,11 +10,16 @@ from pydlr import dlr
 
 def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
 
-    lamb = 8. * beta
+    t = time.time()
+    lamb = 10. * beta
+    print(f'lambd = {lamb}')
+    
     d = dlr(lamb=lamb)
+    print(f'init dlr {time.time() - t} s')
 
     e0, e1 = -0.55, 0.3
-    V = 0.2
+    #V = 0.2
+    V = 1.2
 
     E_aa = np.array([
         [e0, V],
@@ -66,7 +71,7 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
     G_iaa_dlr_dyson_int = d.tau_from_dlr(G_xaa_dlr_dyson_int)
 
     t = time.time()
-    G_xaa_dlr_dyson_int_iter = d.dyson_dlr_integro(np.array([[e0]]), V**2 * g1_xaa, beta, iterative=True)
+    G_xaa_dlr_dyson_int_iter = d.dyson_dlr_integro(np.array([[e0]]), V**2 * g1_xaa, beta, iterative=True, lomem=True)
     print(f'gmres {time.time() - t} s')
     G_iaa_dlr_dyson_int_iter = d.tau_from_dlr(G_xaa_dlr_dyson_int_iter)
 
@@ -113,7 +118,7 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
 
 if __name__ == '__main__':
 
-    betas = 8 * 2 ** np.arange(0, 10)
+    betas = 8 * 2 ** np.arange(0, 12)
     #betas = [2048]
     print(f'betas = {betas}')
 
@@ -134,4 +139,6 @@ if __name__ == '__main__':
     plt.legend(loc='best')
     plt.loglog([], [])
     plt.xlabel(r'$\beta$')
+
+    plt.savefig('figure_dyson_alg_cf.pdf')
     plt.show()
