@@ -4,9 +4,13 @@ cmake_minimum_required(VERSION 3.12)
 # project name and language
 project(dlr LANGUAGES Fortran)
 
+# Path for local cmake modules
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 option(with_python "Install python module: pydlr" OFF)
 option(BUILD_SHARED_LIBS "Build shared library, turn OFF for static." ON)
 option(POSITION_INDEPENDENT_CODE "Use -fPIC by default" ON)
+option(BUILD_DOCS "Build documentation" OFF)
 
 include(CTest)
 find_package(BLAS REQUIRED)
@@ -128,4 +132,10 @@ add_test(NAME python-test_gridding
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
     )
 
+endif()
+
+# Documentation
+
+if(BUILD_DOCS)
+  add_subdirectory(doc)
 endif()
