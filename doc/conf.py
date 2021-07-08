@@ -54,7 +54,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'Discrete Lehman Representation (DLR)'
 copyright = u'2021, The Simons Foundation & Hugo U.R. Strand'
-author = u'Jason Kayne & Hugo U.R. Strand'
+author = u'Jason Kaye & Hugo U.R. Strand'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
