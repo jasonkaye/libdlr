@@ -17,6 +17,21 @@ from scipy.linalg import lu_solve, lu_factor
 from .kernel import kernel, kernel_discretization, fermi_function
 
 
+class solver_wrapper:
+
+    def __init__(self, solver):
+        self.solver = solver
+
+    def callback(self, x):
+        self.iter += 1
+
+    def __call__(self, A, b, **kwargs):
+        self.iter = 1
+        ret = self.solver(A, b, callback=self.callback, **kwargs)
+        print('N iter:', self.iter)
+        return ret
+    
+
 class dlrBase(object):
 
     def __init__(self, lamb, eps=1e-15, fb=b'f',
@@ -147,7 +162,7 @@ class dlrBase(object):
     
     # -- Mathematical operations
 
-    def convolution(self, A_xaa, B_xaa, beta=1.):
+    def convolution_instab(self, A_xaa, B_xaa, beta=1.):
 
         tau_l = self.get_tau(1.)
         w_x = self.dlrrf
@@ -168,6 +183,118 @@ class dlrBase(object):
         
         return C_xaa
 
+
+    def convolution_stab(self, A_xaa, B_xaa, beta=1.):
+        
+        n, na, _ = A_xaa.shape
+        A_AA = self.convolution_matrix(A_xaa, beta).reshape((n*na, n*na))
+        B_Aa = B_xaa.reshape((n*na, na))
+        C_Aa= A_AA @ B_Aa
+        C_xaa_ref = C_Aa.reshape((n, na, na))
+
+        if True:
+            tau_l = self.get_tau(1.)
+            w_x = self.dlrrf
+
+            I = np.eye(len(w_x))
+            W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
+
+            k1_x = -np.squeeze(kernel(np.ones(1), w_x))
+
+            AB_xaa = np.matmul(A_xaa, B_xaa)
+
+            C_xaa_1 = k1_x[:, None, None] * AB_xaa
+
+            #C_xaa_2 = self.dlr_from_tau(tau_l[:, None, None] * self.tau_from_dlr(AB_xaa))
+
+            #C_xaa_2 = np.zeros_like(C_xaa_1)
+            #for i in range(n):
+            #    t_xaa = self.dlr_from_tau(np.einsum('i,i,ab->iab', tau_l, self.T_lx[:, i], A_xaa[i]))
+            #    C_xaa_2 += np.einsum('xab,bc->xac', t_xaa, B_xaa[i])
+
+            C_xaa_2 = np.zeros_like(C_xaa_1)
+            for a in range(na):
+                for b in range(na):
+                    t_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx * A_xaa[:, a, b][None, :])
+                    C_xaa_2[:, a, :] += np.einsum('xy,yc->xc', t_xx, B_xaa[:, b, :])
+                
+            #C_xaa_2 = np.einsum('xyab,ybc->xac', self.dlr_from_tau(np.einsum('i,ix,xab->ixab', tau_l, self.T_lx, A_xaa)), B_xaa)
+
+                
+            C_xaa_3 = np.matmul(np.tensordot(W_xx, A_xaa, axes=(0, 0)), B_xaa)
+            C_xaa_4 = np.matmul(A_xaa, np.tensordot(W_xx, B_xaa, axes=(0, 0)))
+
+            C_xaa = C_xaa_1 + C_xaa_2 + C_xaa_3 + C_xaa_4
+
+            C_xaa_1_p = k1_x[:, None, None] * A_xaa
+            C_xxaa_2_p = self.dlr_from_tau(np.einsum('l,lx,x...->lx...', tau_l, self.T_lx, A_xaa))
+            C_xaa_3_p = np.tensordot(W_xx, A_xaa, axes=(0, 0))
+            C_xxaa_4_p = A_xaa[:, None, ...] * W_xx.T[:, :, None, None]
+
+            C_xaa_1_ref = np.matmul(C_xaa_1_p, B_xaa) # Done
+            C_xaa_2_ref = np.einsum('xyab,ybc->xac', C_xxaa_2_p, B_xaa)
+            C_xaa_3_ref = np.matmul(C_xaa_3_p, B_xaa) # Done
+            C_xaa_4_ref = np.einsum('xyab,ybc->xac', C_xxaa_4_p, B_xaa) # Done
+
+            C_xaa_ref2 = C_xaa_1_ref + C_xaa_2_ref + C_xaa_3_ref + C_xaa_4_ref
+            
+            np.testing.assert_array_almost_equal(C_xaa_1, C_xaa_1_ref)
+            #np.testing.assert_array_almost_equal(C_xaa_2, C_xaa_2_ref) # Breaks!
+            np.testing.assert_array_almost_equal(C_xaa_3, C_xaa_3_ref)
+            np.testing.assert_array_almost_equal(C_xaa_4, C_xaa_4_ref)
+            
+            C_xaa *= beta            
+            C_xaa_ref2 *= beta            
+
+        xdiff = np.max(np.abs(C_xaa - C_xaa_ref))
+        xdiff2 = np.max(np.abs(C_xaa_ref2 - C_xaa_ref))
+        idiff = np.max(np.abs(self.tau_from_dlr(C_xaa) - self.tau_from_dlr(C_xaa_ref)))
+        idiff2 = np.max(np.abs(self.tau_from_dlr(C_xaa_ref2) - self.tau_from_dlr(C_xaa_ref)))
+        print(f'idiff = {idiff}, xdiff = {xdiff}, idiff2 = {idiff2}, xdiff2 = {xdiff2}')
+
+        #if xdiff > 0.: exit()
+        
+        return C_xaa
+
+
+    def convolution(self, A_xaa, B_xaa, beta=1.):
+        
+        n, na, _ = A_xaa.shape
+        A_AA = self.convolution_matrix(A_xaa, beta).reshape((n*na, n*na))
+        B_Aa = B_xaa.reshape((n*na, na))
+        C_Aa= A_AA @ B_Aa
+        C_xaa = C_Aa.reshape((n, na, na))
+
+        return C_xaa
+    
+
+    def convolution_stab_lo_mem(self, A_xaa, B_xaa, beta=1.):
+        
+        n, na, _ = A_xaa.shape
+
+        tau_l = self.get_tau(1.)
+        w_x = self.dlrrf
+
+        I = np.eye(len(w_x))
+        W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
+
+        k1_x = -np.squeeze(kernel(np.ones(1), w_x))
+
+        AB_xaa = np.matmul(A_xaa, B_xaa)
+
+        C_xaa = k1_x[:, None, None] * AB_xaa + \
+            np.matmul(np.tensordot(W_xx, A_xaa, axes=(0, 0)), B_xaa) + \
+            np.matmul(A_xaa, np.tensordot(W_xx, B_xaa, axes=(0, 0)))
+
+        for a in range(na):
+            for b in range(na):
+                t_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx * A_xaa[:, a, b][None, :])
+                C_xaa[:, a, :] += np.einsum('xy,yc->xc', t_xx, B_xaa[:, b, :])
+
+        C_xaa *= beta            
+        
+        return C_xaa
+    
 
     def convolution_matrix(self, A_xaa, beta=1.):
 
@@ -275,6 +402,47 @@ class dlrBase(object):
 
         return g_xaa
 
+
+    def dyson_dlr_integro(self, H_aa, Sigma_xaa, beta, S_aa=None, iterative=False):
+
+        na = H_aa.shape[0]
+        n = Sigma_xaa.shape[0]
+        I_aa = np.eye(na)
+
+        g0_iaa = self.free_greens_function_tau(H_aa, beta, S_aa=S_aa)
+        g0_xaa = self.dlr_from_tau(g0_iaa)
+
+        g0Sigma_xaa = self.convolution(g0_xaa, Sigma_xaa, beta)
+        
+        if iterative:
+
+            from scipy.sparse.linalg import LinearOperator
+            from scipy.sparse.linalg import gmres as scipy_gmres
+            
+            def Amatvec(x_Aa):
+                x_xaa = x_Aa.reshape((n, na, na))
+                y_xaa = x_xaa.copy()
+                y_xaa -= self.convolution(g0Sigma_xaa, x_xaa, beta)
+                return y_xaa.reshape((n*na, na))
+
+            D_AA = LinearOperator(matvec=Amatvec, shape=(n * na, n * na), dtype=complex)
+            b_Aa = g0_xaa.reshape((n*na, na))
+
+            g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, tol=1e-14)
+            g_xaa = g_Aa.reshape((n, na, na))
+
+        else:
+
+            #D_AA = np.kron(self.T_lx, I_aa) - self.tau_from_dlr(self.convolution_matrix(g0Sigma_xaa, beta)).reshape((n*na, n*na))        
+            #b_Aa = g0_iaa.reshape((n*na, na))
+
+            D_AA = np.kron(np.eye(n), I_aa) - self.convolution_matrix(g0Sigma_xaa, beta).reshape((n*na, n*na))
+            b_Aa = g0_xaa.reshape((n*na, na))
+
+            g_xaa = np.linalg.solve(D_AA, b_Aa).reshape((n, na, na))
+
+        return g_xaa
+    
     
     def volterra_matsubara(self, g_qaa, Sigma_qaa, beta):
 
