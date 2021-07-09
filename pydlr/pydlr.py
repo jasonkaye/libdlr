@@ -172,7 +172,7 @@ class dlrBase(object):
 
     def convolution_matrix(self, A_xaa, beta=1.):
 
-        """ Fast DLR convolution matrix construction with scaling: O(N^3) flops and O(N^2) storage. 
+        """ Fast DLR convolution matrix construction with scaling: O(N^3*M^2) flops and O(N^2*M^2) storage. 
 
         Author: Hugo U.R. Strand """
         
@@ -199,7 +199,7 @@ class dlrBase(object):
 
     def convolution(self, A_xaa, B_xaa, beta=1.):
 
-        """ Fast DLR convolution with scaling: O(N^2) flops and O(N) storage.
+        """ Fast DLR convolution with scaling: O(N^3*M^3) flops and O(N^2 + N*M^2) storage.
 
         Author: Hugo U.R. Strand """
         
@@ -223,7 +223,7 @@ class dlrBase(object):
                 t_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx * A_xaa[:, a, b][None, :])
                 C_xaa[:, a, :] += np.einsum('xy,yc->xc', t_xx, B_xaa[:, b, :])
 
-        C_xaa *= beta            
+        C_xaa *= beta
         
         return C_xaa
     
