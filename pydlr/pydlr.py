@@ -89,6 +89,15 @@ class dlrBase(object):
 
         print(f'lu mats {time.time() - t} s')
 
+        tau_l = self.get_tau(1.)
+        w_x = self.dlrrf
+
+        I = np.eye(len(w_x))
+        self.W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
+
+        self.k1_x = -np.squeeze(kernel(np.ones(1), w_x))
+        self.TtT_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx)
+
         print(f'dlr init done {time.time() - t_start} s')
 
 
@@ -204,17 +213,11 @@ class dlrBase(object):
         Author: Hugo U.R. Strand """
         
         n, na, _ = A_xaa.shape
-
         tau_l = self.get_tau(1.)
-        w_x = self.dlrrf
 
-        I = np.eye(len(w_x))
-        W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
-        k1_x = -np.squeeze(kernel(np.ones(1), w_x))
-
-        WA_xaa = np.matmul(W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
-        WB_xaa = np.matmul(W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
-        C_xaa = np.matmul(k1_x[:, None, None] * A_xaa + WA_xaa, B_xaa) + np.matmul(A_xaa, WB_xaa)
+        WA_xaa = np.matmul(self.W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
+        WB_xaa = np.matmul(self.W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
+        C_xaa = np.matmul(self.k1_x[:, None, None] * A_xaa + WA_xaa, B_xaa) + np.matmul(A_xaa, WB_xaa)
 
         # Stabilized version of the tau dependent term in the fast convolution
         
@@ -252,6 +255,28 @@ class dlrBase(object):
         return C_xaa
 
 
+    def convolution_instab_opt(self, A_xaa, B_xaa, beta=1.):
+
+        n, na, _ = A_xaa.shape
+        
+        WA_xaa = np.matmul(self.W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
+        C_xaa = np.matmul(WA_xaa, B_xaa)
+        del WA_xaa
+        
+        WB_xaa = np.matmul(self.W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
+        C_xaa += np.matmul(A_xaa, WB_xaa)
+        del WB_xaa
+
+        AB_xaa = np.matmul(A_xaa, B_xaa)
+        C_xaa += self.k1_x[:, None, None] * AB_xaa
+        C_xaa += np.matmul(self.TtT_xx, AB_xaa.reshape((n, na*na))).reshape((n, na, na))
+        del AB_xaa
+        
+        C_xaa *= beta
+        
+        return C_xaa
+
+    
     def convolution_dense(self, A_xaa, B_xaa, beta=1.):
         
         n, na, _ = A_xaa.shape
@@ -348,7 +373,7 @@ class dlrBase(object):
 
 
     def dyson_dlr(self, H_aa, Sigma_xaa, beta, S_aa=None,
-                  iterative=False, lomem=False, verbose=False, tol=1e-12):
+                  iterative=False, lomem=False, verbose=False, fastconv=False, tol=1e-12):
 
         na = H_aa.shape[0]
         n = Sigma_xaa.shape[0]
@@ -357,7 +382,9 @@ class dlrBase(object):
         g0_iaa = self.free_greens_function_tau(H_aa, beta, S_aa=S_aa)
         g0_xaa = self.dlr_from_tau(g0_iaa)
 
-        g0Sigma_xaa = self.convolution(g0_xaa, Sigma_xaa, beta)
+        convolution = self.convolution_instab_opt if fastconv else self.convolution
+        
+        g0Sigma_xaa = convolution(g0_xaa, Sigma_xaa, beta)
         
         if iterative:
 
@@ -368,7 +395,7 @@ class dlrBase(object):
                 def Amatvec(x_Aa):
                     x_xaa = x_Aa.reshape((n, na, na))
                     y_xaa = x_xaa.copy()
-                    y_xaa -= self.convolution(g0Sigma_xaa, x_xaa, beta)
+                    y_xaa -= convolution(g0Sigma_xaa, x_xaa, beta)
                     return self.tau_from_dlr(y_xaa).reshape((n*na, na))
             else:
                 C_AA = self.convolution_matrix(g0Sigma_xaa, beta).reshape((n*na, n*na))
@@ -392,7 +419,7 @@ class dlrBase(object):
             M_AA = LinearOperator(matvec=Mmatvec, shape=(n * na, n * na), dtype=complex)
             b_Aa = g0_iaa.reshape((n*na, na))
 
-            x0_Aa = M_AA.matvec(g0_iaa.reshape((n*na, na)))
+            x0_Aa = M_AA.matvec(b_Aa)
             
             g_Aa, info = solver_wrapper(scipy_gmres, verbose=verbose)(D_AA, b_Aa, x0=x0_Aa, M=M_AA, tol=tol)
             g_xaa = g_Aa.reshape((n, na, na))

@@ -74,6 +74,12 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
     print(f'gmres {time.time() - t} s')
     G_iaa_dlr_dyson_int_iter = d.tau_from_dlr(G_xaa_dlr_dyson_int_iter)
 
+    t = time.time()
+    G_xaa_dlr_dyson_int_iter_fast = d.dyson_dlr(
+        np.array([[e0]]), V**2 * g1_xaa, beta, iterative=True, lomem=True, verbose=True, fastconv=True, tol=1e-14)
+    print(f'gmres {time.time() - t} s')
+    G_iaa_dlr_dyson_int_iter_fast = d.tau_from_dlr(G_xaa_dlr_dyson_int_iter_fast)
+    
     #np.testing.assert_array_almost_equal(G_qaa, G_qaa_dyson_dlr)
     #np.testing.assert_array_almost_equal(G_iaa, G_iaa_dyson_dlr)
 
@@ -82,12 +88,14 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
     err_dlr_dyson = np.max(np.abs(G_iaa - G_iaa_dlr_dyson))
     err_dlr_dyson_int = np.max(np.abs(G_iaa - G_iaa_dlr_dyson_int))
     err_dlr_dyson_int_iter = np.max(np.abs(G_iaa - G_iaa_dlr_dyson_int_iter))
+    err_dlr_dyson_int_iter_fast = np.max(np.abs(G_iaa - G_iaa_dlr_dyson_int_iter_fast))
 
     print(f'err_mat_volt  = {err_mat_volt}')
     print(f'err_mat_dyson = {err_mat_dyson}')
     print(f'err_dlr_dyson = {err_dlr_dyson}')
     print(f'err_dlr_dyson_int = {err_dlr_dyson_int}')
     print(f'err_dlr_dyson_int_iter = {err_dlr_dyson_int_iter}')
+    print(f'err_dlr_dyson_int_iter_fast = {err_dlr_dyson_int_iter_fast}')
 
     if verbose:
         plt.figure(figsize=(10, 12))
@@ -113,7 +121,7 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
 
         plt.show(); exit()
 
-    return err_mat_volt, err_mat_dyson, err_dlr_dyson, err_dlr_dyson_int, err_dlr_dyson_int_iter
+    return err_mat_volt, err_mat_dyson, err_dlr_dyson, err_dlr_dyson_int, err_dlr_dyson_int_iter, err_dlr_dyson_int_iter_fast
     
 
 if __name__ == '__main__':
@@ -126,16 +134,17 @@ if __name__ == '__main__':
     for beta in betas:
         print('-'*72)
         print(f'beta = {beta}')
-        mv, md, dd, di, dii = test_dyson_and_volterra_matsubara(beta=beta, verbose=False)
-        errs.append((mv, md, dd, di, dii))
+        mv, md, dd, di, dii, diif = test_dyson_and_volterra_matsubara(beta=beta, verbose=False)
+        errs.append((mv, md, dd, di, dii, diif))
 
-    mv, md, dd, di, dii = np.array(errs).T
+    mv, md, dd, di, dii, diif = np.array(errs).T
 
     plt.plot(betas, mv, '.-', label='matsubara dyson integro')
     plt.plot(betas, md, '.-', label='matsubara dyson inverse')
     plt.plot(betas, dd, '.-', label='dlr dyson integro-diff')
     plt.plot(betas, di, '.-', label='dlr dyson integro')
     plt.plot(betas, dii, '.-', label='dlr dyson integro (gmres)')
+    plt.plot(betas, diif, '.-', label='dlr dyson integro (gmres) fast conv')
     plt.legend(loc='best')
     plt.loglog([], [])
     plt.xlabel(r'$\beta$')
