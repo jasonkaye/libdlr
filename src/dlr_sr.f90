@@ -965,157 +965,157 @@
 
 
 
-      subroutine dlr_convtens3(beta,rank,dlrrf,dlrit,phi)
-
-      ! Get tensor phi_{jkl} used to take the values of a DLR expansion at
-      ! the DLR imaginary time nodes to the matrix A of convolution by
-      ! the corresponding DLR expansion.
-      !
-      ! A is applied to a vector of values of a function at the DLR
-      ! imaginary time nodes, and returns the
-      ! convolution at the DLR imaginary time nodes.
-      !
-      ! Given phi, the matrix A of convolution by a function with values
-      ! g_l at the DLR imaginary time nodes  is given by
-      !
-      ! A_jk = sum_l phi_jkl g_l.
-      !
-      ! We note that forming this tensor requires computations in
-      ! quadruple precision arithmetic to circumvent a numerical
-      ! instability, but dlrrf and dlrit do not need
-      ! to be computed to quadruple precision, and the tensor phi is
-      ! returned in double precision.
-      !
-      ! Input:
-      !
-      ! beta  - inverse temperature
-      ! rank  - rank of DLR (# basis functions)
-      ! dlrrf - selected real frequency nodes (omega points)
-      ! dlrit - selected imaginary time nodes (tau points)
-      !
-      ! Output:
-      !
-      ! phi   - convolution tensor
-
-
-      implicit none
-      integer rank
-      real *8 beta,dlrrf(rank),dlrit(rank)
-      real *8 phi(rank*rank,rank)
-      real *8, external :: kfun
-
-      integer j,k,l,info
-      integer, allocatable :: ipvt(:)
-      real *16, allocatable :: phitmp(:,:,:),phitmp2(:,:),it2cf(:,:)
-      real *16, allocatable :: qdlrit(:),qdlrrf(:)
-      real *16, external :: qkfunf,qkfunf_rel
-
-
-      allocate(qdlrit(rank),qdlrrf(rank))
-      allocate(phitmp(rank,rank,rank),phitmp2(rank,rank*rank))
-      allocate(it2cf(rank,rank),ipvt(rank))
-
-      qdlrit = dlrit
-      qdlrrf = dlrrf
-
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-
-            if (k.ne.l) then
-
-              phitmp(j,k,l) = (qkfunf_rel(qdlrit(j),qdlrrf(l)) -&
-                qkfunf_rel(qdlrit(j),qdlrrf(k)))/(qdlrrf(k)-qdlrrf(l))
-
-            else
-
-              if (dlrit(j).gt.0.0d0) then
-
-                phitmp(j,k,l) = (qdlrit(j)-qkfunf(1.0q0,qdlrrf(k)))*&
-                  qkfunf_rel(qdlrit(j),qdlrrf(k))
-
-              else
-
-                phitmp(j,k,l) = (qdlrit(j)+qkfunf(0.0q0,qdlrrf(k)))*&
-                  qkfunf_rel(qdlrit(j),qdlrrf(k))
-
-              endif
-            endif
-
-          enddo
-        enddo
-      enddo
-
-
-
-      do k=1,rank
-        do j=1,rank
-          it2cf(j,k) = qkfunf_rel(qdlrit(j),qdlrrf(k))
-        enddo
-      enddo
-
-      call qgefa(it2cf,rank,rank,ipvt,info)
-
-
-
-
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-            phitmp2(l,(k-1)*rank+j) = phitmp(j,k,l)
-          enddo
-        enddo
-      enddo
-
-      do k=1,rank*rank
-        call qgesl(it2cf,rank,rank,ipvt,phitmp2(:,k),1)
-      enddo
-            
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-            phitmp(j,k,l) = phitmp2(l,(k-1)*rank+j)
-          enddo
-        enddo
-      enddo
-
-
-
-
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-            phitmp2(k,(l-1)*rank+j) = phitmp(j,k,l)
-          enddo
-        enddo
-      enddo
-
-      do k=1,rank*rank
-        call qgesl(it2cf,rank,rank,ipvt,phitmp2(:,k),1)
-      enddo
-            
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-            phitmp(j,k,l) = phitmp2(k,(l-1)*rank+j)
-          enddo
-        enddo
-      enddo
-
-
-
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-            phi((k-1)*rank+j,l) = phitmp(j,k,l)
-          enddo
-        enddo
-      enddo
-
-
-      phi = beta*phi
-
-      end subroutine dlr_convtens3
+!      subroutine dlr_convtens3(beta,rank,dlrrf,dlrit,phi)
+!
+!      ! Get tensor phi_{jkl} used to take the values of a DLR expansion at
+!      ! the DLR imaginary time nodes to the matrix A of convolution by
+!      ! the corresponding DLR expansion.
+!      !
+!      ! A is applied to a vector of values of a function at the DLR
+!      ! imaginary time nodes, and returns the
+!      ! convolution at the DLR imaginary time nodes.
+!      !
+!      ! Given phi, the matrix A of convolution by a function with values
+!      ! g_l at the DLR imaginary time nodes  is given by
+!      !
+!      ! A_jk = sum_l phi_jkl g_l.
+!      !
+!      ! We note that forming this tensor requires computations in
+!      ! quadruple precision arithmetic to circumvent a numerical
+!      ! instability, but dlrrf and dlrit do not need
+!      ! to be computed to quadruple precision, and the tensor phi is
+!      ! returned in double precision.
+!      !
+!      ! Input:
+!      !
+!      ! beta  - inverse temperature
+!      ! rank  - rank of DLR (# basis functions)
+!      ! dlrrf - selected real frequency nodes (omega points)
+!      ! dlrit - selected imaginary time nodes (tau points)
+!      !
+!      ! Output:
+!      !
+!      ! phi   - convolution tensor
+!
+!
+!      implicit none
+!      integer rank
+!      real *8 beta,dlrrf(rank),dlrit(rank)
+!      real *8 phi(rank*rank,rank)
+!      real *8, external :: kfun
+!
+!      integer j,k,l,info
+!      integer, allocatable :: ipvt(:)
+!      real *16, allocatable :: phitmp(:,:,:),phitmp2(:,:),it2cf(:,:)
+!      real *16, allocatable :: qdlrit(:),qdlrrf(:)
+!      real *16, external :: qkfunf,qkfunf_rel
+!
+!
+!      allocate(qdlrit(rank),qdlrrf(rank))
+!      allocate(phitmp(rank,rank,rank),phitmp2(rank,rank*rank))
+!      allocate(it2cf(rank,rank),ipvt(rank))
+!
+!      qdlrit = dlrit
+!      qdlrrf = dlrrf
+!
+!      do l=1,rank
+!        do k=1,rank
+!          do j=1,rank
+!
+!            if (k.ne.l) then
+!
+!              phitmp(j,k,l) = (qkfunf_rel(qdlrit(j),qdlrrf(l)) -&
+!                qkfunf_rel(qdlrit(j),qdlrrf(k)))/(qdlrrf(k)-qdlrrf(l))
+!
+!            else
+!
+!              if (dlrit(j).gt.0.0d0) then
+!
+!                phitmp(j,k,l) = (qdlrit(j)-qkfunf(1.0q0,qdlrrf(k)))*&
+!                  qkfunf_rel(qdlrit(j),qdlrrf(k))
+!
+!              else
+!
+!                phitmp(j,k,l) = (qdlrit(j)+qkfunf(0.0q0,qdlrrf(k)))*&
+!                  qkfunf_rel(qdlrit(j),qdlrrf(k))
+!
+!              endif
+!            endif
+!
+!          enddo
+!        enddo
+!      enddo
+!
+!
+!
+!      do k=1,rank
+!        do j=1,rank
+!          it2cf(j,k) = qkfunf_rel(qdlrit(j),qdlrrf(k))
+!        enddo
+!      enddo
+!
+!      call qgefa(it2cf,rank,rank,ipvt,info)
+!
+!
+!
+!
+!      do l=1,rank
+!        do k=1,rank
+!          do j=1,rank
+!            phitmp2(l,(k-1)*rank+j) = phitmp(j,k,l)
+!          enddo
+!        enddo
+!      enddo
+!
+!      do k=1,rank*rank
+!        call qgesl(it2cf,rank,rank,ipvt,phitmp2(:,k),1)
+!      enddo
+!            
+!      do l=1,rank
+!        do k=1,rank
+!          do j=1,rank
+!            phitmp(j,k,l) = phitmp2(l,(k-1)*rank+j)
+!          enddo
+!        enddo
+!      enddo
+!
+!
+!
+!
+!      do l=1,rank
+!        do k=1,rank
+!          do j=1,rank
+!            phitmp2(k,(l-1)*rank+j) = phitmp(j,k,l)
+!          enddo
+!        enddo
+!      enddo
+!
+!      do k=1,rank*rank
+!        call qgesl(it2cf,rank,rank,ipvt,phitmp2(:,k),1)
+!      enddo
+!            
+!      do l=1,rank
+!        do k=1,rank
+!          do j=1,rank
+!            phitmp(j,k,l) = phitmp2(k,(l-1)*rank+j)
+!          enddo
+!        enddo
+!      enddo
+!
+!
+!
+!      do l=1,rank
+!        do k=1,rank
+!          do j=1,rank
+!            phi((k-1)*rank+j,l) = phitmp(j,k,l)
+!          enddo
+!        enddo
+!      enddo
+!
+!
+!      phi = beta*phi
+!
+!      end subroutine dlr_convtens3
 
 
 
