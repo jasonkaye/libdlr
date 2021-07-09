@@ -7,39 +7,70 @@ import numpy as np
 from pydlr import dlr
 
 
+beta = 128.0
+d = dlr(lamb=40. * beta)
+
+tau_from_matsubara = lambda G_qaa : d.tau_from_dlr(d.dlr_from_matsubara(G_qaa, beta))
+matsubara_from_tau = lambda G_iaa : d.matsubara_from_dlr(d.dlr_from_tau(G_iaa), beta)
+
+e0, e1 = -0.55, 0.3
+V = 10.2 # NB! Large hybridization V gives kernel g0 * delta with non-trivial condition number
+
+E_aa = np.array([
+    [e0, V],
+    [V, e1],
+    ])
+
+E0 = np.array([[e0]])
+E1 = np.array([[e1]])
+
+g0_iaa = d.free_greens_function_tau(E0, beta)
+g0_qaa = matsubara_from_tau(g0_iaa)
+
+g1_iaa = d.free_greens_function_tau(E1, beta)
+delta_iaa = V**2 * g1_iaa
+
+delta_xaa = d.dlr_from_tau(delta_iaa)
+delta_qaa = d.matsubara_from_dlr(delta_xaa, beta)
+
+G_iaa_anal = d.free_greens_function_tau(E_aa, beta)[:, 0, 0].reshape((d.rank, 1, 1))
+
+
+def check(G_iaa, G_iaa_ref):
+    err = np.max(np.abs(G_iaa - G_iaa_ref))
+    print(f'err = {err:2.2E}')
+    np.testing.assert_array_almost_equal(G_iaa, G_iaa_ref)
+
+
 def test_dyson_and_volterra_matsubara():
 
-    beta = 3.421
-    d = dlr(lamb=20.)
+    G_iaa_dyson = tau_from_matsubara(d.dyson_matsubara(E0, delta_qaa, beta))
+    check(G_iaa_dyson, G_iaa_anal)
 
-    e0, e1 = -0.55, 0.3
-    V = 0.2
-
-    E_aa = np.array([
-        [e0, V],
-        [V, e1],
-        ])
-    
-    w_q = d.get_matsubara_frequencies(beta=beta)
- 
-    g0_qaa = d.free_greens_function_matsubara(np.array([[e0]]), beta)
-    g1_qaa = d.free_greens_function_matsubara(np.array([[e1]]), beta)
-
-    G_qaa = d.free_greens_function_matsubara(E_aa, beta)[:, 0, 0].reshape((len(w_q), 1, 1))
-
-    G_qaa_dyson = d.dyson_matsubara(np.array([[e0]]), V**2 * g1_qaa, beta)
-    G_qaa_volterra = d.volterra_matsubara(g0_qaa, V**2 * g1_qaa, beta)
-
-    np.testing.assert_array_almost_equal(G_qaa, G_qaa_dyson)
-    np.testing.assert_array_almost_equal(G_qaa, G_qaa_volterra)
-
-    g1_xaa = d.dlr_from_matsubara(g1_qaa, beta)
-    G_xaa_dyson_dlr = d.dyson_dlr(np.array([[e0]]), V**2 * g1_xaa, beta)
-    G_qaa_dyson_dlr = d.matsubara_from_dlr(G_xaa_dyson_dlr, beta)
-
-    np.testing.assert_array_almost_equal(G_qaa, G_qaa_dyson_dlr)
+    G_iaa_volterra = tau_from_matsubara(d.volterra_matsubara(g0_qaa, delta_qaa, beta))
+    check(G_iaa_volterra, G_iaa_anal)
     
 
+def test_dyson_dlr():
+    
+    G_iaa_dlr_dyson = d.tau_from_dlr(d.dyson_dlr(E0, delta_xaa, beta))
+    check(G_iaa_dlr_dyson, G_iaa_anal)
+
+    G_iaa_dlr_dyson_int = d.tau_from_dlr(
+        d.dyson_dlr_integro(E0, delta_xaa, beta, iterative=False, lomem=False))
+    check(G_iaa_dlr_dyson_int, G_iaa_anal)
+
+    G_iaa_dlr_dyson_int_iter = d.tau_from_dlr(
+        d.dyson_dlr_integro(E0, delta_xaa, beta, iterative=True, lomem=False))
+    check(G_iaa_dlr_dyson_int_iter, G_iaa_anal)
+
+    G_iaa_dlr_dyson_int_iter_lomem = d.tau_from_dlr(
+        d.dyson_dlr_integro(E0, delta_xaa, beta, iterative=True, lomem=True, verbose=True))
+    check(G_iaa_dlr_dyson_int_iter_lomem, G_iaa_anal)
+    
+
+    
 if __name__ == '__main__':
 
     test_dyson_and_volterra_matsubara()
+    test_dyson_dlr()
