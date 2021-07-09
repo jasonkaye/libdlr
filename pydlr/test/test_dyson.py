@@ -53,20 +53,17 @@ def test_dyson_and_volterra_matsubara():
 
 def test_dyson_dlr():
     
-    G_iaa_dlr_dyson = d.tau_from_dlr(d.dyson_dlr(E0, delta_xaa, beta))
+    G_iaa_dlr_dyson_intdiff = d.tau_from_dlr(d.dyson_dlr_integrodiff(E0, delta_xaa, beta))
+    check(G_iaa_dlr_dyson_intdiff, G_iaa_anal)
+
+    G_iaa_dlr_dyson = d.tau_from_dlr(d.dyson_dlr(E0, delta_xaa, beta, iterative=False, lomem=False))
     check(G_iaa_dlr_dyson, G_iaa_anal)
 
-    G_iaa_dlr_dyson_int = d.tau_from_dlr(
-        d.dyson_dlr_integro(E0, delta_xaa, beta, iterative=False, lomem=False))
-    check(G_iaa_dlr_dyson_int, G_iaa_anal)
+    G_iaa_dlr_dyson_iter = d.tau_from_dlr(d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=False))
+    check(G_iaa_dlr_dyson_iter, G_iaa_anal)
 
-    G_iaa_dlr_dyson_int_iter = d.tau_from_dlr(
-        d.dyson_dlr_integro(E0, delta_xaa, beta, iterative=True, lomem=False))
-    check(G_iaa_dlr_dyson_int_iter, G_iaa_anal)
-
-    G_iaa_dlr_dyson_int_iter_lomem = d.tau_from_dlr(
-        d.dyson_dlr_integro(E0, delta_xaa, beta, iterative=True, lomem=True, verbose=True))
-    check(G_iaa_dlr_dyson_int_iter_lomem, G_iaa_anal)
+    G_iaa_dlr_dyson_iter_lomem = d.tau_from_dlr(d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=True, verbose=True))
+    check(G_iaa_dlr_dyson_iter_lomem, G_iaa_anal)
     
 
     

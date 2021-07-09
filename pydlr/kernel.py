@@ -133,7 +133,7 @@ def gridparams(lamb, order=24):
     return order, npt, npo, nt, no
 
 
-def kernel_discretization(lamb):
+def kernel_discretization(lamb, error_est=False):
 
     order, npt, npo, nt, no = gridparams(lamb)
 
@@ -169,28 +169,31 @@ def kernel_discretization(lamb):
     kmat = kernel(t[:nt//2], w)
     kmat = np.vstack((kmat, kmat[::-1, ::-1]))
 
-    # -- Error estimate
-    
-    x2_i = chebyschev_collocation_points_1st_kind(2*N)
+    if not error_est:
+        return kmat, t, w
+    else:
+        # -- Error estimate
 
-    err = 0.
+        x2_i = chebyschev_collocation_points_1st_kind(2*N)
 
-    for widx in range(no):
-        for tp in range(npt):
-            a, b = t_panel_break_pt[tp], t_panel_break_pt[tp + 1]
-            X = a + (b - a)*0.5*(x2_i + 1)
-            K = np.squeeze(kernel(X, np.array([w[widx]])))
-            K_interp = barycentric_interpolation(x2_i, x_i, kmat[N*tp:N*(tp+1), widx], w_i)
-            perr = np.max(np.abs(K - K_interp))
-            err = np.max([err, perr])
+        err = 0.
 
-    for tidx in range(nt//2):
-        for wp in range(2*npo):
-            a, b = w_panel_break_pt[wp], w_panel_break_pt[wp + 1]
-            X = a + (b - a)*0.5*(x2_i + 1)
-            K = np.squeeze(kernel(np.array([t[tidx]]), X))
-            K_interp = barycentric_interpolation(x2_i, x_i, kmat[tidx, N*wp:N*(wp+1)], w_i)
-            perr = np.max(np.abs(K - K_interp))
-            err = np.max([err, perr])            
+        for widx in range(no):
+            for tp in range(npt):
+                a, b = t_panel_break_pt[tp], t_panel_break_pt[tp + 1]
+                X = a + (b - a)*0.5*(x2_i + 1)
+                K = np.squeeze(kernel(X, np.array([w[widx]])))
+                K_interp = barycentric_interpolation(x2_i, x_i, kmat[N*tp:N*(tp+1), widx], w_i)
+                perr = np.max(np.abs(K - K_interp))
+                err = np.max([err, perr])
+
+        for tidx in range(nt//2):
+            for wp in range(2*npo):
+                a, b = w_panel_break_pt[wp], w_panel_break_pt[wp + 1]
+                X = a + (b - a)*0.5*(x2_i + 1)
+                K = np.squeeze(kernel(np.array([t[tidx]]), X))
+                K_interp = barycentric_interpolation(x2_i, x_i, kmat[tidx, N*wp:N*(wp+1)], w_i)
+                perr = np.max(np.abs(K - K_interp))
+                err = np.max([err, perr])            
             
-    return kmat, t, w, err
+        return kmat, t, w, err

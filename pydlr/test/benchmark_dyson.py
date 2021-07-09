@@ -18,8 +18,8 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
     print(f'init dlr {time.time() - t} s')
 
     e0, e1 = -0.55, 0.3
-    #V = 0.2
-    V = 1.2
+    V = 0.2
+    #V = 1.2
 
     E_aa = np.array([
         [e0, V],
@@ -29,7 +29,6 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
     w_q = d.get_matsubara_frequencies(beta=beta)
 
     tau_i = d.get_tau(beta)
-    sidx = np.argsort(tau_i)
 
     print(f'np = {len(tau_i)}')
     
@@ -61,17 +60,17 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
     #np.testing.assert_array_almost_equal(G_qaa, G_qaa_dyson)
     #np.testing.assert_array_almost_equal(G_qaa, G_qaa_volterra)
 
-    G_xaa_dlr_dyson = d.dyson_dlr(np.array([[e0]]), V**2 * g1_xaa, beta)
+    G_xaa_dlr_dyson = d.dyson_dlr_integrodiff(np.array([[e0]]), V**2 * g1_xaa, beta)
     G_qaa_dlr_dyson = d.matsubara_from_dlr(G_xaa_dlr_dyson, beta)
     G_iaa_dlr_dyson = d.tau_from_dlr(G_xaa_dlr_dyson)
 
     t = time.time()
-    G_xaa_dlr_dyson_int = d.dyson_dlr_integro(np.array([[e0]]), V**2 * g1_xaa, beta)
+    G_xaa_dlr_dyson_int = d.dyson_dlr(np.array([[e0]]), V**2 * g1_xaa, beta)
     print(f'solve {time.time() - t} s')
     G_iaa_dlr_dyson_int = d.tau_from_dlr(G_xaa_dlr_dyson_int)
 
     t = time.time()
-    G_xaa_dlr_dyson_int_iter = d.dyson_dlr_integro(np.array([[e0]]), V**2 * g1_xaa, beta, iterative=True, lomem=True)
+    G_xaa_dlr_dyson_int_iter = d.dyson_dlr(np.array([[e0]]), V**2 * g1_xaa, beta, iterative=True, lomem=True, verbose=True, tol=1e-14)
     print(f'gmres {time.time() - t} s')
     G_iaa_dlr_dyson_int_iter = d.tau_from_dlr(G_xaa_dlr_dyson_int_iter)
 
@@ -91,25 +90,26 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
     print(f'err_dlr_dyson_int_iter = {err_dlr_dyson_int_iter}')
 
     if verbose:
-        subp = [3, 1, 1]
+        plt.figure(figsize=(10, 12))
+        subp = [2, 1, 1]
 
         plt.subplot(*subp); subp[-1] += 1
-        plt.plot(tau_i[sidx], -np.squeeze(g0_iaa[sidx]), '.-')
-        plt.plot(tau_i[sidx], -np.squeeze(g1_iaa[sidx]), '.-')
-        plt.plot(tau_i[sidx], -np.squeeze(G_iaa[sidx]), '.-')
+        plt.plot(tau_i, -np.squeeze(g0_iaa), '.-')
+        plt.plot(tau_i, -np.squeeze(g1_iaa), '.-')
+        plt.plot(tau_i, -np.squeeze(G_iaa), '.-')
         plt.semilogy([], [])
-
+        
         plt.xlabel(r'$\tau$')
         plt.ylabel(r'$G(\tau)$')
 
         plt.subplot(*subp); subp[-1] += 1
-
-        plt.plot(tau_i[sidx], -np.squeeze(G_iaa[sidx]), '.-', label='ref')
-        plt.plot(tau_i[sidx], -np.squeeze(G_iaa_mat_dyson[sidx]).real, '.-', label='mat dyson')
-        plt.plot(tau_i[sidx], -np.squeeze(G_iaa_mat_volt[sidx]).real, '.-', label='mat volt')
-        plt.plot(tau_i[sidx], -np.squeeze(G_iaa_dlr_dyson[sidx]).real, '.-', label='dlr dyson')
-        plt.plot(tau_i[sidx], -np.squeeze(G_iaa_dlr_dyson_int[sidx]).real, '.-', label='dlr dyson int')
+        plt.plot(tau_i, -np.squeeze(G_iaa), '.-', label='ref')
+        plt.plot(tau_i, -np.squeeze(G_iaa_mat_dyson).real, '.-', label='mat dyson')
+        plt.plot(tau_i, -np.squeeze(G_iaa_mat_volt).real, '.-', label='mat volt')
+        plt.plot(tau_i, -np.squeeze(G_iaa_dlr_dyson).real, '.-', label='dlr dyson')
+        plt.plot(tau_i, -np.squeeze(G_iaa_dlr_dyson_int).real, '.-', label='dlr dyson int')
         plt.legend()
+        plt.semilogy([], [])
 
         plt.show(); exit()
 
@@ -118,8 +118,8 @@ def test_dyson_and_volterra_matsubara(beta=10., verbose=False):
 
 if __name__ == '__main__':
 
-    betas = 8 * 2 ** np.arange(0, 12)
-    #betas = [2048]
+    betas = 8 * 2 ** np.arange(0, 10)
+    #betas = [1024]
     print(f'betas = {betas}')
 
     errs = []

@@ -18,21 +18,6 @@ from scipy.linalg import lu_solve, lu_factor
 from .kernel import kernel, kernel_discretization, fermi_function
 
 
-class solver_wrapper:
-
-    def __init__(self, solver):
-        self.solver = solver
-
-    def callback(self, x):
-        self.iter += 1
-
-    def __call__(self, A, b, **kwargs):
-        self.iter = 1
-        ret = self.solver(A, b, callback=self.callback, **kwargs)
-        print('N iter:', self.iter)
-        return ret
-    
-
 class dlrBase(object):
 
     def __init__(self, lamb, eps=1e-15, fb=b'f',
@@ -48,7 +33,8 @@ class dlrBase(object):
         if nmax is None: nmax = int(lamb)
 
         t = time.time()
-        self.kmat, self.t, self.om, self.err = kernel_discretization(self.lamb)
+        #self.kmat, self.t, self.om, self.err = kernel_discretization(self.lamb, error_est=True)
+        self.kmat, self.t, self.om = kernel_discretization(self.lamb, error_est=False)
         print(f'kernel {time.time() - t} s')
         
         t = time.time()
@@ -59,7 +45,7 @@ class dlrBase(object):
 
         t = time.time()
         _, oidx = scipy_qr(self.kmat, pivoting=True, mode='r')
-        self.oidx = oidx[:self.rank]
+        self.oidx = np.sort(oidx[:self.rank])
         self.dlrrf = self.om[self.oidx]
         print(f'qr w {time.time() - t} s')
 
@@ -67,32 +53,42 @@ class dlrBase(object):
 
         t = time.time()
         _, tidx = scipy_qr(self.kmat[:, self.oidx].T, pivoting=True, mode='r')
-        self.tidx = tidx[:self.rank]
+        self.tidx = np.sort(tidx[:self.rank])
         self.dlrit = self.t[self.tidx]
         print(f'qr t {time.time() - t} s')
         
         # -- Transform matrix (LU-decomposed)
 
+        t = time.time()
         self.T_lx = self.kmat[self.tidx][:, self.oidx]
         self.dlrit2cf, self.it2cfpiv = lu_factor(self.T_lx)
+        print(f'lu ix {time.time() - t} s')
 
         # -- Matsubara frequency points
 
-        n = np.arange(-nmax, nmax+1)
+        t = time.time()
+
+        n = np.arange(-nmax, nmax+1)        
         iwn = 1.j * np.pi * (2*n + 1)
 
         self.kmat_mf = 1./(iwn[:, None] + self.dlrrf[None, :])
 
         _, mfidx = scipy_qr(self.kmat_mf.T, pivoting=True, mode='r')
-        self.mfidx = mfidx[:self.rank]
-
+        self.mfidx = np.sort(mfidx[:self.rank])
+        
         self.nmax = nmax
         self.dlrmf = n[self.mfidx]
-                    
+
+        print(f'qr mats {time.time() - t} s')
+        
         # -- Transform matrix (LU-decomposed)
 
+        t = time.time()
         self.T_qx = self.kmat_mf[self.mfidx, :]
         self.dlrmf2cf, self.mf2cfpiv = lu_factor(self.T_qx)
+
+        print(f'lu mats {time.time() - t} s')
+
         print(f'dlr init done {time.time() - t_start} s')
 
 
@@ -186,6 +182,8 @@ class dlrBase(object):
 
         AB_xaa = np.matmul(A_xaa, B_xaa)
 
+        # NB! The term with dlr_from_tau below is *not* numerically stable
+        
         C_xaa = k1_x[:, None, None] * AB_xaa + \
             self.dlr_from_tau(tau_l[:, None, None] * self.tau_from_dlr(AB_xaa)) + \
             np.matmul(np.tensordot(W_xx, A_xaa, axes=(0, 0)), B_xaa) + \
@@ -196,13 +194,15 @@ class dlrBase(object):
         return C_xaa
 
 
-    def convolution_stab(self, A_xaa, B_xaa, beta=1.):
+    def convolution_experiment(self, A_xaa, B_xaa, beta=1.):
         
-        n, na, _ = A_xaa.shape
-        A_AA = self.convolution_matrix(A_xaa, beta).reshape((n*na, n*na))
-        B_Aa = B_xaa.reshape((n*na, na))
-        C_Aa= A_AA @ B_Aa
-        C_xaa_ref = C_Aa.reshape((n, na, na))
+        #n, na, _ = A_xaa.shape
+        #A_AA = self.convolution_matrix(A_xaa, beta).reshape((n*na, n*na))
+        #B_Aa = B_xaa.reshape((n*na, na))
+        #C_Aa= A_AA @ B_Aa
+        #C_xaa_ref = C_Aa.reshape((n, na, na))
+        
+        C_xaa_ref = self.convolution_dense(A_xaa, B_xaa, beta=beta)
 
         if True:
             tau_l = self.get_tau(1.)
@@ -281,6 +281,10 @@ class dlrBase(object):
     
 
     def convolution(self, A_xaa, B_xaa, beta=1.):
+
+        """ Fast DLR convolution with scaling: O(N^2) flops and O(N) storage.
+
+        Author: Hugo U.R. Strand """
         
         n, na, _ = A_xaa.shape
 
@@ -294,6 +298,8 @@ class dlrBase(object):
         WA_xaa = np.matmul(W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
         WB_xaa = np.matmul(W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
         C_xaa = np.matmul(k1_x[:, None, None] * A_xaa + WA_xaa, B_xaa) + np.matmul(A_xaa, WB_xaa)
+
+        # Stabilized version of the tau dependent term in the fast convolution
         
         for a in range(na):
             for b in range(na):
@@ -307,6 +313,10 @@ class dlrBase(object):
 
     def convolution_matrix(self, A_xaa, beta=1.):
 
+        """ Fast DLR convolution matrix construction with scaling: O(N^3) flops and O(N^2) storage. 
+
+        Author: Hugo U.R. Strand """
+        
         w_x = self.dlrrf
         tau_l = self.get_tau(1.)
 
@@ -386,7 +396,7 @@ class dlrBase(object):
         return G_qaa
 
 
-    def dyson_dlr(self, H_aa, Sigma_xaa, beta, S_aa=None):
+    def dyson_dlr_integrodiff(self, H_aa, Sigma_xaa, beta, S_aa=None):
 
         na = H_aa.shape[0]
         I_aa = np.eye(na)
@@ -412,7 +422,8 @@ class dlrBase(object):
         return g_xaa
 
 
-    def dyson_dlr_integro(self, H_aa, Sigma_xaa, beta, S_aa=None, iterative=False, lomem=False):
+    def dyson_dlr(self, H_aa, Sigma_xaa, beta, S_aa=None,
+                  iterative=False, lomem=False, verbose=False, tol=1e-12):
 
         na = H_aa.shape[0]
         n = Sigma_xaa.shape[0]
@@ -437,9 +448,9 @@ class dlrBase(object):
             else:
                 C_AA = self.convolution_matrix(g0Sigma_xaa, beta).reshape((n*na, n*na))
                 def Amatvec(x_Aa):
-                    #return x_Aa - C_AA @ x_Aa
                     y_Aa = x_Aa - C_AA @ x_Aa
-                    return self.tau_from_dlr(y_Aa.reshape((n, na, na))).reshape((n*na, na))
+                    y_xaa = y_Aa.reshape((n, na, na))
+                    return self.tau_from_dlr(y_xaa).reshape((n*na, na))
 
             I_aa = np.eye(na)
             g0Sigma_qaa = self.matsubara_from_dlr(g0Sigma_xaa, beta)
@@ -454,21 +465,20 @@ class dlrBase(object):
 
             D_AA = LinearOperator(matvec=Amatvec, shape=(n * na, n * na), dtype=complex)
             M_AA = LinearOperator(matvec=Mmatvec, shape=(n * na, n * na), dtype=complex)
-            #b_Aa = g0_xaa.reshape((n*na, na))
             b_Aa = g0_iaa.reshape((n*na, na))
 
             x0_Aa = M_AA.matvec(g0_iaa.reshape((n*na, na)))
-            #x0_Aa = M_AA.matvec(g0_xaa.reshape((n*na, na)))
             
-            #g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, tol=1e-14)
-            #g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, x0=x0_Aa, tol=1e-14)
-            g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, x0=x0_Aa, M=M_AA, tol=1e-14)
-            #g_Aa, info = solver_wrapper(scipy_gmres)(D_AA, b_Aa, x0=x0_Aa*0, M=M_AA, tol=1e-14)
+            g_Aa, info = solver_wrapper(scipy_gmres, verbose=verbose)(D_AA, b_Aa, x0=x0_Aa, M=M_AA, tol=tol)
             g_xaa = g_Aa.reshape((n, na, na))
 
-            print(f'diff x0 = {np.max(np.abs(self.tau_from_dlr(x0_Aa.reshape((n, na, na))) - self.tau_from_dlr(g_Aa.reshape((n,na,na)))))}')
+            if verbose:
+                diff = np.max(np.abs(self.tau_from_dlr(x0_Aa.reshape((n, na, na))) - self.tau_from_dlr(g_Aa.reshape((n,na,na)))))
+                print(f'diff x0 = {diff}')
 
         else:
+
+            if lomem: raise NotImplementedError
 
             #D_AA = np.kron(self.T_lx, I_aa) - self.tau_from_dlr(self.convolution_matrix(g0Sigma_xaa, beta)).reshape((n*na, n*na))        
             #b_Aa = g0_iaa.reshape((n*na, na))
@@ -493,4 +503,19 @@ class dlrBase(object):
 dlr = dlrBase
 
 #from .pydlr_fortran import dlrFortran as dlr
-        
+
+
+class solver_wrapper:
+
+    def __init__(self, solver, verbose=False):
+        self.solver = solver
+        self.verbose = verbose
+
+    def callback(self, x):
+        self.iter += 1
+
+    def __call__(self, A, b, **kwargs):
+        self.iter = 1
+        ret = self.solver(A, b, callback=self.callback, **kwargs)
+        if self.verbose: print('GMRES N iter:', self.iter)
+        return ret
