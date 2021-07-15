@@ -9,20 +9,27 @@ from pydlr import dlr
 
 def test_convolution_scalar(verbose=False):
 
-    beta = 3.337
+    #beta = 3.337
+    beta = 100.
+
+    lamb = np.max([20., 10. * beta])
     e1, e2 = 3., 3.3
 
-    d = dlr(lamb=30.)
+    d = dlr(lamb=lamb)
 
+    g1_l = d.free_greens_function_tau(np.array([[e1]]), beta)
+    g2_l = d.free_greens_function_tau(np.array([[e2]]), beta)
+
+    c = 1./(e1 - e2)
+    gg_l_anal = c * g1_l - c * g2_l
+    
     g1_q = d.free_greens_function_matsubara(np.array([[e1]]), beta)
     g2_q = d.free_greens_function_matsubara(np.array([[e2]]), beta)
-
+    
     # -- DLR Matsubara convolution
 
     gg_q = np.einsum('qab,qbc->qac', g1_q, g2_q)
-
-    gg_x = d.dlr_from_matsubara(gg_q, beta)
-    gg_l = d.tau_from_dlr(gg_x)
+    gg_l_matsub = d.tau_from_dlr(d.dlr_from_matsubara(gg_q, beta))
 
     # -- DLR coeff convolution
 
@@ -32,6 +39,9 @@ def test_convolution_scalar(verbose=False):
     gg_x_dlr = d.convolution(g1_x, g2_x, beta=beta)
     gg_l_dlr = d.tau_from_dlr(gg_x_dlr)
 
+    gg_l_dlr_instab = d.tau_from_dlr(d.convolution_instab(g1_x, g2_x, beta=beta))
+    gg_l_dlr_instab_opt = d.tau_from_dlr(d.convolution_instab_opt(g1_x, g2_x, beta=beta))
+    
     # -- DLR convolution matrix
 
     n, na, _ = g1_x.shape
@@ -43,8 +53,11 @@ def test_convolution_scalar(verbose=False):
     gg_x_mat = np.matmul(C_AA, B_Aa).reshape((n, na, na))
     gg_l_mat = d.tau_from_dlr(gg_x_mat)
 
-    print(f'diff scalar = {np.max(np.abs(gg_l - gg_l_dlr))}')
-    print(f'diff scalar (convmat) = {np.max(np.abs(gg_l - gg_l_mat))}')
+    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_matsub))} (matsubara)')
+    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_dlr))} (dlr)')
+    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_dlr_instab))} (dlr instab)')
+    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_dlr_instab_opt))} (dlr instab opt)')
+    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_mat))} (dlr convmat)')
     
     # --
     
@@ -62,7 +75,8 @@ def test_convolution_scalar(verbose=False):
         plt.subplot(*subp); subp[-1] += 1
         plt.plot(tau_l, gg_l_dlr[:, 0, 0].real, 'o', label='DLR conv', alpha=0.5)
         plt.plot(tau_l, gg_l_mat[:, 0, 0].real, '+', label='DLR conv mat')
-        plt.plot(tau_l, gg_l[:, 0, 0].real, 'x', label='Matsub conv')
+        plt.plot(tau_l, gg_l_matsub[:, 0, 0].real, 'x', label='Matsub conv')
+        plt.plot(tau_l, gg_l_anal[:, 0, 0].real, 'x', label='Analytic')
         plt.ylabel(r'$(g_1 \ast g_2)(\tau)$')
         plt.xlabel(r'$\tau$')
         plt.legend(loc='best')
@@ -70,8 +84,11 @@ def test_convolution_scalar(verbose=False):
 
     # -- Test
 
-    np.testing.assert_array_almost_equal(gg_l, gg_l_dlr)
-    np.testing.assert_array_almost_equal(gg_l, gg_l_mat)
+    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_matsub)
+    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_dlr)
+    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_dlr_instab)
+    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_dlr_instab_opt)
+    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_mat)
 
 
 def test_convolution_matrix():
