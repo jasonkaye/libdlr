@@ -16,9 +16,9 @@ include(CTest)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ../lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../lib)
-add_subdirectory(./id_dist)
+#set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ../lib)
+#set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../lib)
+#add_subdirectory(./id_dist)
 
 # Fortran library: dlr
 
@@ -28,7 +28,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 file(GLOB dlr_SRC CONFIGURE_DEPENDS "./src/*.f*" "./src/utils_external/*.f*")
 
 add_library(dlr ${dlr_SRC})
-target_link_libraries(dlr PUBLIC id_dist BLAS::BLAS LAPACK::LAPACK)
+#target_link_libraries(dlr PUBLIC id_dist BLAS::BLAS LAPACK::LAPACK)
+target_link_libraries(dlr PUBLIC BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS dlr LIBRARY)
 install(TARGETS dlr ARCHIVE)
 
@@ -51,7 +52,7 @@ add_test(NAME dlr_conv_test COMMAND dlr_conv_test)
 
 file(GLOB dlr_c_SRC CONFIGURE_DEPENDS "./src/dlr_c/*.f*")
 add_library(dlr_c SHARED ${dlr_c_SRC})
-target_link_libraries(dlr_c PUBLIC dlr id_dist BLAS::BLAS LAPACK::LAPACK)
+#target_link_libraries(dlr_c PUBLIC dlr id_dist BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS dlr_c LIBRARY)
 set_target_properties(dlr_c PROPERTIES INSTALL_RPATH "@loader_path/")
 
