@@ -1,0 +1,14 @@
+The file id_dist_qr.f contains several subroutines from the Fortran
+library ID, Version 0.4. The library was developed by Per-Gunnar
+Martinsson, Vladimir Rokhlin, Yoel Shkolnisky, and Mark Tygert. The
+documentation for the full library, including copyright notice, is
+contained in doc.pdf, also included in this folder. The full library can
+be downloaded from
+
+www.tygert.com/software.html
+
+We have only included the subroutines involved in implementing the
+pivoted QR algorithm, for double precision real and complex
+numbers, both by precision and by rank. The subroutines have not been
+modified, and can be found in the files idd_qrpiv.f, idd_house.f,
+idz_qrpiv.f, and idz_house.f in the original ID library.

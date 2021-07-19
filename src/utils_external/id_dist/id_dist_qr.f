@@ -1,7 +1,7 @@
       !
       !
       ! This file contains subroutines from the id_dist library used to
-      ! do pivoted QR
+      ! implement pivoted QR
       !
       !
        
