@@ -82,7 +82,7 @@
       ! Initialize Green's function evaluator
 
       pg = 24
-      npg = npo
+      npg = max(ceiling(log(lambda)/log(2.0d0)),1)
       
       allocate(xgl(pg),wgl(pg),xgj(pg),wgj(pg),pbpg(2*npg+1))
 
