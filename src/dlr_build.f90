@@ -179,7 +179,7 @@
             
             ktrue = kfunf(xx,om(j))
 
-            call barycheb(p,xc2(k),kmat((i-1)*p+1:i*p,j),wc,xc,ktest)
+            call barycheb(p,xc,wc,xc2(k),kmat((i-1)*p+1:i*p,j),ktest)
 
             errtmp = max(errtmp,abs(ktrue-ktest))
 
@@ -206,7 +206,7 @@
             
             ktrue = kfunf(t(j),xx)
 
-            call barycheb(p,xc2(k),kmat(j,(i-1)*p+1:i*p),wc,xc,ktest)
+            call barycheb(p,xc,wc,xc2(k),kmat(j,(i-1)*p+1:i*p),ktest)
 
             errtmp = max(errtmp,abs(ktrue-ktest))
 

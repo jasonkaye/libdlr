@@ -91,7 +91,7 @@ todo_include_todos = True
 
 breathe_projects = { "fortran" : "_doxygen_fortran/xml" }
 breathe_default_project = "fortran"
-breathe_projects_source = { "fortran" : ("../src", ["dlr_build.f90", "dlr_it.f90", "dlr_mf.f90", "dlr_utils.f90", "dlr_conv.f90", "kernels.f90", "utils.f90", "dlr_dyson.f90"]) }
+breathe_projects_source = { "fortran" : ("../src", ["dlr_build.f90", "dlr_it.f90", "dlr_mf.f90", "dlr_utils.f90", "dlr_conv.f90", "dlr_kernels.f90", "utils.f90", "dlr_dyson.f90"]) }
 
 # -- Options for HTML output ----------------------------------------------
 

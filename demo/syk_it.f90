@@ -108,9 +108,7 @@
 
       allocate(phi(rank*rank,rank))
 
-      !call dlr_convtens(beta,rank,dlrrf,dlrit,phi)
-      call dlr_convtens2(beta,rank,dlrrf,dlrit,it2cf,it2cfpiv,phi)
-      !call dlr_convtens3(beta,rank,dlrrf,dlrit,phi)
+      call dlr_convtens(beta,rank,dlrrf,dlrit,it2cf,it2cfpiv,phi)
 
 
       ! Solve Dyson equation by marching in mu

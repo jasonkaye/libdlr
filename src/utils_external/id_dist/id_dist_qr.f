@@ -1,7 +1,8 @@
       !
       !
       ! This file contains subroutines from the id_dist library used to
-      ! implement pivoted QR
+      ! implement pivoted QR. It also contains a subroutine,
+      ! ind_rearrange, which is not in the original library.
       !
       !
        
@@ -1212,3 +1213,39 @@ c
         end
 c
 c
+
+
+
+
+      subroutine ind_rearrange(n,krank,ind)
+
+      ! Rearrange output ind from iddp_qrpiv or iddr_qrpiv to give list
+      ! of krank columns selected by a pivoted QR process
+      !
+      ! Output overwrites first krank entries of ind
+      !
+      ! NOTE: This subroutine is not in the original ID library.
+
+      implicit none
+      integer n,krank,ind(n)
+
+      integer k,iswap
+      integer, allocatable :: tmp(:)
+
+      allocate(tmp(n))
+
+      do k = 1,n
+        tmp(k) = k
+      enddo
+      
+      do k = 1,krank
+      
+        iswap = tmp(k)
+        tmp(k) = tmp(ind(k))
+        tmp(ind(k)) = iswap
+      
+      enddo
+
+      ind(1:krank) = tmp(1:krank)
+     
+      end subroutine ind_rearrange
