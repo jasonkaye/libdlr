@@ -77,8 +77,8 @@
       integer, allocatable :: dlrmf(:),it2cfpiv(:),mf2cfpiv(:)
       real *8 one,gtest,gtest2
       real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:),g(:)
-      real *8, allocatable :: cf2it(:,:),cf2itr(:,:)
-      complex *16, allocatable :: mf2cf(:,:),cf2mf(:,:)
+      real *8, allocatable :: cf2it(:,:),it2itr(:,:)
+      complex *16, allocatable :: mf2cf(:,:),cf2mf(:,:),g0(:)
 
       one = 1.0d0
 
@@ -119,11 +119,11 @@
       ! transform matrix, and DLR coefficients -> Matsubara frequency
       ! values transform matrix
 
-      allocate(cf2it(rank,rank),cf2itr(rank,rank),cf2mf(rank,rank))
+      allocate(cf2it(rank,rank),it2itr(rank,rank),cf2mf(rank,rank))
 
       call dlr_cf2it(rank,dlrrf,dlrit,cf2it)
 
-      call dlr_cf2itr(rank,dlrrf,dlrit,cf2itr)
+      call dlr_it2itr(rank,dlrrf,dlrit,it2cf,it2cfpiv,it2itr)
 
       call dlr_cf2mf(rank,dlrrf,dlrmf,cf2mf)
       
@@ -137,8 +137,20 @@
 
       numit = maxit
 
+      ! Get free particle Green's function
+
+      allocate(g0(rank))
+
+      call getg0(beta,rank,dlrmf,0.0d0,g0)
+
+      ! Set initial guess to g0
+
+      call dlr_mfexpnd(rank,mf2cf,mf2cfpiv,g0,g)
+
+      g = matmul(cf2it,g)
+
       call dlr_dyson_mf(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,&
-        dlrmf,mf2cf,mf2cfpiv,cf2mf,0*one,sigeval,w,fptol,numit,1,g,info)
+        dlrmf,mf2cf,mf2cfpiv,cf2mf,sigeval,w,fptol,numit,g0,g,info)
 
       write(6,*) 'mu = ',0.0d0
 
@@ -152,8 +164,10 @@
 
         numit = maxit
 
+        call getg0(beta,rank,dlrmf,i*mu/nmu,g0)
+
         call dlr_dyson_mf(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,&
-          dlrmf,mf2cf,mf2cfpiv,cf2mf,i*mu/nmu,sigeval,w,fptol,numit,0,&
+          dlrmf,mf2cf,mf2cfpiv,cf2mf,sigeval,w,fptol,numit,g0,&
           g,info)
 
         write(6,*) 'mu = ',i*mu/nmu
@@ -173,6 +187,8 @@
 
       call eqpts_rel(nout,ttst)
 
+      call dlr_expnd(rank,it2cf,it2cfpiv,g,g)
+
       open(1,file='gfun')
 
       do i=1,nout
@@ -188,7 +204,6 @@
       close(1)
 
 
-
       contains
 
         subroutine sigeval(rank,g,sig)
@@ -199,32 +214,25 @@
         integer rank
         real *8 g(rank),sig(rank)
 
-        sig = c**2*matmul(cf2it,g)**2*matmul(cf2itr,g)
+        sig = c**2*g**2*matmul(it2itr,g)
 
         end subroutine sigeval
       
       end subroutine dlr_syk_mf_main
 
 
-
-
-      subroutine dlr_cf2itr(rank,dlrrf,dlrit,cf2itr)
+      subroutine getg0(beta,rank,dlrmf,mu,g0)
 
       implicit none
-      integer rank
-      real *8 dlrrf(rank),dlrit(rank),cf2itr(rank,rank)
+      integer rank,dlrmf(rank)
+      real *8 beta,mu
+      complex *16 g0(rank)
 
-      integer i,j
-      real *8, external :: kfunf_rel
+      integer i
+      complex *16, external :: kfunf_mf
 
-      ! Get matrix taking DLR coefficients to values of DLR expansion at
-      ! imaginary time points reflected about tau = 1/2.
-
-      do j=1,rank
-        do i=1,rank
-          cf2itr(i,j) = kfunf_rel(-dlrit(i),dlrrf(j))
-        enddo
+      do i=1,rank
+        g0(i) = -kfunf_mf(dlrmf(i),beta*mu)
       enddo
 
-      end subroutine dlr_cf2itr
-
+      end subroutine getg0

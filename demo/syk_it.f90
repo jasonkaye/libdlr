@@ -70,7 +70,8 @@
       integer, allocatable :: it2cfpiv(:)
       real *8 one,gtest,gtest2
       real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:),g(:)
-      real *8, allocatable :: cf2it(:,:),it2itr(:,:),phi(:,:)
+      real *8, allocatable :: cf2it(:,:),it2itr(:,:),phi(:,:),g0(:)
+      real *8, external :: kfunf_rel
 
       one = 1.0d0
 
@@ -111,14 +112,25 @@
       call dlr_convtens(beta,rank,dlrrf,dlrit,it2cf,it2cfpiv,phi)
 
 
-      ! Solve Dyson equation by marching in mu
+      ! Get free particle Green's function
+
+      allocate(g0(rank))
+
+      call getg0(beta,rank,dlrit,0.0d0,g0)
+
+
+      ! Solve Dyson equation by slowly increasing mu
 
       allocate(g(rank))
 
       numit = maxit
 
-      call dlr_dyson_it(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,phi,0*one,&
-        sigeval,w,fptol,numit,1,g,info)
+      ! Set initial guess to g0
+
+      g = g0
+
+      call dlr_dyson_it(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,phi,&
+        sigeval,w,fptol,numit,g0,g,info)
 
       write(6,*) 'mu = ',0.0d0
 
@@ -132,8 +144,10 @@
 
         numit = maxit
 
+        call getg0(beta,rank,dlrit,i*mu/nmu,g0)
+
         call dlr_dyson_it(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,phi,&
-          i*mu/nmu,sigeval,w,fptol,numit,0,g,info)
+          sigeval,w,fptol,numit,g0,g,info)
 
         write(6,*) 'mu = ',i*mu/nmu
 
@@ -184,3 +198,19 @@
         end subroutine sigeval
       
       end subroutine dlr_syk_it_main
+
+
+      subroutine getg0(beta,rank,dlrit,mu,g0)
+
+      implicit none
+      integer rank
+      real *8 beta,dlrit(rank),mu,g0(rank)
+
+      integer i
+      real *8, external :: kfunf_rel
+
+      do i=1,rank
+        g0(i) = -kfunf_rel(dlrit(i),beta*mu)
+      enddo
+
+      end subroutine getg0

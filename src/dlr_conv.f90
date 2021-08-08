@@ -25,10 +25,10 @@
       !!                          stored in LAPACK LU factored format;
       !!                          LU pivots
       !! @param[out]  phi       tensor taking DLR coefficients of g to
-      !                           matrix C of convolution by g. C takes
-      !                           DLR coefficients of a function f ->
-      !                           DLR grid values of the convolution 
-      !                           g * f.
+      !!                          matrix C of convolution by g. C takes
+      !!                          DLR coefficients of a function f ->
+      !!                          DLR grid values of the convolution
+      !!                          g * f.
 
       subroutine dlr_convtens(beta,rank,dlrrf,dlrit,it2cf,it2cfpiv,phi)
 
@@ -184,12 +184,12 @@
       !! @param[in]   dlrrf   DLR frequency nodes
       !! @param[in]   dlrit   DLR imaginary time nodes
       !! @param[out]  phivcc  tensor taking DLR coefficients of g to
-      !                         matrix C of convolution by g. C takes
-      !                         DLR coefficients of a function f -> DLR
-      !                         grid values of the convolution g * f.
-      !                         "vcc" indicates that for the tensor
-      !                         phi_{ijk}, i indexes grid values, and
-      !                         j,k index DLR coefficients.
+      !!                        matrix C of convolution by g. C takes
+      !!                        DLR coefficients of a function f -> DLR
+      !!                        grid values of the convolution g * f.
+      !!                        "vcc" indicates that for the tensor
+      !!                        phi_{ijk}, i indexes grid values, and
+      !!                        j,k index DLR coefficients.
       
       subroutine dlr_convtens_vcc(beta,rank,dlrrf,dlrit,phivcc)
 
