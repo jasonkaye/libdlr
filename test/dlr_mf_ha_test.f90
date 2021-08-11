@@ -61,7 +61,7 @@
 
       allocate(dlrrf(r),dlrmf(r))
 
-      call dlr_buildmf(lambda,eps,nmax,r,dlrrf,dlrmf)
+      call dlr_buildmf(lambda,eps,nmax,-1,r,dlrrf,dlrmf)
 
 
       write(6,*) ''
@@ -74,7 +74,7 @@
 
       allocate(mf2cf(r,r),mf2cfp(r))
 
-      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,mf2cf,mf2cfp)
+      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,-1,mf2cf,mf2cfp)
 
 
       ! --- Compute actual eps-rank of fine grid K matrix by SVD ---
@@ -170,7 +170,7 @@
       integer n
       real *8 beta
       complex *16 g
-      complex *16, external :: kfunf_mf
+      complex *16, external :: kfunmf
 
       real *8 a1,a2,a3,a4,a5
 
@@ -180,9 +180,9 @@
       a4 =  0.915d0
       a5 =  0.929d0
 
-      g = kfunf_mf(n,beta*a1) + kfunf_mf(n,beta*a2) +&
-        kfunf_mf(n,beta*a3) + kfunf_mf(n,beta*a4) +&
-        kfunf_mf(n,beta*a5)
+      g = kfunmf(2*n+1,beta*a1) + kfunmf(2*n+1,beta*a2) +&
+        kfunmf(2*n+1,beta*a3) + kfunmf(2*n+1,beta*a4) +&
+        kfunmf(2*n+1,beta*a5)
         
       end subroutine gfun_mf
 

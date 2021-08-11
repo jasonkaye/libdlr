@@ -137,7 +137,7 @@
 
       do i=1,2*ntst_mf+1
 
-        call dlr_mf_eval(r,dlrrf,gc,mf_tst(i),gtst_mf(i))
+        call dlr_mf_eval(r,dlrrf,-1,gc,mf_tst(i),gtst_mf(i))
 
       enddo
 
@@ -280,7 +280,7 @@
 
       integer ii,jj
       real *8 one,a,b,x
-      complex *16, external :: kfunf_mf
+      complex *16, external :: kfunmf
 
       one = 1.0d0
 
@@ -290,7 +290,7 @@
         b = pbp(ii+1)
         do jj=1,n
           x = a+(b-a)*(xgl(jj)+one)/2
-          val = val + (b-a)/2*wgl(jj)*kfunf_mf(m,beta*x)*&
+          val = val + (b-a)/2*wgl(jj)*kfunmf(2*m+1,beta*x)*&
             sqrt(one-x**2)
         enddo
       enddo
@@ -300,7 +300,7 @@
       do jj=1,n
         x = a+(b-a)*(xgj(jj)+one)/2
         val = val + ((b-a)/2)**(1.5d0)*wgj(jj)*&
-          kfunf_mf(m,beta*x)*sqrt(one+x)
+          kfunmf(2*m+1,beta*x)*sqrt(one+x)
       enddo
 
       a = -one
@@ -308,7 +308,7 @@
       do jj=1,n
         x = a+(b-a)*(-xgj(n-jj+1)+one)/2
         val = val + ((b-a)/2)**(1.5d0)*wgj(n-jj+1)*&
-          kfunf_mf(m,beta*x)*sqrt(one-x)
+          kfunmf(2*m+1,beta*x)*sqrt(one-x)
       enddo
 
       end subroutine gfun_mf

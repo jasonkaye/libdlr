@@ -58,20 +58,17 @@
 
 
 
-
-      !> Evaluate Lehmann kernel at a fermionic Matsubara frequency
-      !! point.
+      !> Evaluate Lehmann kernel at a Matsubara frequency point.
       !!
-      !! @param[in] n   index of fermionic Matsubara frequency point
-      !!                  i*omega_n = i*pi*(2n+1)
+      !! @param[in] n   index of Matsubara frequency point i*pi*n
       !! @param[in] om  real frequency point
 
-      function kfunf_mf(n,om)
+      function kfunmf(n,om)
 
       implicit none
       integer n
       real *8 om
-      complex *16 kfunf_mf
+      complex *16 kfunmf
 
       real *8 pi
       complex *16 eye
@@ -79,9 +76,9 @@
       pi = 4*atan(1.0d0)
       eye = (0.0d0,1.0d0)
 
-      kfunf_mf = 1.0d0/((2*n+1)*pi*eye+om)
+      kfunmf = 1.0d0/(n*pi*eye+om)
 
-      end function kfunf_mf
+      end function kfunmf
 
 
 

@@ -103,14 +103,14 @@
 
       allocate(dlrmf(r))
 
-      call dlr_mf(nmax,r,dlrrf,dlrmf)
+      call dlr_mf(nmax,r,dlrrf,-1,dlrmf)
 
 
       ! Get Matsubara frequency values -> DLR coefficients transform matrix in LU form
 
       allocate(mf2cf(r,r),mf2cfp(r))
 
-      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,mf2cf,mf2cfp)
+      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,-1,mf2cf,mf2cfp)
 
 
 
@@ -125,7 +125,7 @@
 
       call dlr_it2itr(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
 
-      call dlr_cf2mf(r,dlrrf,dlrmf,cf2mf)
+      call dlr_cf2mf(r,dlrrf,dlrmf,-1,cf2mf)
       
 
       ! --- Solve SYK equation ---
@@ -229,10 +229,10 @@
       complex *16 g0(r)
 
       integer i
-      complex *16, external :: kfunf_mf
+      complex *16, external :: kfunmf
 
       do i=1,r
-        g0(i) = -kfunf_mf(dlrmf(i),beta*mu)
+        g0(i) = -kfunmf(2*dlrmf(i)+1,beta*mu)
       enddo
 
       end subroutine getg0

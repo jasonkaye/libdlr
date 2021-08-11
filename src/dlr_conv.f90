@@ -6,13 +6,15 @@
       !
       
       !> Get tensor taking a set of DLR coefficients to the matrix of
-      !! convolution by the corresponding Green's function.
+      !! convolution by the corresponding Green's function. 
       !!
       !! To obtain the matrix C of convolution by a Green's function G,
       !! use the output of this subroutine with the subroutine
       !! dlr_convtens.
       !!
       !! @param[in]   beta    inverse temperature
+      !! @param[in]   xi      xi=-1 for fermionic case; xi=1 for bosonic
+      !!                        case
       !! @param[in]   r       number of DLR basis functions
       !! @param[in]   dlrrf   DLR frequency nodes
       !! @param[in]   dlrit   DLR imaginary time nodes
@@ -30,10 +32,10 @@
       !!                        DLR grid values of the convolution
       !!                        g * f.
 
-      subroutine dlr_convtens(beta,r,dlrrf,dlrit,it2cf,it2cfp,phi)
+      subroutine dlr_convtens(beta,xi,r,dlrrf,dlrit,it2cf,it2cfp,phi)
 
       implicit none
-      integer r,it2cfp(r)
+      integer r,xi,it2cfp(r)
       real *8 beta,dlrrf(r),dlrit(r),it2cf(r,r)
       real *8 phi(r*r,r)
       real *8, external :: kfun
@@ -41,7 +43,7 @@
       integer j,k,l,ier,maxrec,numint,info
       real *8 one,rint1,rint2
       real *8, allocatable :: phitmp(:,:,:),phitmp2(:,:)
-      real *8, external :: kfunf,kfunf_rel
+      real *8, external :: kfunf,kfunf_rel,expfun
 
       one = 1.0d0
 
@@ -53,20 +55,33 @@
 
             if (k.ne.l) then
 
-              phitmp(j,k,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
-                kfunf_rel(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
+              !phitmp(j,k,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
+              !  kfunf_rel(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
+
+              phitmp(j,k,l) =&
+                (kfunf_rel(dlrit(j),dlrrf(l))*expfun(dlrrf(k),xi) -&
+                kfunf_rel(dlrit(j),dlrrf(k))*expfun(dlrrf(l),xi))/&
+                (dlrrf(k)-dlrrf(l))
+
+
 
             else
 
               if (dlrit(j).gt.0.0d0) then
 
-                phitmp(j,k,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
-                  kfunf_rel(dlrit(j),dlrrf(k))
+                !phitmp(j,k,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
+                !  kfunf_rel(dlrit(j),dlrrf(k))
+
+                phitmp(j,k,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
+                  xi*kfunf(1.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
 
               else
 
-                phitmp(j,k,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
-                  kfunf_rel(dlrit(j),dlrrf(k))
+                !phitmp(j,k,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
+                !  kfunf_rel(dlrit(j),dlrrf(k))
+
+                phitmp(j,k,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
+                  kfunf(0.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
 
               endif
             endif
@@ -180,6 +195,8 @@
       !! operating on grid values.
       !!
       !! @param[in]   beta    inverse temperature
+      !! @param[in]   xi      xi=-1 for fermionic case; xi=1 for bosonic
+      !!                        case
       !! @param[in]   r       number of DLR basis functions
       !! @param[in]   dlrrf   DLR frequency nodes
       !! @param[in]   dlrit   DLR imaginary time nodes
@@ -191,17 +208,17 @@
       !!                        phi_{ijk}, i indexes grid values, and
       !!                        j,k index DLR coefficients.
       
-      subroutine dlr_convtens_vcc(beta,r,dlrrf,dlrit,phivcc)
+      subroutine dlr_convtens_vcc(beta,xi,r,dlrrf,dlrit,phivcc)
 
       implicit none
-      integer r
+      integer r,xi
       real *8 beta,dlrrf(r),dlrit(r)
       real *8 phivcc(r*r,r)
       real *8, external :: kfun
 
       integer j,k,l,ier,maxrec,numint
       real *8 one,rint1,rint2
-      real *8, external :: kfunf,kfunf_rel
+      real *8, external :: kfunf,kfunf_rel,expfun
 
       one = 1.0d0
 
@@ -211,20 +228,31 @@
 
             if (k.ne.l) then
 
-              phivcc((k-1)*r+j,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
-                kfunf_rel(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
+!              phivcc((k-1)*r+j,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
+!                kfunf_rel(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
+
+              phivcc((k-1)*r+j,l) = &
+                (kfunf_rel(dlrit(j),dlrrf(l))*expfun(dlrrf(k),xi) -&
+                kfunf_rel(dlrit(j),dlrrf(k))*expfun(dlrrf(l),xi))/&
+                (dlrrf(k)-dlrrf(l))
 
             else
 
               if (dlrit(j).gt.0.0d0) then
 
-                phivcc((k-1)*r+j,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
-                  kfunf_rel(dlrit(j),dlrrf(k))
+!                phivcc((k-1)*r+j,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
+!                  kfunf_rel(dlrit(j),dlrrf(k))
+
+                phivcc((k-1)*r+j,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
+                  xi*kfunf(1.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
 
               else
 
-                phivcc((k-1)*r+j,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
-                  kfunf_rel(dlrit(j),dlrrf(k))
+!                phivcc((k-1)*r+j,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
+!                  kfunf_rel(dlrit(j),dlrrf(k))
+
+                phivcc((k-1)*r+j,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
+                  kfunf(0.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
 
               endif
             endif
@@ -297,3 +325,20 @@
       gmat = transpose(gmat)
 
       end subroutine dlr_convmat_vcc
+
+
+
+      function expfun(om,xi)
+
+      implicit none
+
+      integer xi
+      real *8 om,expfun
+
+      if (om.ge.0.0d0) then
+        expfun = (1.0d0-xi*exp(-om))/(1.0d0+exp(-om))
+      else
+        expfun = (exp(om)-1.0d0*xi)/(exp(om)+1.0d0)
+      endif
+
+      end function expfun

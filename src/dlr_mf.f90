@@ -10,9 +10,21 @@
 
       !> Get DLR frequency nodes and Matsubara frequency nodes
       !!
+      !! Note: Matsubara frequencies are given by
+      !! i*omega_n = i*pi*(2n+1) for fermionic Green's functions, and
+      !! i*omega_n = i*pi*2n for bosonic Green's functions. The integers
+      !! returned in the array dlrmf are the indices n of these
+      !! frequencies. The input xi controls whether these are indices
+      !! into fermionic or bosonic Matsubara frequencies. For example,
+      !! if dlrmf(j) = 3 for some index j, and xi = -1, then the
+      !! corresponding Matsubara frequency is i*omega_n = i*pi*(2*3+1); if
+      !! xi = 1, then it is i*omega_n = i*pi*(2*3).
+      !!
       !! @param[in]     lambda  dimensionless cutoff parameter
       !! @param[in]     eps     DLR error tolerance
       !! @param[in]     nmax    Matsubara frequency cutoff
+      !! @param[in]     xi      xi=-1 for fermionic frequencies; xi=1
+      !!                          for bosonic frequencies
       !! @param[in,out] r       On input, maximum possible number of DLR
       !!                          basis functions, defining input size
       !!                          of various arrays; on output, number
@@ -20,10 +32,10 @@
       !! @param[out]    dlrrf   DLR frequency nodes
       !! @param[out]    dlrmf   DLR Matsubara frequency nodes
 
-      subroutine dlr_buildmf(lambda,eps,nmax,r,dlrrf,dlrmf)
+      subroutine dlr_buildmf(lambda,eps,nmax,xi,r,dlrrf,dlrmf)
 
       implicit none
-      integer nmax,r,dlrmf(r)
+      integer nmax,xi,r,dlrmf(r)
       real *8 lambda,eps,dlrrf(r)
 
       integer p,npt,npo,nt,no
@@ -55,7 +67,7 @@
 
       ! Get DLR Matsubara frequency grid
 
-      call dlr_mf(nmax,r,dlrrf,dlrmf)
+      call dlr_mf(nmax,r,dlrrf,xi,dlrmf)
 
       end subroutine dlr_buildmf
 
@@ -64,23 +76,35 @@
 
 
       !> Get DLR Matsubara frequency nodes
+      !! 
+      !! Note: Matsubara frequencies are given by
+      !! i*omega_n = i*pi*(2n+1) for fermionic Green's functions, and
+      !! i*omega_n = i*pi*2n for bosonic Green's functions. The integers
+      !! returned in the array dlrmf are the indices n of these
+      !! frequencies. The input xi controls whether these are indices
+      !! into fermionic or bosonic Matsubara frequencies. For example,
+      !! if dlrmf(j) = 3 for some index j, and xi = -1, then the
+      !! corresponding Matsubara frequency is i*omega_n = i*pi*(2*3+1); if
+      !! xi = 1, then it is i*omega_n = i*pi*(2*3).
       !!
       !! @param[in]  nmax   Matsubara frequency cutoff
       !! @param[in]  r      number of DLR basis functions
       !! @param[in]  dlrrf  DLR frequency nodes
+      !! @param[in]  xi     xi=-1 for fermionic frequencies; xi=1
+      !!                      for bosonic frequencies
       !! @param[out] dlrmf  DLR Matsubara frequency nodes
 
-      subroutine dlr_mf(nmax,r,dlrrf,dlrmf)
+      subroutine dlr_mf(nmax,r,dlrrf,xi,dlrmf)
 
       implicit none
-      integer nmax,r,dlrmf(r)
+      integer nmax,r,xi,dlrmf(r)
       real *8 dlrrf(r)
 
       integer i,k,info
       integer, allocatable :: ns(:),list(:)
       real *8, allocatable :: work(:)
       complex *16, allocatable :: poles(:,:)
-      complex *16, external :: kfunf_mf
+      complex *16, external :: kfunmf
 
       ! Get matrix of Fourier transforms of DLR basis functions
 
@@ -91,7 +115,8 @@
       do i=1,2*nmax+1
         do k=1,r
           
-          poles(k,i) = kfunf_mf(ns(i),dlrrf(k))
+          !poles(k,i) = kfunf_mf(ns(i),dlrrf(k))
+          poles(k,i) = kfunmf(2*ns(i)+(1-xi)/2,dlrrf(k))
           
         enddo
       enddo
@@ -132,6 +157,8 @@
       !! @param[in]  r         number of DLR basis functions
       !! @param[in]  dlrrf   DLR frequency nodes
       !! @param[in]  dlrmf   DLR Matsubara frequency nodes
+      !! @param[in]  xi      xi=-1 for fermionic frequencies; xi=1
+      !!                       for bosonic frequencies
       !! @param[out] mf2cf   Matsubara frequency grid values ->
       !!                       DLR coefficients transform matrix,
       !!                       stored in LAPACK LU factored format; LU
@@ -141,22 +168,23 @@
       !!                       stored in LAPACK LU factored format; LU
       !!                       pivots
 
-      subroutine dlr_mf2cf(nmax,r,dlrrf,dlrmf,mf2cf,mf2cfp)
+      subroutine dlr_mf2cf(nmax,r,dlrrf,dlrmf,xi,mf2cf,mf2cfp)
 
       implicit none
-      integer nmax,r,dlrmf(r),mf2cfp(r)
+      integer nmax,r,xi,dlrmf(r),mf2cfp(r)
       real *8 dlrrf(r)
       complex *16 mf2cf(r,r)
 
       integer j,k,info
-      complex *16, external :: kfunf_mf
+      complex *16, external :: kfunmf
 
       ! Extract selected rows and columns of Fourier transformed K
       ! matrix
 
       do k=1,r
         do j=1,r
-          mf2cf(j,k) = kfunf_mf(dlrmf(j),dlrrf(k))
+          !mf2cf(j,k) = kfunf_mf(dlrmf(j),dlrrf(k))
+          mf2cf(j,k) = kfunmf(2*dlrmf(j)+(1-xi)/2,dlrrf(k))
         enddo
       enddo
 
@@ -180,19 +208,21 @@
       !! @param[in]  r      number of DLR basis functions
       !! @param[in]  dlrrf  DLR freq nodes
       !! @param[in]  dlrmf  DLR Matsubara freq nodes
+      !! @param[in]  xi      xi=-1 for fermionic frequencies; xi=1
+      !!                       for bosonic frequencies
       !! @param[out] cf2mf  DLR coeffs -> Matsubara freq grid
       !!                      values transform matrix
 
 
 
-      subroutine dlr_cf2mf(r,dlrrf,dlrmf,cf2mf)
+      subroutine dlr_cf2mf(r,dlrrf,dlrmf,xi,cf2mf)
 
       implicit none
-      integer r,dlrmf(r)
+      integer r,dlrmf(r),xi
       real *8 dlrrf(r)
       complex *16 cf2mf(r,r)
 
-      complex *16, external :: kfunf_mf
+      complex *16, external :: kfunmf
 
       integer i,j
 
@@ -201,7 +231,8 @@
 
       do j=1,r
         do i=1,r
-          cf2mf(i,j) = kfunf_mf(dlrmf(i),dlrrf(j))
+          !cf2mf(i,j) = kfunf_mf(dlrmf(i),dlrrf(j))
+          cf2mf(i,j) = kfunmf(2*dlrmf(i)+(1-xi)/2,dlrrf(j))
         enddo
       enddo
 
@@ -253,30 +284,43 @@
 
 
 
-      !> Evaluate a DLR expansion at a fermionic Matsubara frequency
-      !! point i*omega_n = i*(2n+1)
+      !> Evaluate a DLR expansion at a Matsubara frequency point
+      !! 
+      !! Note: Matsubara frequencies are given by
+      !! i*omega_n = i*pi*(2n+1) for fermionic Green's functions, and
+      !! i*omega_n = i*pi*2n for bosonic Green's functions. The
+      !Matsubara frequency at which the DLR expansion is evaluated it
+      !determined by the input index n, and xi, which determines whether
+      !n is an index into a fermionic or bosonic Matsubara frequency.
+      !! For example, if n=11 and xi = -1, then the DLR expansion will
+      !! be evaluated at the Matsubara frequency 
+      !! i*omega_n = i*pi*(2*11+1); if xi = 1, then it will be evaluated
+      !! at i*omega_n = i*pi*(2*11).
       !!
       !! @param[in]  r      number of DLR basis functions
       !! @param[in]  dlrrf  DLR frequency nodes
+      !! @param[in]  xi     xi=-1 for fermionic frequencies; xi=1
+      !!                      for bosonic frequencies
       !! @param[in]  gc     DLR coefficients of expansion
       !! @param[in]  n      Matsubara frequency integer
       !! @param[out] gn     value of DLR expansion at i*omega_n
 
-      subroutine dlr_mf_eval(r,dlrrf,gc,n,gn)
+      subroutine dlr_mf_eval(r,dlrrf,xi,gc,n,gn)
 
       implicit none
-      integer r,n
+      integer r,xi,n
       real *8 dlrrf(r),gc(r)
       complex *16 gn
 
       integer i
       complex *16 kval
-      complex *16, external :: kfunf_mf
+      complex *16, external :: kfunmf
 
       gn = (0.0d0,0.0d0)
       do i=1,r
 
-        kval = kfunf_mf(n,dlrrf(i))
+        !kval = kfunf_mf(n,dlrrf(i))
+        kval = kfunmf(2*n+(1-xi)/2,dlrrf(i))
 
         gn = gn + gc(i)*kval
 

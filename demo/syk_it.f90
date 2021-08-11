@@ -109,7 +109,7 @@
 
       allocate(phi(r*r,r))
 
-      call dlr_convtens(beta,r,dlrrf,dlrit,it2cf,it2cfp,phi)
+      call dlr_convtens(beta,-1,r,dlrrf,dlrit,it2cf,it2cfp,phi)
 
 
       ! Get free particle Green's function
