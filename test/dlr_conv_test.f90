@@ -30,8 +30,8 @@
       integer ntst
       real *8 lambda,eps,beta
 
-      integer i,j,rank
-      integer, allocatable :: it2cfpiv(:)
+      integer i,j,r
+      integer, allocatable :: it2cfp(:)
       real *8 one,gtrue,gtest,errl2,errlinf,gmax,gl2
       real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:)
       real *8, allocatable :: g1(:),g2(:),g3(:)
@@ -51,23 +51,23 @@
 
       ! Build DLR basis, grid
 
-      rank = 500 ! Upper bound on rank
+      r = 500 ! Upper bound on DLR rank
 
-      allocate(dlrrf(rank),dlrit(rank))
+      allocate(dlrrf(r),dlrit(r))
 
-      call dlr_buildit(lambda,eps,rank,dlrrf,dlrit)
+      call dlr_buildit(lambda,eps,r,dlrrf,dlrit)
 
       ! Get imaginary time values -> DLR coefficients transform matrix in LU form
 
-      allocate(it2cf(rank,rank),it2cfpiv(rank))
+      allocate(it2cf(r,r),it2cfp(r))
 
-      call dlr_it2cf(rank,dlrrf,dlrit,it2cf,it2cfpiv)
+      call dlr_it2cf(r,dlrrf,dlrit,it2cf,it2cfp)
 
 
       write(6,*) ''
       write(6,*) '-------------------- DLR basis --------------------'
       write(6,*) ''
-      write(6,*) 'DLR rank                          = ',rank
+      write(6,*) 'DLR rank                          = ',r
 
 
       ! --- Sample two Green's function and get DLR expansions ---
@@ -75,9 +75,9 @@
 
       ! Sample G1 and G2 at DLR grid points
 
-      allocate(g1(rank),g2(rank),g3(rank))
+      allocate(g1(r),g2(r),g3(r))
 
-      do i=1,rank
+      do i=1,r
 
         call gfun1(beta,dlrit(i),g1(i))
         call gfun2(beta,dlrit(i),g2(i))
@@ -89,16 +89,16 @@
 
       ! Get convolution tensor
 
-      allocate(phi(rank*rank,rank))
+      allocate(phi(r*r,r))
 
-      call dlr_convtens(beta,rank,dlrrf,dlrit,it2cf,it2cfpiv,phi)
+      call dlr_convtens(beta,r,dlrrf,dlrit,it2cf,it2cfp,phi)
 
 
       ! Form matrix of convolution by G1
 
-      allocate(gmat(rank,rank))
+      allocate(gmat(r,r))
 
-      call dlr_convmat(rank,it2cf,it2cfpiv,phi,g1,gmat)
+      call dlr_convmat(r,it2cf,it2cfp,phi,g1,gmat)
 
 
       ! Apply matrix to obtain convolution G3
@@ -108,7 +108,7 @@
       
       ! Get DLR coefficients of g3
 
-      call dlr_expnd(rank,it2cf,it2cfpiv,g3,g3)
+      call dlr_expnd(r,it2cf,it2cfp,g3,g3)
 
 
       ! Get test points and compare computed G3 against exact
@@ -131,7 +131,7 @@
 
         ! Evaluate DLR
 
-        call dlr_eval(rank,dlrrf,g3,ttst(i),gtest)
+        call dlr_eval(r,dlrrf,g3,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 

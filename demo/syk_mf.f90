@@ -73,8 +73,8 @@
       integer nout,maxit,nmu,nmax
       real *8 lambda,eps,fptol,w,beta,mu,c
 
-      integer i,j,rank,info,numit
-      integer, allocatable :: dlrmf(:),it2cfpiv(:),mf2cfpiv(:)
+      integer i,j,r,info,numit
+      integer, allocatable :: dlrmf(:),it2cfp(:),mf2cfp(:)
       real *8 one,gtest,gtest2
       real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:),g(:)
       real *8, allocatable :: cf2it(:,:),it2itr(:,:)
@@ -85,32 +85,32 @@
 
       ! Build DLR basis, grid
 
-      rank = 500 ! Upper bound on rank
+      r = 500 ! Upper bound on DLR rank
 
-      allocate(dlrrf(rank),dlrit(rank))
+      allocate(dlrrf(r),dlrit(r))
 
-      call dlr_buildit(lambda,eps,rank,dlrrf,dlrit)
+      call dlr_buildit(lambda,eps,r,dlrrf,dlrit)
 
 
       ! Get imaginary time values -> DLR coefficients transform matrix in LU form
 
-      allocate(it2cf(rank,rank),it2cfpiv(rank))
+      allocate(it2cf(r,r),it2cfp(r))
 
-      call dlr_it2cf(rank,dlrrf,dlrit,it2cf,it2cfpiv)
+      call dlr_it2cf(r,dlrrf,dlrit,it2cf,it2cfp)
 
 
       ! Get DLR Matsubara frequency grid
 
-      allocate(dlrmf(rank))
+      allocate(dlrmf(r))
 
-      call dlr_mf(nmax,rank,dlrrf,dlrmf)
+      call dlr_mf(nmax,r,dlrrf,dlrmf)
 
 
       ! Get Matsubara frequency values -> DLR coefficients transform matrix in LU form
 
-      allocate(mf2cf(rank,rank),mf2cfpiv(rank))
+      allocate(mf2cf(r,r),mf2cfp(r))
 
-      call dlr_mf2cf(nmax,rank,dlrrf,dlrmf,mf2cf,mf2cfpiv)
+      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,mf2cf,mf2cfp)
 
 
 
@@ -119,13 +119,13 @@
       ! transform matrix, and DLR coefficients -> Matsubara frequency
       ! values transform matrix
 
-      allocate(cf2it(rank,rank),it2itr(rank,rank),cf2mf(rank,rank))
+      allocate(cf2it(r,r),it2itr(r,r),cf2mf(r,r))
 
-      call dlr_cf2it(rank,dlrrf,dlrit,cf2it)
+      call dlr_cf2it(r,dlrrf,dlrit,cf2it)
 
-      call dlr_it2itr(rank,dlrrf,dlrit,it2cf,it2cfpiv,it2itr)
+      call dlr_it2itr(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
 
-      call dlr_cf2mf(rank,dlrrf,dlrmf,cf2mf)
+      call dlr_cf2mf(r,dlrrf,dlrmf,cf2mf)
       
 
       ! --- Solve SYK equation ---
@@ -133,24 +133,24 @@
 
       ! Solve Dyson equation by marching in mu
 
-      allocate(g(rank))
+      allocate(g(r))
 
       numit = maxit
 
       ! Get free particle Green's function
 
-      allocate(g0(rank))
+      allocate(g0(r))
 
-      call getg0(beta,rank,dlrmf,0.0d0,g0)
+      call getg0(beta,r,dlrmf,0.0d0,g0)
 
       ! Set initial guess to g0
 
-      call dlr_mfexpnd(rank,mf2cf,mf2cfpiv,g0,g)
+      call dlr_mfexpnd(r,mf2cf,mf2cfp,g0,g)
 
       g = matmul(cf2it,g)
 
-      call dlr_dyson_mf(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,&
-        dlrmf,mf2cf,mf2cfpiv,cf2mf,sigeval,w,fptol,numit,g0,g,info)
+      call dlr_dyson_mf(beta,r,dlrit,it2cf,it2cfp,cf2it,&
+        dlrmf,mf2cf,mf2cfp,cf2mf,sigfun,w,fptol,numit,g0,g,info)
 
       write(6,*) 'mu = ',0.0d0
 
@@ -164,10 +164,10 @@
 
         numit = maxit
 
-        call getg0(beta,rank,dlrmf,i*mu/nmu,g0)
+        call getg0(beta,r,dlrmf,i*mu/nmu,g0)
 
-        call dlr_dyson_mf(beta,rank,dlrit,it2cf,it2cfpiv,cf2it,&
-          dlrmf,mf2cf,mf2cfpiv,cf2mf,sigeval,w,fptol,numit,g0,&
+        call dlr_dyson_mf(beta,r,dlrit,it2cf,it2cfp,cf2it,&
+          dlrmf,mf2cf,mf2cfp,cf2mf,sigfun,w,fptol,numit,g0,&
           g,info)
 
         write(6,*) 'mu = ',i*mu/nmu
@@ -187,13 +187,13 @@
 
       call eqpts_rel(nout,ttst)
 
-      call dlr_expnd(rank,it2cf,it2cfpiv,g,g)
+      call dlr_expnd(r,it2cf,it2cfp,g,g)
 
       open(1,file='gfun')
 
       do i=1,nout
 
-        call dlr_eval(rank,dlrrf,g,ttst(i),gtest)
+        call dlr_eval(r,dlrrf,g,ttst(i),gtest)
 
         call rel2abs(1,ttst(i),ttst(i))
 
@@ -206,32 +206,32 @@
 
       contains
 
-        subroutine sigeval(rank,g,sig)
+        subroutine sigfun(r,g,sig)
 
         ! Evaluator for SYK self-energy
 
         implicit none
-        integer rank
-        real *8 g(rank),sig(rank)
+        integer r
+        real *8 g(r),sig(r)
 
         sig = c**2*g**2*matmul(it2itr,g)
 
-        end subroutine sigeval
+        end subroutine sigfun
       
       end subroutine dlr_syk_mf_main
 
 
-      subroutine getg0(beta,rank,dlrmf,mu,g0)
+      subroutine getg0(beta,r,dlrmf,mu,g0)
 
       implicit none
-      integer rank,dlrmf(rank)
+      integer r,dlrmf(r)
       real *8 beta,mu
-      complex *16 g0(rank)
+      complex *16 g0(r)
 
       integer i
       complex *16, external :: kfunf_mf
 
-      do i=1,rank
+      do i=1,r
         g0(i) = -kfunf_mf(dlrmf(i),beta*mu)
       enddo
 

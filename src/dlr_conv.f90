@@ -12,30 +12,30 @@
       !! use the output of this subroutine with the subroutine
       !! dlr_convtens.
       !!
-      !! @param[in]   beta      inverse temperature
-      !! @param[in]   rank      number of DLR basis functions
-      !! @param[in]   dlrrf     DLR frequency nodes
-      !! @param[in]   dlrit     DLR imaginary time nodes
-      !! @param[in]   it2cf     imaginary time grid values ->
-      !!                          DLR coefficients transform matrix,
-      !!                          stored in LAPACK LU factored format;
-      !!                          LU factors
-      !! @param[in]   it2cfpiv  imaginary time grid values ->
-      !!                          DLR coefficients transform matrix,
-      !!                          stored in LAPACK LU factored format;
-      !!                          LU pivots
-      !! @param[out]  phi       tensor taking DLR coefficients of g to
-      !!                          matrix C of convolution by g. C takes
-      !!                          DLR coefficients of a function f ->
-      !!                          DLR grid values of the convolution
-      !!                          g * f.
+      !! @param[in]   beta    inverse temperature
+      !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   dlrrf   DLR frequency nodes
+      !! @param[in]   dlrit   DLR imaginary time nodes
+      !! @param[in]   it2cf   imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU factors
+      !! @param[in]   it2cfp  imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU pivots
+      !! @param[out]  phi     tensor taking DLR coefficients of g to
+      !!                        matrix C of convolution by g. C takes
+      !!                        DLR coefficients of a function f ->
+      !!                        DLR grid values of the convolution
+      !!                        g * f.
 
-      subroutine dlr_convtens(beta,rank,dlrrf,dlrit,it2cf,it2cfpiv,phi)
+      subroutine dlr_convtens(beta,r,dlrrf,dlrit,it2cf,it2cfp,phi)
 
       implicit none
-      integer rank,it2cfpiv(rank)
-      real *8 beta,dlrrf(rank),dlrit(rank),it2cf(rank,rank)
-      real *8 phi(rank*rank,rank)
+      integer r,it2cfp(r)
+      real *8 beta,dlrrf(r),dlrit(r),it2cf(r,r)
+      real *8 phi(r*r,r)
       real *8, external :: kfun
 
       integer j,k,l,ier,maxrec,numint,info
@@ -45,11 +45,11 @@
 
       one = 1.0d0
 
-      allocate(phitmp(rank,rank,rank),phitmp2(rank,rank*rank))
+      allocate(phitmp(r,r,r),phitmp2(r,r*r))
 
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
+      do l=1,r
+        do k=1,r
+          do j=1,r
 
             if (k.ne.l) then
 
@@ -77,30 +77,30 @@
 
 
 
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-            phitmp2(k,(l-1)*rank+j) = phitmp(j,k,l)
+      do l=1,r
+        do k=1,r
+          do j=1,r
+            phitmp2(k,(l-1)*r+j) = phitmp(j,k,l)
           enddo
         enddo
       enddo
             
-      call dgetrs('T',rank,rank*rank,it2cf,rank,it2cfpiv,phitmp2,rank,&
+      call dgetrs('T',r,r*r,it2cf,r,it2cfp,phitmp2,r,&
         info)
 
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-            phitmp(j,k,l) = phitmp2(k,(l-1)*rank+j)
+      do l=1,r
+        do k=1,r
+          do j=1,r
+            phitmp(j,k,l) = phitmp2(k,(l-1)*r+j)
           enddo
         enddo
       enddo
 
 
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
-            phi((k-1)*rank+j,l) = phitmp(j,k,l)
+      do l=1,r
+        do k=1,r
+          do j=1,r
+            phi((k-1)*r+j,l) = phitmp(j,k,l)
           enddo
         enddo
       enddo
@@ -121,41 +121,41 @@
       !! values of a Green's function F, and returns the values of
       !! G * F at the imaginary time grid points.
       !!
-      !! @param[in]   rank      number of DLR basis functions
-      !! @param[in]   it2cf     imaginary time grid values ->
-      !!                          DLR coefficients transform matrix,
-      !!                          stored in LAPACK LU factored format;
-      !!                          LU factors
-      !! @param[in]   it2cfpiv  imaginary time grid values ->
-      !!                          DLR coefficients transform matrix,
-      !!                          stored in LAPACK LU factored format;
-      !!                          LU pivots
-      !! @param[in]   phi       tensor produced by subroutine
-      !!                          dlr_convtens taking DLR coefficients
-      !!                          of g to matrix of convolution by g.
-      !! @param[in]   g         values of Green's function at imaginary
-      !!                          time grid points
-      !! @param[out]  gmat      matrix of convolution by g
+      !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   it2cf   imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU factors
+      !! @param[in]   it2cfp  imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU pivots
+      !! @param[in]   phi     tensor produced by subroutine
+      !!                        dlr_convtens taking DLR coefficients
+      !!                        of g to matrix of convolution by g.
+      !! @param[in]   g       values of Green's function at imaginary
+      !!                        time grid points
+      !! @param[out]  gmat    matrix of convolution by g
 
-      subroutine dlr_convmat(rank,it2cf,it2cfpiv,phi,g,gmat)
+      subroutine dlr_convmat(r,it2cf,it2cfp,phi,g,gmat)
 
       implicit none
-      integer rank,it2cfpiv(rank)
-      real *8 phi(rank*rank,rank),it2cf(rank,rank),g(rank)
-      real *8 gmat(rank,rank)
+      integer r,it2cfp(r)
+      real *8 phi(r*r,r),it2cf(r,r),g(r)
+      real *8 gmat(r,r)
 
       integer info
       real *8, allocatable :: gc(:)
 
       ! Get DLR coefficients of G
 
-      allocate(gc(rank))
+      allocate(gc(r))
 
-      call dlr_expnd(rank,it2cf,it2cfpiv,g,gc)
+      call dlr_expnd(r,it2cf,it2cfp,g,gc)
 
       ! Get convolution matrix taking coefficients -> values
 
-      call dgemv('N',rank*rank,rank,1.0d0,phi,rank*rank,gc,1,0.0d0,&
+      call dgemv('N',r*r,r,1.0d0,phi,r*r,gc,1,0.0d0,&
         gmat,1)
 
 
@@ -180,7 +180,7 @@
       !! operating on grid values.
       !!
       !! @param[in]   beta    inverse temperature
-      !! @param[in]   rank    number of DLR basis functions
+      !! @param[in]   r       number of DLR basis functions
       !! @param[in]   dlrrf   DLR frequency nodes
       !! @param[in]   dlrit   DLR imaginary time nodes
       !! @param[out]  phivcc  tensor taking DLR coefficients of g to
@@ -191,12 +191,12 @@
       !!                        phi_{ijk}, i indexes grid values, and
       !!                        j,k index DLR coefficients.
       
-      subroutine dlr_convtens_vcc(beta,rank,dlrrf,dlrit,phivcc)
+      subroutine dlr_convtens_vcc(beta,r,dlrrf,dlrit,phivcc)
 
       implicit none
-      integer rank
-      real *8 beta,dlrrf(rank),dlrit(rank)
-      real *8 phivcc(rank*rank,rank)
+      integer r
+      real *8 beta,dlrrf(r),dlrit(r)
+      real *8 phivcc(r*r,r)
       real *8, external :: kfun
 
       integer j,k,l,ier,maxrec,numint
@@ -205,25 +205,25 @@
 
       one = 1.0d0
 
-      do l=1,rank
-        do k=1,rank
-          do j=1,rank
+      do l=1,r
+        do k=1,r
+          do j=1,r
 
             if (k.ne.l) then
 
-              phivcc((k-1)*rank+j,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
+              phivcc((k-1)*r+j,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
                 kfunf_rel(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
 
             else
 
               if (dlrit(j).gt.0.0d0) then
 
-                phivcc((k-1)*rank+j,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
+                phivcc((k-1)*r+j,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
                   kfunf_rel(dlrit(j),dlrrf(k))
 
               else
 
-                phivcc((k-1)*rank+j,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
+                phivcc((k-1)*r+j,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
                   kfunf_rel(dlrit(j),dlrrf(k))
 
               endif
@@ -249,50 +249,50 @@
       !! values of a Green's function F, and returns the values of
       !! G * F at the imaginary time grid points.
       !!
-      !! @param[in]   rank      number of DLR basis functions
-      !! @param[in]   it2cf     imaginary time grid values ->
-      !!                          DLR coefficients transform matrix,
-      !!                          stored in LAPACK LU factored format;
-      !!                          LU factors
-      !! @param[in]   it2cfpiv  imaginary time grid values ->
-      !!                          DLR coefficients transform matrix,
-      !!                          stored in LAPACK LU factored format;
-      !!                          LU pivots
-      !! @param[in]   phivcc    tensor produced by subroutine
-      !!                          dlr_convtens_vcc taking DLR coefficients
-      !!                          of g to matrix of convolution by g,
-      !!                          acting from DLR coefficients to DLR
-      !!                          grid values.
-      !! @param[in]   g         values of Green's function at imaginary
-      !!                          time grid points
-      !! @param[out]  gmat      matrix of convolution by g
+      !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   it2cf   imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU factors
+      !! @param[in]   it2cfp  imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU pivots
+      !! @param[in]   phivcc  tensor produced by subroutine
+      !!                        dlr_convtens_vcc taking DLR coefficients
+      !!                        of g to matrix of convolution by g,
+      !!                        acting from DLR coefficients to DLR
+      !!                        grid values.
+      !! @param[in]   g       values of Green's function at imaginary
+      !!                        time grid points
+      !! @param[out]  gmat    matrix of convolution by g
 
-      subroutine dlr_convmat_vcc(rank,it2cf,it2cfpiv,phivcc,g,gmat)
+      subroutine dlr_convmat_vcc(r,it2cf,it2cfp,phivcc,g,gmat)
 
       implicit none
-      integer rank,it2cfpiv(rank)
-      real *8 phivcc(rank*rank,rank),it2cf(rank,rank),g(rank)
-      real *8 gmat(rank,rank)
+      integer r,it2cfp(r)
+      real *8 phivcc(r*r,r),it2cf(r,r),g(r)
+      real *8 gmat(r,r)
 
       integer i,j,info
       real *8, allocatable :: gc(:)
 
       ! Get DLR coefficients of G
 
-      allocate(gc(rank))
+      allocate(gc(r))
 
-      call dlr_expnd(rank,it2cf,it2cfpiv,g,gc)
+      call dlr_expnd(r,it2cf,it2cfp,g,gc)
 
       ! Get convolution matrix taking coefficients -> values
 
-      call dgemv('N',rank*rank,rank,1.0d0,phivcc,rank*rank,gc,1,0.0d0,&
+      call dgemv('N',r*r,r,1.0d0,phivcc,r*r,gc,1,0.0d0,&
         gmat,1)
 
       ! Precompose with matrix taking values -> coefficients
 
       gmat = transpose(gmat)
 
-      call dgetrs('T',rank,rank,it2cf,rank,it2cfpiv,gmat,rank,info)
+      call dgetrs('T',r,r,it2cf,r,it2cfp,gmat,r,info)
 
       gmat = transpose(gmat)
 

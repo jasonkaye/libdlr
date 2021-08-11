@@ -36,8 +36,8 @@
       integer ntst,nmax
       real *8 lambda,eps,beta
 
-      integer i,j,rank
-      integer, allocatable :: dlrmf(:),mf2cfpiv(:)
+      integer i,j,r
+      integer, allocatable :: dlrmf(:),mf2cfp(:)
       real *8 one,gtrue,errl2,errlinf,gmax,gl2,gtest
       real *8, allocatable :: ttst(:),dlrrf(:)
       real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:),gc(:)
@@ -57,24 +57,24 @@
 
       ! Build DLR basis, grid
 
-      rank = 500 ! Upper bound on rank
+      r = 500 ! Upper bound on DLR rank
 
-      allocate(dlrrf(rank),dlrmf(rank))
+      allocate(dlrrf(r),dlrmf(r))
 
-      call dlr_buildmf(lambda,eps,nmax,rank,dlrrf,dlrmf)
+      call dlr_buildmf(lambda,eps,nmax,r,dlrrf,dlrmf)
 
 
       write(6,*) ''
       write(6,*) '-------------------- DLR basis --------------------'
       write(6,*) ''
-      write(6,*) 'DLR rank                          = ',rank
+      write(6,*) 'DLR rank                          = ',r
 
 
       ! Get Matsubara frequency values -> DLR coefficients transform matrix in LU form
 
-      allocate(mf2cf(rank,rank),mf2cfpiv(rank))
+      allocate(mf2cf(r,r),mf2cfp(r))
 
-      call dlr_mf2cf(nmax,rank,dlrrf,dlrmf,mf2cf,mf2cfpiv)
+      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,mf2cf,mf2cfp)
 
 
       ! --- Compute actual eps-rank of fine grid K matrix by SVD ---
@@ -82,7 +82,7 @@
       write(6,*) ''
       write(6,*) '-------------------- DLR basis --------------------'
       write(6,*) ''
-      write(6,*) 'DLR rank                          = ',rank
+      write(6,*) 'DLR rank                          = ',r
 
 
       ! --- Sample Green's function and get DLR ---
@@ -90,9 +90,9 @@
 
       ! Sample G(tau) at DLR grid points
 
-      allocate(g(rank),gc(rank))
+      allocate(g(r),gc(r))
 
-      do i=1,rank
+      do i=1,r
 
         call gfun_mf(beta,dlrmf(i),g(i))
 
@@ -101,7 +101,7 @@
 
       ! Compute coefficients of DLR expansion from samples
 
-      call dlr_mfexpnd(rank,mf2cf,mf2cfpiv,g,gc)
+      call dlr_mfexpnd(r,mf2cf,mf2cfp,g,gc)
 
 
       ! --- Compare DLR with true Green's function ---
@@ -127,7 +127,7 @@
 
         ! Evaluate DLR
 
-        call dlr_eval(rank,dlrrf,gc,ttst(i),gtest)
+        call dlr_eval(r,dlrrf,gc,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 

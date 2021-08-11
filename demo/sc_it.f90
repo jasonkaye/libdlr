@@ -46,8 +46,8 @@
       integer ntst_it,ntst_mf
       real *8 lambda,eps,beta
 
-      integer npg,npo,pg,i,j,rank
-      integer, allocatable :: it2cfpiv(:),mf_tst(:)
+      integer npg,npo,pg,i,j,r
+      integer, allocatable :: it2cfp(:),mf_tst(:)
       real *8 one
       real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),g(:),gc(:)
       real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:)
@@ -58,18 +58,18 @@
 
       ! Build DLR basis, grid
 
-      rank = 500 ! Upper bound on rank
+      r = 500 ! Upper bound on DLR rank
 
-      allocate(dlrrf(rank),dlrit(rank))
+      allocate(dlrrf(r),dlrit(r))
 
-      call dlr_buildit(lambda,eps,rank,dlrrf,dlrit)
+      call dlr_buildit(lambda,eps,r,dlrrf,dlrit)
 
 
       ! Get imaginary time values -> DLR coefficients transform matrix in LU form
 
-      allocate(it2cf(rank,rank),it2cfpiv(rank))
+      allocate(it2cf(r,r),it2cfp(r))
 
-      call dlr_it2cf(rank,dlrrf,dlrit,it2cf,it2cfpiv)
+      call dlr_it2cf(r,dlrrf,dlrit,it2cf,it2cfp)
 
 
       ! --- Sample Green's function and obtain DLR coefficients ---
@@ -86,9 +86,9 @@
 
       ! Sample G(tau) at DLR imaginary time grid points
 
-      allocate(g(rank),gc(rank))
+      allocate(g(r),gc(r))
 
-      do i=1,rank
+      do i=1,r
 
         call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,dlrit(i),&
           g(i))
@@ -98,7 +98,7 @@
 
       ! Compute coefficients of DLR expansion from samples
 
-      call dlr_expnd(rank,it2cf,it2cfpiv,g,gc)
+      call dlr_expnd(r,it2cf,it2cfp,g,gc)
 
 
       ! --- Evaluate DLR in imaginary time and Matsubara frequency
@@ -117,7 +117,7 @@
 
       do i=1,ntst_it
 
-        call dlr_eval(rank,dlrrf,gc,it_tst(i),gtst_it(i))
+        call dlr_eval(r,dlrrf,gc,it_tst(i),gtst_it(i))
 
       enddo
 
@@ -137,7 +137,7 @@
 
       do i=1,2*ntst_mf+1
 
-        call dlr_mf_eval(rank,dlrrf,gc,mf_tst(i),gtst_mf(i))
+        call dlr_mf_eval(r,dlrrf,gc,mf_tst(i),gtst_mf(i))
 
       enddo
 

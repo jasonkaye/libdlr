@@ -50,8 +50,8 @@
       integer nmax,ntst_it,ntst_mf
       real *8 lambda,eps,beta
 
-      integer npt,npo,i,j,rank,pg,npg
-      integer, allocatable :: mf2cfpiv(:),dlrmf(:),mf_tst(:)
+      integer npt,npo,i,j,r,pg,npg
+      integer, allocatable :: mf2cfp(:),dlrmf(:),mf_tst(:)
       real *8 one
       real *8, allocatable :: it_tst(:),dlrrf(:)
       real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:)
@@ -63,18 +63,18 @@
 
       ! Build DLR basis, grid
 
-      rank = 500 ! Upper bound on rank
+      r = 500 ! Upper bound on DLR rank
 
-      allocate(dlrrf(rank),dlrmf(rank))
+      allocate(dlrrf(r),dlrmf(r))
 
-      call dlr_buildmf(lambda,eps,nmax,rank,dlrrf,dlrmf)
+      call dlr_buildmf(lambda,eps,nmax,r,dlrrf,dlrmf)
 
 
       ! Get Matsubara frequency values -> DLR coefficients transform matrix in LU form
 
-      allocate(mf2cf(rank,rank),mf2cfpiv(rank))
+      allocate(mf2cf(r,r),mf2cfp(r))
 
-      call dlr_mf2cf(nmax,rank,dlrrf,dlrmf,mf2cf,mf2cfpiv)
+      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,mf2cf,mf2cfp)
 
 
       ! --- Sample Green's function and obtain DLR coefficients ---
@@ -91,9 +91,9 @@
 
       ! Sample G(tau) at DLR Matsubara frequency grid points
 
-      allocate(g(rank),gc(rank))
+      allocate(g(r),gc(r))
 
-      do i=1,rank
+      do i=1,r
 
         call gfun_mf(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,dlrmf(i),&
           g(i))
@@ -103,7 +103,7 @@
 
       ! Compute coefficients of DLR expansion from samples
 
-      call dlr_mfexpnd(rank,mf2cf,mf2cfpiv,g,gc)
+      call dlr_mfexpnd(r,mf2cf,mf2cfp,g,gc)
 
 
       ! --- Evaluate DLR in imaginary time and Matsubara frequency
@@ -122,7 +122,7 @@
 
       do i=1,ntst_it
 
-        call dlr_eval(rank,dlrrf,gc,it_tst(i),gtst_it(i))
+        call dlr_eval(r,dlrrf,gc,it_tst(i),gtst_it(i))
 
       enddo
 
@@ -142,7 +142,7 @@
 
       do i=1,2*ntst_mf+1
 
-        call dlr_mf_eval(rank,dlrrf,gc,mf_tst(i),gtst_mf(i))
+        call dlr_mf_eval(r,dlrrf,gc,mf_tst(i),gtst_mf(i))
 
       enddo
 

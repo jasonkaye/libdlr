@@ -232,7 +232,7 @@
       !! @param[in]     om      Matsubara frequency fine grid points
       !! @param[in]     kmat    kernel K(tau,omega), sampled at fine grid
       !!                          points
-      !! @param[in,out] rank    On input, maximum possible number of DLR
+      !! @param[in,out] r       On input, maximum possible number of DLR
       !!                          basis functions, defining input size
       !!                          of various arrays; on output, number
       !!                          of DLR basis functions.
@@ -240,11 +240,11 @@
       !! @param[out]    oidx    column indices of kmat corresponding to
       !!                          DLR frequency nodes
 
-      subroutine dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
+      subroutine dlr_rf(lambda,eps,nt,no,om,kmat,r,dlrrf,oidx)
 
       implicit none
-      integer nt,no,rank,oidx(rank)
-      real *8 lambda,eps,om(no),kmat(nt,no),dlrrf(rank)
+      integer nt,no,r,oidx(r)
+      real *8 lambda,eps,om(no),kmat(nt,no),dlrrf(r)
 
       integer, allocatable :: list(:)
       real *8, allocatable :: tmp(:,:),work(:)
@@ -258,16 +258,16 @@
 
       ! Pivoted QR 
       
-      call iddp_qrpiv(eps,nt,no,tmp,rank,list,work)
+      call iddp_qrpiv(eps,nt,no,tmp,r,list,work)
 
       ! Rearrange indices to get selected frequency point indices
 
-      call ind_rearrange(no,rank,list)
+      call ind_rearrange(no,r,list)
 
       ! Extract selected frequencies
 
-      oidx(1:rank) = list(1:rank)
-      dlrrf(1:rank) = om(oidx(1:rank))
+      oidx(1:r) = list(1:r)
+      dlrrf(1:r) = om(oidx(1:r))
           
       end subroutine dlr_rf
 

@@ -35,8 +35,8 @@
       integer ntst
       real *8 lambda,eps,beta
 
-      integer i,j,rank
-      integer, allocatable :: it2cfpiv(:)
+      integer i,j,r
+      integer, allocatable :: it2cfp(:)
       real *8 one,gtrue,gtest,errl2,errlinf,gmax,gl2
       real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:)
       real *8, allocatable :: g(:),gc(:)
@@ -54,31 +54,31 @@
 
       ! Build DLR basis, grid
 
-      rank = 500 ! Upper bound on rank
+      r = 500 ! Upper bound on DLR rank
 
-      allocate(dlrrf(rank),dlrit(rank))
+      allocate(dlrrf(r),dlrit(r))
 
-      call dlr_buildit(lambda,eps,rank,dlrrf,dlrit)
+      call dlr_buildit(lambda,eps,r,dlrrf,dlrit)
 
 
       write(6,*) ''
       write(6,*) '-------------------- DLR basis --------------------'
       write(6,*) ''
-      write(6,*) 'DLR rank                          = ',rank
+      write(6,*) 'DLR rank                          = ',r
 
 
       ! Get imaginary time values -> DLR coefficients transform matrix in LU form
 
-      allocate(it2cf(rank,rank),it2cfpiv(rank))
+      allocate(it2cf(r,r),it2cfp(r))
 
-      call dlr_it2cf(rank,dlrrf,dlrit,it2cf,it2cfpiv)
+      call dlr_it2cf(r,dlrrf,dlrit,it2cf,it2cfp)
 
 
       ! Sample G(tau) at DLR grid points
 
-      allocate(g(rank),gc(rank))
+      allocate(g(r),gc(r))
 
-      do i=1,rank
+      do i=1,r
 
         call gfun(beta,dlrit(i),g(i))
 
@@ -87,7 +87,7 @@
 
       ! Compute coefficients of DLR expansion from samples
 
-      call dlr_expnd(rank,it2cf,it2cfpiv,g,gc)
+      call dlr_expnd(r,it2cf,it2cfp,g,gc)
 
 
       ! Get test points at which to measure error of Green's function;
@@ -110,7 +110,7 @@
 
         ! Evaluate DLR
 
-        call dlr_eval(rank,dlrrf,gc,ttst(i),gtest)
+        call dlr_eval(r,dlrrf,gc,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 
