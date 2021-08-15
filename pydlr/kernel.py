@@ -8,9 +8,9 @@ import numpy as np
 from scipy.linalg import qr as scipy_qr
 
 
-def chebyschev_collocation_points_1st_kind(N):
+def chebyshev_collocation_points_1st_kind(N):
     """
-    Return the Chebyschev collocation points of the first kind.
+    Return the Chebyshev collocation points of the first kind.
 
     The Chebyshev collocation points of the first kind are defined as
 
@@ -36,8 +36,8 @@ def chebyschev_collocation_points_1st_kind(N):
     Examples
     --------
 
-    >>> from pydlr.kernel import chebyschev_collocation_points_1st_kind
-    >>> x_j = chebyschev_collocation_points_1st_kind(10)
+    >>> from pydlr.kernel import chebyshev_collocation_points_1st_kind
+    >>> x_j = chebyshev_collocation_points_1st_kind(10)
     array([-0.98768834, -0.89100652, -0.70710678, -0.4539905 , -0.15643447,
             0.15643447,  0.4539905 ,  0.70710678,  0.89100652,  0.98768834])
 
@@ -47,9 +47,9 @@ def chebyschev_collocation_points_1st_kind(N):
     return x_j
 
 
-def chebyschev_barycentric_weights_1st_kind(N):
+def chebyshev_barycentric_weights_1st_kind(N):
     """
-    Return the Chebyschev barycentric interpolation weights of the first kind.
+    Return the Chebyshev barycentric interpolation weights of the first kind.
 
     The barycentric interpolation weights are defined as
 
@@ -73,30 +73,110 @@ def chebyschev_barycentric_weights_1st_kind(N):
     Examples
     --------
 
-    >>> from pydlr.kernel import chebyschev_barycentric_weights_1st_kind
-    >>> x_j = chebyschev_barycentric_weights_1st_kind(10)
+    >>> from pydlr.kernel import chebyshev_barycentric_weights_1st_kind
+    >>> w_j = chebyshev_barycentric_weights_1st_kind(10)
+    array([ 0.15643447, -0.4539905 ,  0.70710678, -0.89100652,  0.98768834,
+           -0.98768834,  0.89100652, -0.70710678,  0.4539905 , -0.15643447])
 
     """
     j = np.arange(N)
-    w_i = (-1)**j * np.sin(np.pi * (2*j + 1)/(2*N))
-    return w_i
+    w_j = (-1)**j * np.sin(np.pi * (2*j + 1)/(2*N))
+    return w_j
 
 
-def barycentric_interpolation(x, x_i, f_i, w_i):
+def barycentric_chebyshev_interpolation(x, x_j, f_j, w_j):
+    """
+    Return the barycentric interpolation of a Chebyshev polynomial on arbitrary points.
 
-    # -- Return value if x is on the grid x_i
-    idxs = np.argwhere(x_i == x)
-    if len(idxs) > 0: return f_i[idxs[0]]
+    The Barycentric interpolation formula has the form
 
+    .. math:: f(x) = \\left( \\sum_{j=0}^{N-1} \\frac{f_j w_j}{x - x_j} \\right) \Bigg/ \\left( \\sum_{j=0}^{N-1} \\frac{w_j}{x - x_j} \\right)
+
+    Parameters
+    ----------
+
+    x : ndarray
+        points :math:`x` to evaluate the Chebyshev polynomial at
+
+    x_j : ndarray
+        Chebyshev collocation points :math:`x_j` of the first kind
+
+    f_j : ndarray
+        Values  :math:`f_j` of the polynomial at the collocation points, :math:`f_j = f(x_j)`
+
+    w_j : ndarray
+        Chebyshev barycentric interpolation weights :math:`w_j`
+
+
+    Returns
+    -------
+
+    f_x : ndarray
+        Values :math:`f(x)` of the polynomial at the points :math:`x`
+
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> f = lambda x : np.cos(4*np.pi * x)
+    >>> from pydlr.kernel import chebyshev_collocation_points_1st_kind
+    >>> from pydlr.kernel import chebyshev_barycentric_weights_1st_kind
+    >>> x_j = chebyshev_collocation_points_1st_kind(32)
+    >>> w_j = chebyshev_barycentric_weights_1st_kind(32)
+    >>> f_j = f(x_j)
+    >>> from pydlr.kernel import barycentric_chebyshev_interpolation
+    >>> x = np.linspace(-1, 1, num=1000)
+    >>> f_x = barycentric_chebyshev_interpolation(x, x_j, f_j, w_j)
+    >>> np.testing.assert_array_almost_equal(f_x, f(x))
+    >>> print(np.max(np.abs(f_x - f(x))) < 1e-9)
+    True
+
+    """
+    
     # -- Barycentric interpolation off the grid
-    q_xi = w_i[:, None] / (x[None, :] - x_i[:, None])
-    val_x = np.sum(q_xi * f_i[:, None, ...], axis=0) / np.sum(q_xi, axis=0)
+    with np.testing.suppress_warnings() as sup:
+        sup.filter(RuntimeWarning, "divide by zero encountered in true_divide")
+        sup.filter(RuntimeWarning, "invalid value encountered in true_divide")
+        
+        q_xj = w_j[:, None] / (x[None, :] - x_j[:, None])
+        f_x = np.sum(q_xj * f_j[:, None, ...], axis=0) / np.sum(q_xj, axis=0)
 
-    return val_x
+    # -- Direct value lookup if x is on the grid x_j
+    idxs = np.argwhere(x[:, None] == x_j[None, :])
+    if len(idxs) > 0:
+        xidx, j = idxs.T
+        f_x[xidx] = f_j[j]
+    
+    return f_x
 
 
 def fermi_function(E, beta):
+    """
+    Evaluate the Fermi distribution function at energy :math:`E` and inverse temperature :math:`\beta`.
 
+    The Fermi distribution function :math:`f_\\beta(E)` has the form
+
+    .. math:: f_\\beta(E) = \\frac{1}{1 + e^{\\beta E}}
+
+    the evaluation is stabilized using separate formulas for :math:`E \lessgtr 0`.
+
+    Parameters
+    ----------
+
+    E : ndarray
+        Energies
+
+    beta : float
+        Inverse temperature
+
+    Returns
+    -------
+
+    f : ndarray
+        The Fermi distribution function evaluated at :math:`E`
+    
+    """
+    
     f = np.zeros_like(E)
     p, m = np.argwhere(E > 0), np.argwhere(E <= 0)
 
@@ -107,6 +187,34 @@ def fermi_function(E, beta):
 
 
 def kernel(tau, omega):
+    """
+    Evaluate the imaginary time and real frequency analytical continuation kernel :math:`K(\\tau, \\omega)`.
+
+    The Fermionic analytical continuation kernel has the form
+    
+    .. math:: K(\\tau, \\omega) = \\frac{e^{-\\omega \\tau}}{1 + e^{\\omega}}
+
+    in normalized imaginary time :math:`\\tau \\in [0, 1]` and frequency :math:`\omega`.
+
+    The evaluation is stabilized using separate formulas for :math:`E \lessgtr 0`.
+
+    Parameters
+    ----------
+
+    tau : ndarray
+        Points in imaginary time :math:`\\tau_j`
+
+    omega : ndarray
+        Points in real frequency :math:`\\omega_k`
+
+    Returns
+    -------
+
+    kernel : ndarray
+        Kernel :math:`K_{jk}` evaluated on the :math:`\\tau_j` and :math:`\\omega_k` grids,
+        :math:`K_{jk} = K(\\tau_j, \\omega_k)`
+
+    """
 
     kernel = np.empty((len(tau), len(omega)))
 
@@ -123,6 +231,37 @@ def kernel(tau, omega):
 
 
 def gridparams(lamb, order=24):
+    """
+    Empirical discretization parameters of :math:`K(\\tau, \\omega)` for given :math:`\Lambda`
+
+    Parameters
+    ----------
+
+    lamb : float
+        Cutoff parameter :math:`\Lambda`
+
+    order : int, optional
+        Order of the polynomial expansion
+
+    Returns
+    -------
+
+    order : int
+        polynomial order
+    
+    npt : int
+        number of panel refinements in imaginary time
+
+    npo : int
+        number of panel refinements in frequency
+
+    nt : int
+        total number of imaginary time points
+    
+    no : int
+        total number of real frenquency points
+
+    """
 
     npt = int(np.max([np.ceil(np.log(lamb)/np.log(2.))-2, 1]))
     npo = int(np.max([np.ceil(np.log(lamb)/np.log(2.)), 1]))
@@ -134,14 +273,39 @@ def gridparams(lamb, order=24):
 
 
 def kernel_discretization(lamb, error_est=False):
+    """
+    Return kernel discretization correct to machine prescision for given :math:`\Lambda`
 
+    Parameters
+    ----------
+
+    lamb : float
+        Cut-off parameter :math:`\Lambda`
+
+    error_est : bool, optional
+        Perform convergence check of discretization (NB, slow)
+
+    Returns
+    -------
+
+    kmat : ndarray
+        Discretization of the analytical continuation kernel :math:`K_{jk}`
+
+    t : ndarray
+        Discretized imaginary time grid :math:`\\tau_j`
+
+    w : ndarray
+        Discretized real frequency grid :math:`\\omega_k`
+
+    """
+    
     order, npt, npo, nt, no = gridparams(lamb)
 
     #print(f'order = {order}, npt = {npt}, npo = {npo}, nt = {nt}, no = {no}')
     
     N = 24
-    x_i = chebyschev_collocation_points_1st_kind(N)
-    w_i = chebyschev_barycentric_weights_1st_kind(N)
+    x_i = chebyshev_collocation_points_1st_kind(N)
+    w_i = chebyshev_barycentric_weights_1st_kind(N)
 
     # -- Tau panel discretization
     
@@ -174,7 +338,7 @@ def kernel_discretization(lamb, error_est=False):
     else:
         # -- Error estimate
 
-        x2_i = chebyschev_collocation_points_1st_kind(2*N)
+        x2_i = chebyshev_collocation_points_1st_kind(2*N)
 
         err = 0.
 
@@ -183,7 +347,8 @@ def kernel_discretization(lamb, error_est=False):
                 a, b = t_panel_break_pt[tp], t_panel_break_pt[tp + 1]
                 X = a + (b - a)*0.5*(x2_i + 1)
                 K = np.squeeze(kernel(X, np.array([w[widx]])))
-                K_interp = barycentric_interpolation(x2_i, x_i, kmat[N*tp:N*(tp+1), widx], w_i)
+                K_interp = barycentric_chebyshev_interpolation(
+                    x2_i, x_i, kmat[N*tp:N*(tp+1), widx], w_i)
                 perr = np.max(np.abs(K - K_interp))
                 err = np.max([err, perr])
 
@@ -192,7 +357,8 @@ def kernel_discretization(lamb, error_est=False):
                 a, b = w_panel_break_pt[wp], w_panel_break_pt[wp + 1]
                 X = a + (b - a)*0.5*(x2_i + 1)
                 K = np.squeeze(kernel(np.array([t[tidx]]), X))
-                K_interp = barycentric_interpolation(x2_i, x_i, kmat[tidx, N*wp:N*(wp+1)], w_i)
+                K_interp = barycentric_chebyshev_interpolation(
+                    x2_i, x_i, kmat[tidx, N*wp:N*(wp+1)], w_i)
                 perr = np.max(np.abs(K - K_interp))
                 err = np.max([err, perr])            
             

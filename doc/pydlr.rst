@@ -1,14 +1,6 @@
 pydlr (Python module)
 =====================
 
-kernel
-------
-
-.. automodule:: pydlr.kernel
-   :members:
-   :undoc-members:
-   :special-members: __init__
-
 pydlr
 -----
 		     
@@ -29,3 +21,11 @@ pydlr_fortran
    :private-members:
    :special-members:
    :inherited-members:
+
+kernel
+------
+
+.. automodule:: pydlr.kernel
+   :members:
+   :undoc-members:
+   :special-members: __init__
