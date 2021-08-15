@@ -9,12 +9,74 @@ from scipy.linalg import qr as scipy_qr
 
 
 def chebyschev_collocation_points_1st_kind(N):
+    """
+    Return the Chebyschev collocation points of the first kind.
+
+    The Chebyshev collocation points of the first kind are defined as
+
+    .. math:: x_j = \\cos \\left( \\pi \\frac{2j + 1}{2N} \\right)
+
+    where :math:`N` is the order and :math:`j = 0, ..., N-1`.
+
+
+    Parameters
+    ----------
+
+    N : int
+        Order of the collocation point set.
+
+
+    Returns
+    -------
+
+    x_j : ndarray
+        Array with the collocation points :math:`x_j` sorted in
+        increasing order.
+
+    Examples
+    --------
+
+    >>> from pydlr.kernel import chebyschev_collocation_points_1st_kind
+    >>> x_j = chebyschev_collocation_points_1st_kind(10)
+    array([-0.98768834, -0.89100652, -0.70710678, -0.4539905 , -0.15643447,
+            0.15643447,  0.4539905 ,  0.70710678,  0.89100652,  0.98768834])
+
+    """
     j = np.arange(N)
-    x = np.cos(np.pi * (2*j + 1)/(2*N))[::-1]
-    return x
+    x_j = np.cos(np.pi * (2*j + 1)/(2*N))[::-1]
+    return x_j
 
 
 def chebyschev_barycentric_weights_1st_kind(N):
+    """
+    Return the Chebyschev barycentric interpolation weights of the first kind.
+
+    The barycentric interpolation weights are defined as
+
+    .. math:: w_j = (-1)^{j} \\sin \\left( \\pi \\frac{2j + 1}{2N} \\right)
+
+    where :math:`N` is the order and :math:`j = 0, ..., N-1`.
+    
+    Parameters
+    ----------
+
+    N : int
+        Order of the collocation point set.
+
+
+    Returns
+    -------
+
+    w_j : ndarray
+        Array with the barycentric weights :math:`w_j`.
+
+    Examples
+    --------
+
+    >>> from pydlr.kernel import chebyschev_barycentric_weights_1st_kind
+    >>> x_j = chebyschev_barycentric_weights_1st_kind(10)
+
+    """
     j = np.arange(N)
     w_i = (-1)**j * np.sin(np.pi * (2*j + 1)/(2*N))
     return w_i
