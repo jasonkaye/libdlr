@@ -4,18 +4,15 @@ using Numpy and Scipy.
 
 Author: Hugo U.R. Strand (2021) """
 
-import time
 
 import numpy as np
 import numpy.polynomial.legendre as leg
 
-from scipy.linalg import qr as scipy_qr
 from scipy.linalg import eigh as scipy_eigh 
 from scipy.linalg import lu_solve, lu_factor
 
-from scipy.linalg.interpolative import interp_decomp
 
-from .kernel import kernel, kernel_discretization, fermi_function
+from .kernel import kernel, KernelInterpolativeDecoposition
 
 
 class dlrBase(object):
@@ -23,66 +20,26 @@ class dlrBase(object):
     def __init__(self, lamb, eps=1e-15, fb=b'f',
                  max_rank=500, nmax=None, verbose=False, python_impl=False):
 
-        t_start = time.time()
-        
         self.xi = {b'f':-1., b'b':1.}[fb]
         
         self.lamb = lamb
         self.eps = eps
 
-        if nmax is None: nmax = int(lamb)
+        kid = KernelInterpolativeDecoposition(
+            lamb, eps=eps, max_rank=max_rank, nmax=nmax, verbose=verbose)
 
-        t = time.time()
-        #self.kmat, self.t, self.om, self.err = kernel_discretization(self.lamb, error_est=True)
-        self.kmat, self.t, self.om = kernel_discretization(self.lamb, error_est=False)
-        print(f'kernel {time.time() - t} s')
+        self.rank = kid.rank
+        self.t, self.om = kid.t, kid.om
+        self.kmat = kid.kmat
+        self.dlrit, self.dlrrf, self.dlrmf = kid.dlrit, kid.dlrrf, kid.dlrmf
+        self.dlrit2cf, self.it2cfpiv = kid.dlrit2cf, kid.it2cfpiv
+        self.dlrmf2cf, self.mf2cfpiv = kid.dlrmf2cf, kid.mf2cfpiv
+        self.T_lx, self.T_qx = kid.T_lx, kid.T_qx
 
-        # -- Select real frequency points
+        del kid
 
-        t = time.time()
-        self.rank, self.oidx, self.proj_w = interp_decomp(self.kmat, self.eps * self.lamb)
-        self.oidx = np.sort(self.oidx[:self.rank])
-        self.dlrrf = self.om[self.oidx]
-        print(f'ID w {time.time() - t} s')
-
-        # -- Select imaginary time points
-
-        t = time.time()
-        self.tidx, self.proj_t = interp_decomp(self.kmat[:, self.oidx].T, self.rank)
-        self.tidx = np.sort(self.tidx[:self.rank])
-        self.dlrit = self.t[self.tidx]
-        print(f'ID t {time.time() - t} s')
-            
-        # -- Matsubara frequency points
-
-        t = time.time()
-        n = np.arange(-nmax, nmax+1)        
-        iwn = 1.j * np.pi * (2*n + 1)
-        self.kmat_mf = 1./(iwn[:, None] + self.dlrrf[None, :])
-        print(f'kernel mats {time.time() - t} s')
-
-        t = time.time()
-        self.mfidx, self.proj_mf = interp_decomp(self.kmat_mf.T, self.rank, rand=True)
-        self.mfidx = np.sort(self.mfidx[:self.rank])
-        print(f'ID mats {time.time() - t} s')
-            
-        self.nmax = nmax
-        self.dlrmf = n[self.mfidx]
-
-        # -- Transform matrix DLR-tau (LU-decomposed)
-
-        t = time.time()
-        self.T_lx = self.kmat[self.tidx][:, self.oidx]
-        self.dlrit2cf, self.it2cfpiv = lu_factor(self.T_lx)
-        print(f'lu ix {time.time() - t} s')
-
-        # -- Transform matrix DLR-Matsubara (LU-decomposed)
-
-        t = time.time()
-        self.T_qx = self.kmat_mf[self.mfidx, :]
-        self.dlrmf2cf, self.mf2cfpiv = lu_factor(self.T_qx)
-        print(f'lu mats {time.time() - t} s')
-
+        #self.W_xx, self.k1_x, self.TfT_xx = kid.W_xx, kid.k1_x, kid.TfT_xx
+ 
         # -- Auxilliary variables
 
         tau_l = self.get_tau(1.)
@@ -94,15 +51,10 @@ class dlrBase(object):
         self.k1_x = -np.squeeze(kernel(np.ones(1), w_x))
         self.TtT_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx)
 
-        print(f'dlr init done {time.time() - t_start} s')
-
-
+        
     # -- Imaginary time
 
-    def get_tau_over_beta(self):
-        tt = self.t.copy()
-        tt += (self.t[::-1] > 0) * (1 - self.t[::-1])
-        return tt[self.tidx]
+    def get_tau_over_beta(self): return self.dlrit
 
     
     def get_tau(self, beta=1.):

@@ -4,7 +4,8 @@
 
 import numpy as np
 
-from pydlr import dlr, kernel_discretization
+from pydlr import dlr
+from pydlr.kernel import kernel_discretization
 
 
 def test_gridding(verbose=False):

@@ -4,7 +4,8 @@
 
 import numpy as np
 
-from pydlr import dlr, fermi_function
+from pydlr import dlr
+from pydlr.kernel import fermi_function
 
 
 def test_dimer(verbose=False):
