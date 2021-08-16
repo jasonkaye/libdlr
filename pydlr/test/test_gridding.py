@@ -11,7 +11,7 @@ from pydlr.kernel import kernel_discretization
 def test_gridding(verbose=False):
 
     lamb = 40.
-    d = dlr(lamb=lamb, python_impl=False)
+    d = dlr(lamb=lamb)
     kmat, t, w, err = kernel_discretization(lamb, error_est=True)
     print(f'err = {err:2.2E}')
     

@@ -36,36 +36,42 @@ delta_qaa = d.matsubara_from_dlr(delta_xaa, beta)
 G_iaa_anal = d.free_greens_function_tau(E_aa, beta)[:, 0, 0].reshape((d.rank, 1, 1))
 
 
-def check(G_iaa, G_iaa_ref):
+def check(msg, G_iaa, G_iaa_ref):
     err = np.max(np.abs(G_iaa - G_iaa_ref))
-    print(f'err = {err:2.2E}')
+    print(f'err = {err:2.2E} -- {msg}')
     np.testing.assert_array_almost_equal(G_iaa, G_iaa_ref)
 
 
 def test_dyson_and_volterra_matsubara():
 
     G_iaa_dyson = tau_from_matsubara(d.dyson_matsubara(E0, delta_qaa, beta))
-    check(G_iaa_dyson, G_iaa_anal)
+    check('matsubara dyson', G_iaa_dyson, G_iaa_anal)
 
     G_iaa_volterra = tau_from_matsubara(d.volterra_matsubara(g0_qaa, delta_qaa, beta))
-    check(G_iaa_volterra, G_iaa_anal)
+    check('matsubara volterra', G_iaa_volterra, G_iaa_anal)
     
 
 def test_dyson_dlr():
     
     G_iaa_dlr_dyson_intdiff = d.tau_from_dlr(d.dyson_dlr_integrodiff(E0, delta_xaa, beta))
-    check(G_iaa_dlr_dyson_intdiff, G_iaa_anal)
+    check('dlr intdiff', G_iaa_dlr_dyson_intdiff, G_iaa_anal)
 
-    G_iaa_dlr_dyson = d.tau_from_dlr(d.dyson_dlr(E0, delta_xaa, beta, iterative=False, lomem=False))
-    check(G_iaa_dlr_dyson, G_iaa_anal)
+    G_iaa_dlr_dyson = d.tau_from_dlr(
+        d.dyson_dlr(E0, delta_xaa, beta, iterative=False, lomem=False))
+    check('dlr int', G_iaa_dlr_dyson, G_iaa_anal)
 
-    G_iaa_dlr_dyson_iter = d.tau_from_dlr(d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=False))
-    check(G_iaa_dlr_dyson_iter, G_iaa_anal)
+    G_iaa_dlr_dyson_iter = d.tau_from_dlr(
+        d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=False))
+    check('dlr int iter', G_iaa_dlr_dyson_iter, G_iaa_anal)
 
-    G_iaa_dlr_dyson_iter_lomem = d.tau_from_dlr(d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=True, verbose=True))
-    check(G_iaa_dlr_dyson_iter_lomem, G_iaa_anal)
+    G_iaa_dlr_dyson_iter_lomem = d.tau_from_dlr(
+        d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=True, verbose=True))
+    check('dlr int iter lomem', G_iaa_dlr_dyson_iter_lomem, G_iaa_anal)
+
+    G_iaa_dlr_dyson_iter_lomem = d.tau_from_dlr(
+        d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=True, verbose=True, fastconv=True))
+    check('dlr int iter lomem fastconv', G_iaa_dlr_dyson_iter_lomem, G_iaa_anal)
     
-
     
 if __name__ == '__main__':
 

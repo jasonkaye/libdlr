@@ -17,24 +17,26 @@ from .kernel import kernel, KernelInterpolativeDecoposition
 
 class dlrBase(object):
 
-    def __init__(self, lamb, eps=1e-15, fb=b'f',
-                 max_rank=500, nmax=None, verbose=False, python_impl=False):
+    def __init__(self, lamb, eps=1e-15, xi=-1,
+                 max_rank=500, nmax=None, verbose=False, python_impl=True):
 
-        self.xi = {b'f':-1., b'b':1.}[fb]
+        self.xi = xi
         
         self.lamb = lamb
         self.eps = eps
 
-        kid = KernelInterpolativeDecoposition(
-            lamb, eps=eps, max_rank=max_rank, nmax=nmax, verbose=verbose)
+        if not python_impl:
+            from .kernel_fortran import KernelInterpolativeDecopositionFortran
+            KID = KernelInterpolativeDecopositionFortran
+        else:
+            KID = KernelInterpolativeDecoposition
+            
+        kid = KID(lamb, eps=eps, xi=xi, max_rank=max_rank, nmax=nmax, verbose=verbose)
 
-        self.rank = kid.rank
-        self.t, self.om = kid.t, kid.om
-        self.kmat = kid.kmat
-        self.dlrit, self.dlrrf, self.dlrmf = kid.dlrit, kid.dlrrf, kid.dlrmf
-        self.dlrit2cf, self.it2cfpiv = kid.dlrit2cf, kid.it2cfpiv
-        self.dlrmf2cf, self.mf2cfpiv = kid.dlrmf2cf, kid.mf2cfpiv
-        self.T_lx, self.T_qx = kid.T_lx, kid.T_qx
+        members = ['rank', 't', 'om', 'kmat', 'dlrit', 'dlrrf', 'dlrmf',
+            'dlrit2cf', 'it2cfpiv', 'dlrmf2cf', 'mf2cfpiv', 'T_lx', 'T_qx']
+
+        for member in members: setattr(self, member, getattr(kid, member))
 
         del kid
 

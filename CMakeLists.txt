@@ -91,8 +91,8 @@ if(with_python)
    configure_file(${f} ${f} COPYONLY)
   endforeach()
   install(FILES pydlr/pydlr.py DESTINATION pydlr)
-  install(FILES pydlr/pydlr_fortran.py DESTINATION pydlr)
   install(FILES pydlr/kernel.py DESTINATION pydlr)
+  install(FILES pydlr/kernel_fortran.py DESTINATION pydlr)
   install(FILES pydlr/__init__.py DESTINATION pydlr)
 
   add_test(NAME python-test_kernel

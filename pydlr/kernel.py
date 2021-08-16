@@ -367,12 +367,13 @@ def kernel_discretization(lamb, error_est=False):
 
 class KernelInterpolativeDecoposition:
 
-    def __init__(self, lamb, eps=1e-15, max_rank=500, nmax=None, verbose=False):
+    def __init__(self, lamb, eps=1e-15, xi=-1, max_rank=500, nmax=None, verbose=False):
 
         import time
         
         t_start = time.time()
-        
+
+        self.xi = xi # +1 for bosons, -1 for fermions
         self.lamb = lamb
         self.eps = eps
 
@@ -408,8 +409,9 @@ class KernelInterpolativeDecoposition:
         # -- Matsubara frequency points
 
         t = time.time()
-        n = np.arange(-nmax, nmax+1)        
-        iwn = 1.j * np.pi * (2*n + 1)
+        n = np.arange(-nmax, nmax+1)
+        eta = 0.5 * (1 - xi) # 0 for bosons, 1 for fermions
+        iwn = 1.j * np.pi * (2*n + eta)
         self.kmat_mf = 1./(iwn[:, None] + self.dlrrf[None, :])
         print(f'kernel mats {time.time() - t} s')
 
