@@ -45,6 +45,10 @@ add_executable(dlr_conv_test ./test/dlr_conv_test.f90)
 target_link_libraries(dlr_conv_test PRIVATE dlr)
 add_test(NAME dlr_conv_test COMMAND dlr_conv_test)
 
+add_executable(dlr_dyson_sc ./test/dlr_dyson_sc.f90)
+target_link_libraries(dlr_dyson_sc PRIVATE dlr)
+add_test(NAME dlr_dyson_sc COMMAND dlr_dyson_sc)
+
 
 # C-library: dlr_c
 
