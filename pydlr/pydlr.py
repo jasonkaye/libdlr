@@ -15,7 +15,7 @@ from scipy.linalg import lu_solve, lu_factor
 from .kernel import kernel, KernelInterpolativeDecoposition
 
 
-class dlrBase(object):
+class dlr(object):
 
     def __init__(self, lamb, eps=1e-15, xi=-1,
                  max_rank=500, nmax=None, verbose=False, python_impl=True):
@@ -402,11 +402,6 @@ class dlrBase(object):
 
         return G_qaa
     
-
-dlr = dlrBase
-
-#from .pydlr_fortran import dlrFortran as dlr
-
 
 class solver_wrapper:
 
