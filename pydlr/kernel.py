@@ -369,9 +369,9 @@ class KernelInterpolativeDecoposition:
 
     def __init__(self, lamb, eps=1e-15, xi=-1, max_rank=500, nmax=None, verbose=False):
 
-        import time
-        
-        t_start = time.time()
+        if verbose:
+            import time        
+            t_start = time.time()
 
         self.xi = xi # +1 for bosons, -1 for fermions
         self.lamb = lamb
@@ -379,22 +379,22 @@ class KernelInterpolativeDecoposition:
 
         if nmax is None: nmax = int(lamb)
 
-        t = time.time()
+        if verbose: t = time.time()
         #self.kmat, self.t, self.om, self.err = kernel_discretization(self.lamb, error_est=True)
         self.kmat, self.t, self.om = kernel_discretization(self.lamb, error_est=False)
-        print(f'kernel {time.time() - t} s')
+        if verbose: print(f'kernel {time.time() - t} s')
 
         # -- Select real frequency points
 
-        t = time.time()
+        if verbose: t = time.time()
         self.rank, self.oidx, self.proj_w = interp_decomp(self.kmat, self.eps * self.lamb)
         self.oidx = np.sort(self.oidx[:self.rank])
         self.dlrrf = self.om[self.oidx]
-        print(f'ID w {time.time() - t} s')
+        if verbose: print(f'ID w {time.time() - t} s')
 
         # -- Select imaginary time points
 
-        t = time.time()
+        if verbose: t = time.time()
         self.tidx, self.proj_t = interp_decomp(self.kmat[:, self.oidx].T, self.rank)
         self.tidx = np.sort(self.tidx[:self.rank])
 
@@ -404,38 +404,38 @@ class KernelInterpolativeDecoposition:
         tt += (self.t[::-1] > 0) * (1 - self.t[::-1])
         self.dlrit = tt[self.tidx]
         
-        print(f'ID t {time.time() - t} s')
+        if verbose: print(f'ID t {time.time() - t} s')
             
         # -- Matsubara frequency points
 
-        t = time.time()
+        if verbose: t = time.time()
         n = np.arange(-nmax, nmax+1)
         eta = 0.5 * (1 - xi) # 0 for bosons, 1 for fermions
         iwn = 1.j * np.pi * (2*n + eta)
         self.kmat_mf = 1./(iwn[:, None] + self.dlrrf[None, :])
-        print(f'kernel mats {time.time() - t} s')
+        if verbose: print(f'kernel mats {time.time() - t} s')
 
-        t = time.time()
+        if verbose: t = time.time()
         self.mfidx, self.proj_mf = interp_decomp(self.kmat_mf.T, self.rank, rand=True)
         self.mfidx = np.sort(self.mfidx[:self.rank])
-        print(f'ID mats {time.time() - t} s')
+        if verbose: print(f'ID mats {time.time() - t} s')
             
         self.nmax = nmax
         self.dlrmf = n[self.mfidx]
 
         # -- Transform matrix DLR-tau (LU-decomposed)
 
-        t = time.time()
+        if verbose: t = time.time()
         self.T_lx = self.kmat[self.tidx][:, self.oidx]
         self.dlrit2cf, self.it2cfpiv = lu_factor(self.T_lx)
-        print(f'lu ix {time.time() - t} s')
+        if verbose: print(f'lu ix {time.time() - t} s')
 
         # -- Transform matrix DLR-Matsubara (LU-decomposed)
 
-        t = time.time()
+        if verbose: t = time.time()
         self.T_qx = self.kmat_mf[self.mfidx, :]
         self.dlrmf2cf, self.mf2cfpiv = lu_factor(self.T_qx)
-        print(f'lu mats {time.time() - t} s')
+        if verbose: print(f'lu mats {time.time() - t} s')
 
-        print(f'dlr init done {time.time() - t_start} s')
+        if verbose: print(f'dlr init done {time.time() - t_start} s')
         

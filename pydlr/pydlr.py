@@ -21,7 +21,6 @@ class dlr(object):
                  max_rank=500, nmax=None, verbose=False, python_impl=True):
 
         self.xi = xi
-        
         self.lamb = lamb
         self.eps = eps
 
@@ -40,8 +39,6 @@ class dlr(object):
 
         del kid
 
-        #self.W_xx, self.k1_x, self.TfT_xx = kid.W_xx, kid.k1_x, kid.TfT_xx
- 
         # -- Auxilliary variables
 
         tau_l = self.get_tau(1.)
@@ -404,6 +401,9 @@ class dlr(object):
     
 
 class solver_wrapper:
+    """
+    Wrapper for scipy.sparse.linalg iterative linearsystems solvers
+    """
 
     def __init__(self, solver, verbose=False):
         self.solver = solver
