@@ -21,7 +21,7 @@ Building the documentation locally requires
 
    install.rst
    background.rst
-   quickstart.rst
+   quickstart_python_notebook
    dlr.rst
    pydlr.rst
 

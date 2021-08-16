@@ -3,12 +3,12 @@ find_package(Sphinx)
 
 SET(sphinx_top ${CMAKE_CURRENT_BINARY_DIR}/html/index.html)
 
-FILE(GLOB_RECURSE SOURCES *.rst)
+FILE(GLOB_RECURSE SOURCES *.rst *.ipynb)
 EXECUTE_PROCESS(COMMAND sh -c "mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/html")
 set(DOC_SOURCE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Create a temporary copy of the doc that will be completed by the automatically generated one.
-FILE(GLOB_RECURSE all_rst_files RELATIVE ${CMAKE_SOURCE_DIR}/doc *.rst _* *.py *.png *.cpp Doxyfile)
+FILE(GLOB_RECURSE all_rst_files RELATIVE ${CMAKE_SOURCE_DIR}/doc *.rst _* *.py *.png *.cpp *.ipynb Doxyfile)
 SET(rst_copy_tar  ${CMAKE_CURRENT_BINARY_DIR}/rst_copy.tar)
 add_custom_command (OUTPUT ${rst_copy_tar} DEPENDS ${all_rst_files}
  COMMAND cd ${CMAKE_SOURCE_DIR}/doc && tar cf ${rst_copy_tar} ${all_rst_files} && cd ${CMAKE_BINARY_DIR}/doc && tar xf ${rst_copy_tar} && cp conf.py.patch conf.py )
