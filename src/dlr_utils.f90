@@ -8,6 +8,7 @@
 
 
 
+
       !> Get equispaced points on [0,1] in relative format
       !!
       !! For the definitions of absolute and relative formats, see the
@@ -50,7 +51,7 @@
       !! readme.
       !!
       !! Note: converting a point from relative to absolute format will,
-      !! in general, constitute a loss of relative accuracy in the
+      !! in general, result in a loss of relative accuracy in the
       !! location of the point if the point is close to t = 1. For
       !! example, in three-digit arithmetic, the point t = 0.999111 could
       !! be stored as t* = -0.889e-3 in the relative format, but only as

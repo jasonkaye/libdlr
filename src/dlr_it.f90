@@ -9,7 +9,7 @@
 
 
 
-      !> Get DLR frequency nodes and imaginary time nodes
+      !> Get DLR frequency nodes and DLR imaginary time nodes
       !!
       !! @param[in]     lambda  dimensionless cutoff parameter
       !! @param[in]     eps     DLR error tolerance
@@ -32,19 +32,21 @@
       real *8, allocatable :: kmat(:,:),t(:),om(:)
 
 
-      ! Set parameters for the fine grid based on lambda
+      ! Set parameters for fine grid
 
-      call gridparams(lambda,p,npt,npo,nt,no)
+      call ccfine_init(lambda,p,npt,npo,nt,no)
 
 
-      ! Get fine composite Chebyshev discretization of K(tau,omega)
+      ! Get composite Chebyshev fine discretization of Lehmann kernel
 
       allocate(kmat(nt,no),t(nt),om(no))
 
-      call kfine_cc(lambda,p,npt,npo,t,om,kmat,kerr)
+      call ccfine(lambda,p,npt,npo,t,om)
+
+      call dlr_kfine(lambda,p,npt,npo,t,om,kmat,kerr)
 
 
-      ! Select real frequency points for DLR basis
+      ! Select DLR frequency nodes
 
       r = 500 ! Upper bound on possible DLR rank
 
@@ -53,7 +55,7 @@
       call dlr_rf(lambda,eps,nt,no,om,kmat,r,dlrrf,oidx)
 
 
-      ! Get DLR imaginary time grid
+      ! Get DLR imaginary time nodes
 
       call dlr_it(lambda,nt,no,t,kmat,r,oidx,dlrit)
 
@@ -87,10 +89,9 @@
       integer, allocatable :: list(:),tidx(:)
       real *8, allocatable :: tmp(:,:),work(:)
 
-      ! --- Select imaginary time nodes by pivoted QR on rows of 
-      ! kmat ---
 
-      ! Matrix of selected columns
+      ! Get matrix of selected columns of fine discretization of Lehmann
+      ! kernel, transposed 
 
       allocate(tmp(r,nt),list(nt),work(nt),tidx(r))
 
@@ -100,31 +101,22 @@
         enddo
       enddo
 
-      ! Pivoted QR
+      ! Pivoted QR to select imaginary time nodes
 
       call iddr_qrpiv(r,nt,tmp,r,list,work)
+
 
       ! Rearrange indices to get selected imaginary time node indices
 
       call ind_rearrange(nt,r,list)
 
-      ! Extract selected imaginary times. To maintain high precision for
-      ! extremely large lambda and small eps calculations, if t was
-      ! chosen which is close to 1, take the calculated value t*=1-t,
-      ! which is known to full relative precision, and store -t*. Then t
-      ! can either be recovered as 1+(-t*), resulting in a loss of
-      ! relative precision, or we can use the high relative precision
-      ! value directly if we have access to a high accuracy close-to-1
-      ! evaluator.
+
+      ! Extract selected imaginary time nodes
 
       tidx = list(1:r)
 
       do j=1,r
-        if (tidx(j).le.nt/2) then
-          dlrit(j) = t(tidx(j))
-        else
-          dlrit(j) = -t(nt-tidx(j)+1)
-        endif
+        dlrit(j) = t(tidx(j))
       enddo
       
       end subroutine dlr_it
@@ -151,14 +143,15 @@
       integer r
       real *8 dlrrf(r),dlrit(r),cf2it(r,r)
 
-      integer j,k
+      integer i,j
       real *8, external :: kfunf_rel
 
-      ! Get the matrix K(tau_j,omega_k)
+      ! Get the matrix of DLR basis functions evaluated at DLR imaginary
+      ! time nodes
 
-      do k=1,r
-        do j=1,r
-          cf2it(j,k) = kfunf_rel(dlrit(j),dlrrf(k))
+      do j=1,r
+        do i=1,r
+          cf2it(i,j) = kfunf_rel(dlrit(i),dlrrf(j))
         enddo
       enddo
 
@@ -197,13 +190,11 @@
       integer j,k,info
       real *8, external :: kfunf_rel
 
-      ! Get the matrix K(tau_j,omega_k)
+      ! Get the matrix of DLR basis functions evaluated at DLR imaginary
+      ! time nodes
 
-      do k=1,r
-        do j=1,r
-          it2cf(j,k) = kfunf_rel(dlrit(j),dlrrf(k))
-        enddo
-      enddo
+      call dlr_cf2it(r,dlrrf,dlrit,it2cf)
+
 
       ! LU factorize
 
@@ -216,25 +207,25 @@
 
 
       !> Build transform matrix from values of a Green's function G on
-      !! imaginary time grid to values of reflection G(beta-tau) on
+      !! imaginary time grid to values of reflection G(1-tau) on
       !! imaginary time grid
       !!
       !! To obtain the values of a reflected Green's function on the
       !! imaginary time grid, apply the matrix it2itr to the vector of
       !! values of the Green's function on the imaginary time grid
       !!
-      !! @param[in]  r         number of DLR basis functions
-      !! @param[in]  dlrrf     DLR frequency nodes
-      !! @param[in]  dlrit     DLR imaginary time nodes
-      !! @param[in]  it2cf     imaginary time grid values ->
-      !!                         DLR coefficients transform matrix, stored in
-      !!                         LAPACK LU factored format; LU factors
-      !! @param[in]  it2cfp  imaginary time grid values ->
-      !!                         DLR coefficients transform matrix, stored in
-      !!                         LAPACK LU factored format; LU pivots
-      !! @param[out] it2itr    imaginary time grid values -> reflected
-      !!                         imaginary time grid values transform
-      !!                         matrix
+      !! @param[in]  r        number of DLR basis functions
+      !! @param[in]  dlrrf    DLR frequency nodes
+      !! @param[in]  dlrit    DLR imaginary time nodes
+      !! @param[in]  it2cf    imaginary time grid values ->
+      !!                        DLR coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU factors
+      !! @param[in]  it2cfp   imaginary time grid values ->
+      !!                        DLR coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU pivots
+      !! @param[out] it2itr   imaginary time grid values -> reflected
+      !!                        imaginary time grid values transform
+      !!                        matrix
 
       subroutine dlr_it2itr(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
 
@@ -246,13 +237,14 @@
       real *8, external :: kfunf_rel
 
       ! Get matrix taking DLR coefficients to values of DLR expansion at
-      ! imaginary time nodes reflected about tau = beta/2.
+      ! imaginary time nodes reflected about tau = 1/2.
 
       do j=1,r
         do i=1,r
           it2itr(i,j) = kfunf_rel(-dlrit(i),dlrrf(j))
         enddo
       enddo
+
 
       ! Precompose with matrix taking DLR imaginary time grid values ->
       ! DLR coefficients
@@ -291,8 +283,8 @@
 
       integer info
 
-      ! Backsolve with imaginary time grid values -> DLR coefficients
-      ! transform matrix stored in LU form
+      ! Solve interpolation problem using DLR coefficients -> imaginary
+      ! time grid values matrix stored in LU form
 
       gc = g
 
@@ -322,11 +314,12 @@
       real *8 kval
       real *8, external :: kfunf
 
+      ! Evaluate DLR basis functions and sum against DLR coefficients,
+      ! taking into account relative format of given imaginary time
+      ! point
+
       gt = 0.0d0
       do i=1,r
-
-        ! For 0.5<t<1, corresponding to negative t', use symmetry of K
-        ! to evaluate basis functions
 
         if (t.ge.0.0d0) then
           kval = kfunf(t,dlrrf(i))
@@ -339,6 +332,3 @@
       enddo
 
       end subroutine dlr_eval
-
-
-

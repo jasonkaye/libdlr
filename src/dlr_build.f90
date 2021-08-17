@@ -6,7 +6,10 @@
       !
 
 
-      !> Set parameters for composite Chebyshev fine grid.
+
+
+
+      !> Set parameters for composite Chebyshev fine grid
       !!
       !! @param[in]   lambda  dimensionless cutoff parameter
       !! @param[out]  p       Chebyshev degree in each subinterval
@@ -22,81 +25,84 @@
       !! @param[out]  no      number of Matsubara frequency fine grid
       !!                        points (=2*p*npo)
 
-      subroutine gridparams(lambda,p,npt,npo,nt,no)
+      subroutine ccfine_init(lambda,p,npt,npo,nt,no)
 
       implicit none
       integer p,npt,npo,nt,no
       real *8 lambda
 
-      p = 24 ! Chebyshev degree of panels
+      ! Chebyshev degree of panels
+
+      p = 24
+
+      
+      ! Number of panels in imaginary time and real frequency
+      !
+      ! This choice has been made empirically to give fine
+      ! discretization of Lehmann kernel to double machine precision
+      ! accuracy
       
       npt = max(ceiling(log(lambda)/log(2.0d0))-2,1)
       npo = max(ceiling(log(lambda)/log(2.0d0)),1)
 
+
+      ! Total number of fine grid points
+
       nt = 2*p*npt
       no = 2*p*npo
 
-      end subroutine gridparams
+      end subroutine ccfine_init
 
 
 
 
 
-      !> Get discretization of kernel K(tau,omega) on composite
-      !! Chebyshev fine grids in tau and omega.
+      !> Get composite Chebyshev fine grids in tau and omega
       !!
-      !! Use parameters produced by subroutine gridparams.
+      !! Note: for accurate discretization of Lehmann kernel, use
+      !! parameters produced by subroutine gridparams.
       !!
       !! @param[in]   lambda  dimensionless cutoff parameter
-      !! @param[out]  p       Chebyshev degree in each subinterval
-      !! @param[out]  npt     number of subintervals on [0,1/2] in
+      !! @param[in]   p       Chebyshev degree in each subinterval
+      !! @param[in]   npt     number of subintervals on [0,1/2] in
       !!                        imaginary time (total number of
       !!                        subintervals on [0,1] is 2*npt)
-      !! @param[out]  npo     number of subintervals on [0,lambda] in
+      !! @param[in]   npo     number of subintervals on [0,lambda] in
       !!                        real frequency (total number of
-      !!                        subintervals on [-lambda,lambda is
+      !!                        subintervals on [-lambda,lambda] is
       !!                        2*npo)
-      !! @param[out]  t       fine grid points tau on (0,1/2) in
-      !!                        imaginary time (half of full grid)
-      !! @param[out]  om      fine grid points omega on [-lambda,lambda]
-      !!                        in real frequency
-      !! @param[out]  kmat    matrix of K(tau,omega) evaluated on fine
-      !!                        grid
-      !! @param[out]  err     Error of composite Chebyshev interpolant
-      !!                        of K(tau,omega). err(1) is ~= max
-      !!                        relative L^inf error in tau over all
-      !!                        omega in fine grid. err(2) is ~= max
-      !!                        L^inf error in omega over all tau in
-      !!                        fine grid.
+      !! @param[out]  t       imaginary time fine grid points in
+      !!                        relative format
+      !! @param[out]  om      real frequency fine grid points
 
-      subroutine kfine_cc(lambda,p,npt,npo,t,om,kmat,err)
+      subroutine ccfine(lambda,p,npt,npo,t,om)
 
       implicit none
       integer p,npt,npo
-      real *8 lambda,t(npt*p),om(2*npo*p)
-      real *8 kmat(2*npt*p,2*npo*p),err(2)
-      real *8, external :: kfunf
+      real *8 lambda,t(2*npt*p),om(2*npo*p)
 
-      integer nt,no,i,j,k
-      real *8 one,a,b,start,finish,xx,ktrue,ktest,errtmp
+      integer nt,no,i
+      real *8 one,a,b
       real *8, allocatable :: xc(:),wc(:),pbpt(:),pbpo(:)
-      real *8, allocatable :: ktcoef(:,:),komcoef(:,:)
-      real *8, allocatable :: xc2(:),wc2(:)
+
 
       one = 1.0d0
+
+
+      ! Total number of fine grid points
 
       nt = 2*npt*p
       no = 2*npo*p
 
-      ! --- Chebyshev nodes and interpolation weights ---
+
+      ! Get Chebyshev nodes
 
       allocate(xc(p),wc(p))
       
       call barychebinit(p,xc,wc)
 
-      ! -- Tau space discretization ---
 
-      ! Panel break points
+      ! Imaginary time panel break points
 
       allocate(pbpt(2*npt+1))
 
@@ -105,9 +111,8 @@
         pbpt(i+1) = one/2**(npt-i+1)
       enddo
 
-      !pbpt(npt+2:2*npt+1) = 1-pbpt(npt:1:-1)
 
-      ! Grid points
+      ! Imaginary time grid points on (0,1/2)
 
       do i=1,npt
         a = pbpt(i)
@@ -115,9 +120,14 @@
         t((i-1)*p+1:i*p) = a + (b-a)*(xc+one)/2
       enddo
 
-      ! --- Omega space discretization ---
 
-      ! Panel break points
+      ! Imaginary time grid points on (1/2,1) in relative format
+
+      t(nt/2+1:nt) = -t(nt/2:1:-1)
+
+
+
+      ! Real frequency panel break points
 
       allocate(pbpo(2*npo+1))
 
@@ -128,7 +138,8 @@
 
       pbpo(1:npo) = -pbpo(2*npo+1:npo+2:-1)
 
-      ! Grid points
+
+      ! Real frequency grid points
 
       do i=1,2*npo
         a = pbpo(i)
@@ -136,7 +147,63 @@
         om((i-1)*p+1:i*p) = a + (b-a)*(xc+one)/2
       enddo
 
-      ! --- Sample K(tau,omega) on grid ---
+      end subroutine ccfine
+
+
+
+
+
+      !> Get fine discretization of Lehmann kernel
+      !!
+      !! Note: use parameters produced by subroutine ccfine.
+      !!
+      !! @param[in]   lambda  dimensionless cutoff parameter
+      !! @param[in]   p       Chebyshev degree in each subinterval
+      !! @param[in]   npt     number of subintervals on [0,1/2] in
+      !!                        imaginary time (total number of
+      !!                        subintervals on [0,1] is 2*npt)
+      !! @param[in]   npo     number of subintervals on [0,lambda] in
+      !!                        real frequency (total number of
+      !!                        subintervals on [-lambda,lambda] is
+      !!                        2*npo)
+      !! @param[in]   t       imaginary time fine grid points in
+      !!                        relative format
+      !! @param[in]   om      real frequency fine grid points
+      !! @param[out]  kmat    matrix of Lehmann kernel K(tau,omega)
+      !!                        evaluated on fine grid
+      !! @param[out]  err     Error of composite Chebyshev interpolant
+      !!                        of K(tau,omega). err(1) is ~= max
+      !!                        relative L^inf error in tau over all
+      !!                        omega in fine grid. err(2) is ~= max
+      !!                        L^inf error in omega over all tau in
+      !!                        fine grid.
+
+      subroutine dlr_kfine(lambda,p,npt,npo,t,om,kmat,err)
+
+      implicit none
+      integer p,npt,npo
+      real *8 lambda,t(2*p*npt),om(2*p*npo),kmat(2*p*npt,2*p*npo),err(2)
+
+      integer nt,no,i,j,k
+      real *8 one,a,b,start,finish,xx,ktrue,ktest,errtmp
+      real *8, allocatable :: xc(:),wc(:),pbpt(:),pbpo(:)
+      real *8, allocatable :: xc2(:),wc2(:)
+      real *8, external :: kfunf
+
+      one = 1.0d0
+
+      nt = 2*npt*p
+      no = 2*npo*p
+
+      ! Chebyshev nodes and interpolation weights
+
+      allocate(xc(p),wc(p))
+      
+      call barychebinit(p,xc,wc)
+
+
+      ! Evaluate Lehmann kernel K(tau,omega) on fine grid for tau in
+      ! (0,1/2)
 
       do j=1,no
         do i=1,nt/2
@@ -146,17 +213,38 @@
         enddo
       enddo
 
-      ! Copy second half of matrix from first half to improve accuracy
-      ! for extremely large npt: computing exp((1-t)*omega) loses digits
-      ! if t is very close to 1 and (1-t)*omega ~ 1, but exp(-omega*t)
-      ! is fine for small t and t*omega ~ 1.
+
+      ! Get entries for tau in (1/2,1)
 
       kmat(nt/2+1:nt,1:no) = kmat(nt/2:1:-1,no:1:-1)
 
 
-      ! --- Check accuracy of Cheb interpolant on each panel in tau
+
+      ! Imaginary time panel break points
+
+      allocate(pbpt(2*npt+1))
+
+      pbpt(1) = 0*one
+      do i=1,npt
+        pbpt(i+1) = one/2**(npt-i+1)
+      enddo
+
+
+      ! Real frequency panel break points
+
+      allocate(pbpo(2*npo+1))
+
+      pbpo(npo+1) = 0*one
+      do i=1,npo
+        pbpo(npo+i+1) = lambda/2**(npo-i)
+      enddo
+
+      pbpo(1:npo) = -pbpo(2*npo+1:npo+2:-1)
+
+
+      ! Check accuracy of Cheb interpolant on each panel in tau
       ! for fixed omega, and each panel in omega for fixed tau, by
-      ! comparing with K(tau,omega) on Cheb grid of 2*p nodes ---
+      ! comparing with K(tau,omega) on Cheb grid of 2*p nodes
 
       allocate(xc2(2*p),wc2(2*p))
 
@@ -217,7 +305,7 @@
 
       enddo
 
-      end subroutine kfine_cc
+      end subroutine dlr_kfine
 
 
 
@@ -249,20 +337,19 @@
       integer, allocatable :: list(:)
       real *8, allocatable :: tmp(:,:),work(:)
 
-      ! --- Select real frequency nodes by pivoted QR on columns of 
-      ! kmat ---
+      ! Select real frequency nodes by pivoted QR on columns of kmat
 
       allocate(tmp(nt,no),list(no),work(max(nt,no)))
 
       tmp = kmat
 
-      ! Pivoted QR 
-      
       call iddp_qrpiv(eps,nt,no,tmp,r,list,work)
+
 
       ! Rearrange indices to get selected frequency point indices
 
       call ind_rearrange(no,r,list)
+
 
       ! Extract selected frequencies
 

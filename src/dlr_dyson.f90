@@ -8,6 +8,7 @@
 
 
 
+
       !> Solve the nonlinear Dyson equation in imaginary time,
       !! with a given expression for the self-energy in terms of the
       !! Green's function.
@@ -72,20 +73,20 @@
 
       one = 1.0d0
 
-      ! --- Get matrix of convolution by G0 ---
+      ! Get matrix of convolution by G0
 
       allocate(g0mat(r,r))
 
       call dlr_convmat(r,it2cf,it2cfp,phi,g0,g0mat)
 
 
-      ! --- Fixed point iteration for G ---
+      ! Weighted fixed point iteration
 
       allocate(sig(r),gnew(r))
 
       do i=1,numit
 
-        ! Get Sigma in imaginary time grid representation
+        ! Evaluate self-energy
 
         call sigfun(r,g,sig)
 
@@ -157,19 +158,19 @@
       integer j,info1
       integer, allocatable :: ipiv(:)
       real *8 one
-      real *8, allocatable :: sigc(:),sysmat(:,:)
+      real *8, allocatable :: sigc(:),sigmat(:,:),sysmat(:,:)
 
       one = 1.0d0
 
-      allocate(sigc(r),sysmat(r,r),ipiv(r))
+      allocate(sigc(r),sigmat(r,r),sysmat(r,r),ipiv(r))
 
-      ! Matrix of convolution by Sigma
+      ! Get matrix of convolution by self-energy
 
-      call dlr_convmat(r,it2cf,it2cfp,phi,sig,sysmat)
+      call dlr_convmat(r,it2cf,it2cfp,phi,sig,sigmat)
 
-      ! System matrix for linear Dyson equation
+      ! Form system matrix for linear Dyson equation
 
-      sysmat = -matmul(g0mat,sysmat)
+      call dgemm('N','N',r,r,r,-one,g0mat,r,sigmat,r,0*one,sysmat,r)
 
       do j=1,r
         sysmat(j,j) = one + sysmat(j,j)
@@ -271,14 +272,13 @@
 
       one = 1.0d0
 
-      ! --- Fixed point iteration for G ---
+      ! Weighted fixed point iteration
 
       allocate(sig(r),gnew(r))
 
       do i=1,numit
 
-        ! Get Sigma in imaginary time grid representation from DLR
-        ! coefficient representation of previous G
+        ! Evaluate self-energy
 
         call sigfun(r,g,sig)
 
@@ -298,6 +298,9 @@
           return
 
         else
+
+          ! Next G is weighted linear combination of previous and
+          ! current iterates
 
           g = w*gnew + (one-w)*g
 
@@ -358,34 +361,34 @@
       real *8 sig(r),g(r)
       complex *16 mf2cf(r,r),cf2mf(r,r),g0(r)
 
-      integer j,info1
-      integer, allocatable :: ipiv(:)
       real *8 one
-      real *8, allocatable :: sigc(:)
-      complex *16, allocatable :: sigmf(:),gmf(:)
+      real *8, allocatable :: sigc(:),tmp2(:)
+      complex *16, allocatable :: sigmf(:),gmf(:),tmp(:)
 
       one = 1.0d0
 
-      allocate(sigc(r),gmf(r))
+      allocate(sigc(r),gmf(r),sigmf(r),tmp(r),tmp2(r))
 
-      ! DLR coefficient representation of Sigma
+      ! Get DLR coefficients of self-energy
 
       call dlr_expnd(r,it2cf,it2cfp,sig,sigc)
 
-      ! Matsubara frequency representation of Sigma
+      ! Get self-energy on Matsubara frequency grid
 
-      sigmf = matmul(cf2mf,sigc)
+      tmp = sigc
+      call zgemv('N',r,r,one,cf2mf,r,tmp,1,0*one,sigmf,1)
 
-      ! Invert linear Dyson equation
+      ! Solve Dyson equation by diagonal inversion
 
       gmf = g0/(one-beta**2*g0*sigmf)
 
-      ! DLR coefficient representation of solution
+      ! Get DLR coefficients of solution
 
       call dlr_mfexpnd(r,mf2cf,mf2cfp,gmf,g)
 
-      ! Evaluate on imaginary time grid
+      ! Evaluate solution on imaginary time grid
 
-      g = matmul(cf2it,g)
+      tmp2 = g
+      call dgemv('N',r,r,one,cf2it,r,tmp2,1,0*one,g,1)
 
       end subroutine dyson_mf_lin

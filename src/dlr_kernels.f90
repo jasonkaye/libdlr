@@ -7,6 +7,7 @@
 
 
 
+
       !> Evaluate Lehmann kernel with imaginary time point given in
       !! relative format.
       !!
@@ -79,23 +80,3 @@
       kfunmf = 1.0d0/(n*pi*eye+om)
 
       end function kfunmf
-
-
-
-
-!      real *8 function kfunb(t,om)
-!     
-!      ! A proposed bosonic kernel -- no longer used
-!
-!      implicit none
-!      real *8 t,om
-!
-!      if (om.ge.0.0d0) then
-!        call evalexpfun(om,kfunb)
-!        kfunb = exp(-t*om)/kfunb
-!      else
-!        call evalexpfun(-om,kfunb)
-!        kfunb = exp((1.0d0-t)*om)/kfunb
-!      endif
-!
-!      end function kfunb

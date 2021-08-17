@@ -4,9 +4,13 @@
       ! Green's functions in the discrete Lehmann representation
       !
       !
-      
+
+
+
+
+
       !> Get tensor taking a set of DLR coefficients to the matrix of
-      !! convolution by the corresponding Green's function. 
+      !! convolution by the corresponding Green's function
       !!
       !! To obtain the matrix C of convolution by a Green's function G,
       !! use the output of this subroutine with the subroutine
@@ -47,6 +51,9 @@
 
       one = 1.0d0
 
+      ! Get tensor taking DLR coefficients to matrix of convolution from
+      ! DLR coefficients -> imaginary time grid values
+
       allocate(phitmp(r,r,r),phitmp2(r,r*r))
 
       do l=1,r
@@ -55,30 +62,19 @@
 
             if (k.ne.l) then
 
-              !phitmp(j,k,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
-              !  kfunf_rel(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
-
               phitmp(j,k,l) =&
                 (kfunf_rel(dlrit(j),dlrrf(l))*expfun(dlrrf(k),xi) -&
                 kfunf_rel(dlrit(j),dlrrf(k))*expfun(dlrrf(l),xi))/&
                 (dlrrf(k)-dlrrf(l))
 
-
-
             else
 
               if (dlrit(j).gt.0.0d0) then
-
-                !phitmp(j,k,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
-                !  kfunf_rel(dlrit(j),dlrrf(k))
 
                 phitmp(j,k,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
                   xi*kfunf(1.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
 
               else
-
-                !phitmp(j,k,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
-                !  kfunf_rel(dlrit(j),dlrrf(k))
 
                 phitmp(j,k,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
                   kfunf(0.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
@@ -91,6 +87,8 @@
       enddo
 
 
+      ! Precompose with imaginary time grid values -> DLR coefficients
+      ! transformation to obtain final tensor
 
       do l=1,r
         do k=1,r
@@ -100,8 +98,7 @@
         enddo
       enddo
             
-      call dgetrs('T',r,r*r,it2cf,r,it2cfp,phitmp2,r,&
-        info)
+      call dgetrs('T',r,r*r,it2cf,r,it2cfp,phitmp2,r,info)
 
       do l=1,r
         do k=1,r
@@ -112,6 +109,8 @@
       enddo
 
 
+      ! Reshape
+
       do l=1,r
         do k=1,r
           do j=1,r
@@ -120,6 +119,8 @@
         enddo
       enddo
 
+
+      ! Scale by beta for convolutions on [0,beta]
 
       phi = beta*phi
 
@@ -168,11 +169,10 @@
 
       call dlr_expnd(r,it2cf,it2cfp,g,gc)
 
-      ! Get convolution matrix taking coefficients -> values
 
-      call dgemv('N',r*r,r,1.0d0,phi,r*r,gc,1,0.0d0,&
-        gmat,1)
+      ! Get convolution matrix
 
+      call dgemv('N',r*r,r,1.0d0,phi,r*r,gc,1,0.0d0,gmat,1)
 
       end subroutine dlr_convmat
 
@@ -222,14 +222,14 @@
 
       one = 1.0d0
 
+      ! Get tensor taking DLR coefficients to matrix of convolution from
+      ! DLR coefficients -> imaginary time grid values
+
       do l=1,r
         do k=1,r
           do j=1,r
 
             if (k.ne.l) then
-
-!              phivcc((k-1)*r+j,l) = (kfunf_rel(dlrit(j),dlrrf(l)) -&
-!                kfunf_rel(dlrit(j),dlrrf(k)))/(dlrrf(k)-dlrrf(l))
 
               phivcc((k-1)*r+j,l) = &
                 (kfunf_rel(dlrit(j),dlrrf(l))*expfun(dlrrf(k),xi) -&
@@ -240,16 +240,10 @@
 
               if (dlrit(j).gt.0.0d0) then
 
-!                phivcc((k-1)*r+j,l) = (dlrit(j)-kfunf(1.0d0,dlrrf(k)))*&
-!                  kfunf_rel(dlrit(j),dlrrf(k))
-
                 phivcc((k-1)*r+j,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
                   xi*kfunf(1.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
 
               else
-
-!                phivcc((k-1)*r+j,l) = (dlrit(j)+kfunf(0.0d0,dlrrf(k)))*&
-!                  kfunf_rel(dlrit(j),dlrrf(k))
 
                 phivcc((k-1)*r+j,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
                   kfunf(0.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
@@ -260,6 +254,9 @@
           enddo
         enddo
       enddo
+
+      
+      ! Scale by beta for convolutions on [0,beta]
 
       phivcc = beta*phivcc
 
@@ -311,12 +308,16 @@
 
       call dlr_expnd(r,it2cf,it2cfp,g,gc)
 
-      ! Get convolution matrix taking coefficients -> values
+
+      ! Get convolution matrix taking DLR coefficients -> imaginary time
+      ! grid values
 
       call dgemv('N',r*r,r,1.0d0,phivcc,r*r,gc,1,0.0d0,&
         gmat,1)
 
-      ! Precompose with matrix taking values -> coefficients
+
+      ! Precompose with matrix taking imaginary time grid values -> DLR
+      ! coefficients
 
       gmat = transpose(gmat)
 
@@ -328,10 +329,14 @@
 
 
 
+
+
       function expfun(om,xi)
 
-      implicit none
+      ! Evaluate the function f(om) = (1-xi*exp(-om))/(1+exp(-om)), for
+      ! xi = +-1
 
+      implicit none
       integer xi
       real *8 om,expfun
 

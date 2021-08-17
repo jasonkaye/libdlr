@@ -33,21 +33,21 @@ install(TARGETS dlr ARCHIVE)
 
 # Test programs
 
-add_executable(dlr_it_ha_test ./test/dlr_it_ha_test.f90)
-target_link_libraries(dlr_it_ha_test PRIVATE dlr)
-add_test(NAME dlr_it_ha_test COMMAND dlr_it_ha_test)
+add_executable(ha_it ./test/ha_it.f90)
+target_link_libraries(ha_it PRIVATE dlr)
+add_test(NAME ha_it COMMAND ha_it)
 
-add_executable(dlr_mf_ha_test ./test/dlr_mf_ha_test.f90)
-target_link_libraries(dlr_mf_ha_test PRIVATE dlr)
-add_test(NAME dlr_mf_ha_test COMMAND dlr_mf_ha_test)
+add_executable(ha_mf ./test/ha_mf.f90)
+target_link_libraries(ha_mf PRIVATE dlr)
+add_test(NAME ha_mf COMMAND ha_mf)
 
-add_executable(dlr_conv_test ./test/dlr_conv_test.f90)
-target_link_libraries(dlr_conv_test PRIVATE dlr)
-add_test(NAME dlr_conv_test COMMAND dlr_conv_test)
+add_executable(conv_exp ./test/conv_exp.f90)
+target_link_libraries(conv_exp PRIVATE dlr)
+add_test(NAME conv_exp COMMAND conv_exp)
 
-add_executable(dlr_dyson_sc ./test/dlr_dyson_sc.f90)
-target_link_libraries(dlr_dyson_sc PRIVATE dlr)
-add_test(NAME dlr_dyson_sc COMMAND dlr_dyson_sc)
+add_executable(dyson_sc ./test/dyson_sc.f90)
+target_link_libraries(dyson_sc PRIVATE dlr)
+add_test(NAME dyson_sc COMMAND dyson_sc)
 
 
 # C-library: dlr_c
