@@ -332,3 +332,68 @@
       enddo
 
       end subroutine dlr_eval
+
+
+
+
+
+      !> Get DLR coefficients from scattered data by least squares
+      !! fitting
+      !!
+      !! @param[in]  r        number of DLR basis functions
+      !! @param[in]  dlrrf    DLR frequency nodes
+      !! @param[in]  n        number of imaginary time points at which
+      !!                        Green's function G is sampled
+      !! @param[in]  tsamp    imaginary time points at which G is
+      !!                        sampled, given in relative format
+      !! @param[in]  gsamp    values of G at sampling points
+      !! @param[out] gc       DLR coefficients of Green's function
+
+      subroutine dlr_fit(r,dlrrf,nsamp,tsamp,gsamp,gc)
+
+      implicit none
+      integer r,nsamp
+      real *8 dlrrf(r),tsamp(nsamp),gsamp(nsamp),gc(r)
+
+      integer i,j,rank,lwork,info
+      real *8 rcond
+      integer, allocatable :: jpvt(:)
+      real *8, allocatable :: kls(:,:),work(:),tmp(:)
+      real *8, external :: kfunf_rel
+      
+      ! Get system matrix for least squares fitting; columns are DLR
+      ! basis functions evaluated at imaginary time sampling points
+
+      allocate(kls(nsamp,r))
+
+      do j=1,r
+        do i=1,nsamp
+          kls(i,j) = kfunf_rel(tsamp(i),dlrrf(j))
+        enddo
+      enddo
+
+
+      ! Get size of work array for least squares fitting
+
+      allocate(work(1),jpvt(r),tmp(nsamp))
+
+      call dgelsy(nsamp,r,1,kls,nsamp,tmp,nsamp,jpvt,rcond,rank,&
+        work,-1,info)
+
+      lwork = work(1)
+
+      deallocate(work)
+
+
+      ! Least squares fitting of data to determine DLR coefficients
+
+      allocate(work(lwork))
+
+      tmp = gsamp
+
+      call dgelsy(nsamp,r,1,kls,nsamp,tmp,nsamp,jpvt,rcond,rank,&
+        work,lwork,info)
+
+      gc = tmp(1:r)
+
+      end subroutine dlr_fit
