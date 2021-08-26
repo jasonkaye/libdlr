@@ -17,10 +17,3 @@ kernel
    :undoc-members:
    :special-members: __init__
 
-kernel_fortran
---------------
-
-.. automodule:: pydlr.kernel_fortran
-   :members:
-   :undoc-members:
-   :special-members: __init__
