@@ -28,7 +28,8 @@ eval_semi_circ_G_tau = np.vectorize(eval_semi_circ_G_tau)
 def test_semi_cirular_G_tau(verbose=False):
 
     # -- Dense mesh analytic evaluation
-    
+
+    beta = 1.
     tau_i = np.linspace(0, 1, num=200)
     G_i = eval_semi_circ_G_tau(tau_i)
 
@@ -36,7 +37,7 @@ def test_semi_cirular_G_tau(verbose=False):
     # -- and reinterpolation on dense grid from DLR coefficients
     
     d = dlr(lamb=10.)
-    tau_l = d.get_tau()
+    tau_l = d.get_tau(beta)
     shape = (len(tau_l), 1, 1)
     G_l = eval_semi_circ_G_tau(tau_l).reshape(shape)
     G_x = d.dlr_from_tau(G_l)
@@ -54,7 +55,7 @@ def test_semi_cirular_G_tau(verbose=False):
     
     for iter in range(max_iter):
         G_q = d.dyson_matsubara(np.array([[0.]]), 0.25 * G_q.reshape(shape), 1.)[:, 0, 0]
-        G_x_ref = d.dlr_from_matsubara(G_q)
+        G_x_ref = d.dlr_from_matsubara(G_q, beta)
         G_l_ref = d.tau_from_dlr(G_x_ref).real
         G_i_ref2 = d.eval_dlr_tau(G_x_ref, tau_i, 1.)
 

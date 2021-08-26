@@ -16,11 +16,34 @@ from .kernel import kernel, KernelInterpolativeDecoposition
 
 
 class dlr(object):
+    """
+    Discrete Lehmann Representation (DLR) class.
 
+    Provides DRL basis, transofroms, and algorithms.
+
+    Parameters
+    ----------
+
+    lamb : float
+        DLR scale parameter :math:`\\Lambda`.
+    eps : float
+        Set accuracy of the DLR representation.
+    xi : sign, optional,
+        Statistical sign :math:`\\xi = \\pm 1` for bosons and fermions respectively.
+    max_rank : int, optional
+        Maximum rank of the DLR kernel decomposition. Default 500.
+    nmax : int, optional
+        Maxumum index of the Matsubara frequency grid. Default int(lamb).
+    verbose : bool, optional
+        Default `False`.
+    python_impl : bool, optional
+        Switch between the python and fortran library driver. Default `True`.
+
+    """
+    
     def __init__(self, lamb, eps=1e-15, xi=-1,
-                 max_rank=500, nmax=None, verbose=False, python_impl=True):
-
-        self.xi = xi
+                 max_rank=500, nmax=None, verbose=False, python_impl=True):        
+        self.xi = np.sign(xi)
         self.lamb = lamb
         self.eps = eps
 
@@ -53,31 +76,39 @@ class dlr(object):
         
     # -- Imaginary time
 
-    def get_tau_over_beta(self): return self.dlrit
+    def get_tau_over_beta(self):
+        """Get grid in scaled imaginary time :math:`\\tau/\\beta \\in [0, 1]`"""
+        return self.dlrit
 
     
-    def get_tau(self, beta=1.):
+    def get_tau(self, beta):
+        """Get :math:`\tau`-grid in imaginary time :math:`\\tau \\in [0, \\beta]`."""
         tau_l = self.get_tau_over_beta() * beta
         return tau_l
 
 
     def dlr_from_tau(self, G_laa):
+        """Transform the rank-3 array_like Green's function `G_laa` from imaginary time to DLR space."""
         G_xaa = lu_solve((self.dlrit2cf, self.it2cfpiv), G_laa)
         return G_xaa
 
 
     def tau_from_dlr(self, G_xaa):
+        """Transform the rank-3 array_like Green's function `G_xaa` from DLR space to imaginary time."""
         G_laa = np.tensordot(self.T_lx, G_xaa, axes=(1, 0))
         return G_laa
 
 
     def tau_from_legendre(self, G_naa):
+        """Transform the rank-3 array_like Green's function `G_naa` from Legendre coefficient space to imaginary time."""
         x = 2 * self.get_tau_over_beta() - 1
         G_laa = np.rollaxis(leg.legval(x, G_naa), -1)
         return G_laa
 
 
     def eval_dlr_tau(self, G_xaa, tau, beta):
+        """Evaluate the DLR coefficient Green's function `G_xaa` at arbibrary points in imaginary time."""
+
         assert( self.xi == -1. ) # Not implemented for bosons, yet
         
         w_x = self.dlrrf / beta
@@ -97,26 +128,29 @@ class dlr(object):
 
     # -- Matsubara Frequency
 
-    def get_matsubara_frequencies(self, beta=1.):
+    def get_matsubara_frequencies(self, beta):
+        """Get Matsubara frequency grid."""
         zeta = (1 - self.xi)/2
         w_q = 1.j * np.pi/beta * (2*self.dlrmf + zeta)
         return w_q
 
 
-    def matsubara_from_dlr(self, G_xaa, beta=1.):
+    def dlr_from_matsubara(self, G_qaa, beta):
+        """Transform the rank-3 array_like Green's function `G_qaa` from Matsbuara frequency to DLR space."""
+        G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv), G_qaa.conj() / beta)
+        return G_xaa
+
+
+    def matsubara_from_dlr(self, G_xaa, beta):
+        """Transform the rank-3 array_like Green's function `G_xaa` from DLR space to Matsbuara frequency."""
         G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0))
         if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
         G_qaa = G_qaa.conj()
         return G_qaa
-
-
-    def dlr_from_matsubara(self, G_qaa, beta=1.):
-        G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv), G_qaa.conj() / beta)
-        return G_xaa
     
     
     def eval_dlr_freq(self, G_xaa, iwn, beta):
-        
+        """Evaluate the DLR coefficient Green's function `G_xaa` at arbibrary points in frequency space."""
         w_x = self.dlrrf / beta
         G_qaa = np.einsum('x...,qx->q...', G_xaa, 1./(iwn[:, None] + w_x[None, :]))
         if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
@@ -181,6 +215,8 @@ class dlr(object):
 
     def convolution_instab(self, A_xaa, B_xaa, beta=1.):
 
+        raise NotImplementedError
+        
         tau_l = self.get_tau(1.)
         w_x = self.dlrrf
 
