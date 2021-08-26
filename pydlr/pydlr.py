@@ -160,7 +160,7 @@ class dlr(object):
     
     # -- Mathematical operations
 
-    def convolution_matrix(self, A_xaa, beta=1.):
+    def convolution_matrix(self, A_xaa, beta):
 
         """ Fast DLR convolution matrix construction with scaling: 
         O(N^3*M^2) flops and O(N^2*M^2) storage. 
@@ -188,11 +188,13 @@ class dlr(object):
         return C_xaxa
         
 
-    def convolution(self, A_xaa, B_xaa, beta=1.):
+    def convolution_slow(self, A_xaa, B_xaa, beta):
 
         """ Fast DLR convolution with scaling: O(N^3*M^3) flops and O(N^2 + N*M^2) storage.
 
         Author: Hugo U.R. Strand """
+
+        raise NotImplementedError
         
         n, na, _ = A_xaa.shape
         tau_l = self.get_tau(1.)
@@ -213,7 +215,7 @@ class dlr(object):
         return C_xaa
     
 
-    def convolution_instab(self, A_xaa, B_xaa, beta=1.):
+    def convolution_instab(self, A_xaa, B_xaa, beta):
 
         raise NotImplementedError
         
@@ -239,7 +241,49 @@ class dlr(object):
         return C_xaa
 
 
-    def convolution_instab_opt(self, A_xaa, B_xaa, beta=1.):
+    def convolution_matrix_broken(self, A_xaa, beta):
+
+        """ DLR convolution matrix :math:`\mathcal{O}(N^2)` scaling """
+
+        n, na, _ = A_xaa.shape
+
+        #WA_xaa = np.matmul(self.W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
+        #C_xaa = np.matmul(WA_xaa, B_xaa)
+        #del WA_xaa
+
+        C1_xaa = np.einsum('yx,yab->xab', self.W_xx, A_xaa)
+        #C_xaa_ref = np.einsum('xab,xbc->xac', C1_xaa, B_xaa)
+        #np.testing.assert_array_almost_equal(C_xaa, C_xaa_ref)
+        
+        #WB_xaa = np.matmul(self.W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
+        #C_xaa = np.matmul(A_xaa, WB_xaa)
+        #del WB_xaa
+
+        C2_xaa = np.einsum('xy,yab->xab', self.W_xx, A_xaa)
+        #C_xaa_ref = np.einsum('xab,xbc->xac', C2_xaa, B_xaa)
+        #np.testing.assert_array_almost_equal(C_xaa, C_xaa_ref)
+        
+        #AB_xaa = np.matmul(A_xaa, B_xaa)
+        #C_xaa += self.k1_x[:, None, None] * AB_xaa
+        #C_xaa += np.matmul(self.TtT_xx, AB_xaa.reshape((n, na*na))).reshape((n, na, na))
+        #del AB_xaa
+
+        C_xxaa = np.einsum('xy,yab->xyab', self.TtT_xx, A_xaa)
+
+        for i in range(n):
+            C_xxaa[i, i] += C1_xaa[i] + C2_xaa[i] + self.k1_x[i] * A_xaa[i]
+        
+        #C_xaa *= beta
+        C_xxaa *= beta
+
+        C_xaxa = np.moveaxis(C_xxaa, 2, 1)
+        
+        return C_xaxa
+    
+
+    def convolution(self, A_xaa, B_xaa, beta):
+
+        """ DLR convolution with :math:`\mathcal{O}(N^2)` scaling """
 
         n, na, _ = A_xaa.shape
         
@@ -261,7 +305,7 @@ class dlr(object):
         return C_xaa
 
     
-    def convolution_dense(self, A_xaa, B_xaa, beta=1.):
+    def convolution_dense(self, A_xaa, B_xaa, beta):
         
         n, na, _ = A_xaa.shape
         A_AA = self.convolution_matrix(A_xaa, beta).reshape((n*na, n*na))
@@ -357,7 +401,7 @@ class dlr(object):
 
 
     def dyson_dlr(self, H_aa, Sigma_xaa, beta, S_aa=None,
-                  iterative=False, lomem=False, verbose=False, fastconv=False, tol=1e-12):
+                  iterative=False, lomem=False, verbose=False, tol=1e-12):
 
         na = H_aa.shape[0]
         n = Sigma_xaa.shape[0]
@@ -365,10 +409,8 @@ class dlr(object):
 
         g0_iaa = self.free_greens_function_tau(H_aa, beta, S_aa=S_aa)
         g0_xaa = self.dlr_from_tau(g0_iaa)
-
-        convolution = self.convolution_instab_opt if fastconv else self.convolution
         
-        g0Sigma_xaa = convolution(g0_xaa, Sigma_xaa, beta)
+        g0Sigma_xaa = self.convolution(g0_xaa, Sigma_xaa, beta)
         
         if iterative:
 
@@ -379,7 +421,7 @@ class dlr(object):
                 def Amatvec(x_Aa):
                     x_xaa = x_Aa.reshape((n, na, na))
                     y_xaa = x_xaa.copy()
-                    y_xaa -= convolution(g0Sigma_xaa, x_xaa, beta)
+                    y_xaa -= self.convolution(g0Sigma_xaa, x_xaa, beta)
                     return self.tau_from_dlr(y_xaa).reshape((n*na, na))
             else:
                 C_AA = self.convolution_matrix(g0Sigma_xaa, beta).reshape((n*na, n*na))
@@ -410,7 +452,7 @@ class dlr(object):
 
             if verbose:
                 diff = np.max(np.abs(self.tau_from_dlr(x0_Aa.reshape((n, na, na))) - self.tau_from_dlr(g_Aa.reshape((n,na,na)))))
-                print(f'diff x0 = {diff}')
+                print(f'Corr on precond: {diff:2.2E}')
 
         else:
 

@@ -67,10 +67,6 @@ def test_dyson_dlr():
     G_iaa_dlr_dyson_iter_lomem = d.tau_from_dlr(
         d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=True, verbose=True))
     check('dlr int iter lomem', G_iaa_dlr_dyson_iter_lomem, G_iaa_anal)
-
-    G_iaa_dlr_dyson_iter_lomem = d.tau_from_dlr(
-        d.dyson_dlr(E0, delta_xaa, beta, iterative=True, lomem=True, verbose=True, fastconv=True))
-    check('dlr int iter lomem fastconv', G_iaa_dlr_dyson_iter_lomem, G_iaa_anal)
     
     
 if __name__ == '__main__':
