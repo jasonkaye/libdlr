@@ -7,7 +7,6 @@ pydlr
 .. automodule:: pydlr.pydlr
    :members:
    :undoc-members:
-   :special-members: __init__
 
 kernel
 ------
@@ -15,5 +14,4 @@ kernel
 .. automodule:: pydlr.kernel
    :members:
    :undoc-members:
-   :special-members: __init__
 

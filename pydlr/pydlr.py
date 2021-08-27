@@ -329,17 +329,15 @@ class dlr(object):
 
     def convolution(self, A_xaa, B_xaa, beta):
 
-        """ DLR convolution with :math:`\mathcal{O}(N^2)` scaling. 
+        """ DLR convolution with :math:`\mathcal{O}(N^2)` scaling. Author: Hugo U.R. Strand (2021)
 
         Imaginary time convolution
         
-        .. math:: C = A \ast B
+        .. math:: C = A \\ast B
 
         reformulated in DLR coefficient space. The notation :math:`C = A \ast B` is short hand for:
 
         .. math:: C_{ij}(\\tau) = \\sum_k \\int_{0}^\\beta d\\bar{\\tau} A_{ik}(\\tau - \\bar{\\tau}) B_{kj}(\\bar{\\tau})
-
-        Author: Hugo U.R. Strand (2021) 
 
         Parameters
         ----------
@@ -358,7 +356,7 @@ class dlr(object):
 
         C_xaa : (n,m,m), ndarray
             Green's function :math:`C` in DLR coefficient space with :math:`m \\times m` orbital indices,
-            given by the convolution :math:`C = A \ast B`.
+            given by the convolution :math:`C = A \\ast B`.
         """
 
         n, na, _ = A_xaa.shape
@@ -383,7 +381,7 @@ class dlr(object):
     
     def convolution_matrix(self, A_xaa, beta):
 
-        """ Return DLR convolution matrix with :math:`\mathcal{O}(N^2)` scaling. 
+        """ DLR convolution matrix with :math:`\mathcal{O}(N^2)` scaling. Author: Hugo U.R. Strand (2021) 
 
         The imaginary time convolution matrix :math:`M` is given by
         
@@ -456,8 +454,8 @@ class dlr(object):
         G_xaa : (n,m,m), ndarray
             Free Green's function :math:`G` in DLR coefficient space with :math:`m \\times m` orbital indices.
 
-        Note
-        ----
+        Notes
+        -----
 
         The fastest algorithm for calculation of free Green's functions is the `free_greens_function_tau` method.
         """
@@ -557,8 +555,8 @@ class dlr(object):
         G_qaa : (n,m,m), ndarray
             Free Green's function :math:`G` in Matsubara frequency with :math:`m \\times m` orbital indices.
 
-        Note
-        ----
+        Notes
+        -----
 
         The fastest algorithm for calculation of free Green's functions is the `free_greens_function_tau` method.
         """
@@ -601,8 +599,8 @@ class dlr(object):
         G_qaa : (n,m,m), ndarray
             Green's function :math:`G` in Matsubara frequency with :math:`m \\times m` orbital indices.
 
-        Note
-        ----
+        Notes
+        -----
 
         The Matsubara frequency Dyson solver is the fastest Dyson solver, 
         albeit not as accurate as the DLR solver `dyson_dlr`.
@@ -622,11 +620,11 @@ class dlr(object):
 
         The Dyson equation gives the imaginary time Green's function :math:`G_{ij}(\\tau)` as
 
-        .. math:: (-\\partial_\\tau - H_{ij} - \\Sigma_{ij} \ast \, ) G_{jk}(\\tau) = \\delta(\\tau)
+        .. math:: (-\\partial_\\tau - H_{ij} - \\Sigma_{ij} \\ast \\, ) G_{jk}(\\tau) = \\delta(\\tau)
 
         Using the free Green's function :math:`g` this can be rewritten as the integral equation
 
-        .. math:: (1 - g \\ast \\Sigma \\ast ) G = g
+        .. math:: (1 - g \\ast \\Sigma \\ast \\, ) G = g
 
         which here is solved directly in DLR coefficient space.
 
@@ -660,8 +658,8 @@ class dlr(object):
         G_xaa : (n,m,m), ndarray
             Green's function :math:`G` in DLR coefficient space with :math:`m \\times m` orbital indices.
 
-        Note
-        ----
+        Notes
+        -----
 
         This DLR space Dyson solver is the most accurate algorithm for solving the Dyson equation. 
 
@@ -747,7 +745,7 @@ class dlr(object):
 
         The Dyson equation gives the imaginary time Green's function :math:`G_{ij}(\\tau)` as
 
-        .. math:: (-\\partial_\\tau - H_{ij} - \\Sigma_{ij} \ast \, ) G_{jk}(\\tau) = \\delta(\\tau)
+        .. math:: (-\\partial_\\tau - H_{ij} - \\Sigma_{ij} \\ast \\, ) G_{jk}(\\tau) = \\delta(\\tau)
 
         which here is solved directly in DLR coefficient space.
 
@@ -772,8 +770,8 @@ class dlr(object):
         G_xaa : (n,m,m), ndarray
             Green's function :math:`G` in DLR coefficient space with :math:`m \\times m` orbital indices.
 
-        Note
-        ----
+        Notes
+        -----
 
         This DLR space Dyson solver should not be used in production, use `dyson_dlr` instead. 
         The differential formulation gives a worse condition number, as compared to the integral 
