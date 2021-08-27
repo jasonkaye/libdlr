@@ -1,3 +1,8 @@
+      module dlr_it_mod
+        use dlr_build_mod
+        implicit none
+      contains
+
       !
       !
       ! This file contains subroutines to work with the discrete Lehmann
@@ -397,3 +402,6 @@
       gc = tmp(1:r)
 
       end subroutine dlr_fit
+
+
+      end module dlr_it_mod

@@ -28,6 +28,8 @@
 
       subroutine ha_it_main(lambda,eps,ntst,beta)
 
+      use dlr_it_mod
+        
       implicit none
       integer ntst
       real *8 lambda,eps,beta

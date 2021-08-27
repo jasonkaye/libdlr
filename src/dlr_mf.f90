@@ -1,3 +1,8 @@
+      module dlr_mf_mod
+        use dlr_build_mod
+        implicit none
+      contains
+      
       !
       !
       ! This file contains subroutines to work with the discrete Lehmann
@@ -330,3 +335,5 @@
       enddo
 
       end subroutine dlr_mf_eval
+
+      end module dlr_mf_mod

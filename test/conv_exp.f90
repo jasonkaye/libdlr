@@ -1,5 +1,5 @@
       program conv_exp
-
+        
       ! Test convolution of two DLR expansions for Green's functions
       ! which are each a single exponential. Compare result with
       ! analytically-known convolution.
@@ -27,6 +27,9 @@
 
       subroutine conv_exp_main(lambda,eps,ntst,beta)
 
+      use dlr_it_mod
+      use dlr_conv_mod
+        
       implicit none
       integer ntst
       real *8 lambda,eps,beta

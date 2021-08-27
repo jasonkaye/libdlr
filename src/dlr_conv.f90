@@ -1,12 +1,14 @@
+      module dlr_conv_mod
+        use dlr_it_mod
+        implicit none
+      contains
+
       !
       !
       ! This file contains subroutines for imaginary time convolution of
       ! Green's functions in the discrete Lehmann representation
       !
       !
-
-
-
 
 
       !> Get tensor taking a set of DLR coefficients to the matrix of
@@ -47,7 +49,7 @@
       integer j,k,l,ier,maxrec,numint,info
       real *8 one,rint1,rint2
       real *8, allocatable :: phitmp(:,:,:),phitmp2(:,:)
-      real *8, external :: kfunf,kfunf_rel,expfun
+      real *8, external :: kfunf,kfunf_rel
 
       one = 1.0d0
 
@@ -218,7 +220,7 @@
 
       integer j,k,l,ier,maxrec,numint
       real *8 one,rint1,rint2
-      real *8, external :: kfunf,kfunf_rel,expfun
+      real *8, external :: kfunf,kfunf_rel
 
       one = 1.0d0
 
@@ -328,17 +330,15 @@
       end subroutine dlr_convmat_vcc
 
 
-
-
-
       function expfun(om,xi)
 
       ! Evaluate the function f(om) = (1-xi*exp(-om))/(1+exp(-om)), for
       ! xi = +-1
 
       implicit none
-      integer xi
-      real *8 om,expfun
+      real *8 expfun
+      real *8, intent(in) :: om
+      integer, intent(in) :: xi
 
       if (om.ge.0.0d0) then
         expfun = (1.0d0-xi*exp(-om))/(1.0d0+exp(-om))
@@ -347,3 +347,5 @@
       endif
 
       end function expfun
+      
+      end module dlr_conv_mod

@@ -30,6 +30,9 @@
 
       subroutine ha_mf_main(lambda,eps,nmax,ntst,beta)
 
+      use dlr_it_mod
+      use dlr_mf_mod
+        
       implicit none
       integer ntst,nmax
       real *8 lambda,eps,beta

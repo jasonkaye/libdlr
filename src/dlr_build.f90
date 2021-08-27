@@ -1,3 +1,7 @@
+      module dlr_build_mod
+        implicit none
+      contains
+
       !
       !
       ! This file contains subroutines used to obtain the DLR basis
@@ -358,5 +362,4 @@
           
       end subroutine dlr_rf
 
-
-
+      end module dlr_build_mod
