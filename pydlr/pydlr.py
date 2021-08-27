@@ -20,7 +20,7 @@ class dlr(object):
     """
     Discrete Lehmann Representation (DLR) class.
 
-    Provides DRL basis, transofroms, and algorithms.
+    Provides the DRL basis, transforms, and algorithms.
 
     Parameters
     ----------

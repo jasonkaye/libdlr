@@ -367,6 +367,29 @@ def kernel_discretization(lamb, error_est=False):
 
 class KernelInterpolativeDecoposition:
 
+    """
+    Interpolative decomposition class for the imaginary-time analytical continuation kernel.
+
+    This is the SciPy based driver class for the Discrete Lehmann Representation (DLR).
+
+    Parameters
+    ----------
+
+    lamb : float
+        DLR scale parameter :math:`\\Lambda`.
+    eps : float
+        Set accuracy of the DLR representation.
+    xi : sign, optional,
+        Statistical sign :math:`\\xi = \\pm 1` for bosons and fermions respectively.
+    max_rank : int, optional
+        Maximum rank of the DLR kernel decomposition. Default 500.
+    nmax : int, optional
+        Maxumum index of the Matsubara frequency grid. Default int(lamb).
+    verbose : bool, optional
+        Default `False`.
+
+    """
+
     def __init__(self, lamb, eps=1e-15, xi=-1, max_rank=500, nmax=None, verbose=False):
 
         if verbose:

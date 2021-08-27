@@ -38,10 +38,12 @@ extensions = [
     'sphinx.ext.viewcode',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',
-    'numpydoc',
     'breathe',
     'nbsphinx',
     ]
+
+# -- Autodoc
+autodoc_member_order = 'bysource'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -89,10 +91,6 @@ todo_include_todos = True
 
 # -- Options for breathe c++ doc ------------------------------------------
 
-#breathe_projects = { "c++" : "_doxygen/xml/", "fortran" : "_doxygen_fortran/xml" }
-#breathe_default_project = "c++"
-#breathe_projects_source = { "c++" : ("../c++", ["nutshell.hpp"]), "fortran" : ("../fortran", ["utils.f90"]) }
-
 breathe_projects = { "fortran" : "_doxygen_fortran/xml" }
 breathe_default_project = "fortran"
 breathe_projects_source = { "fortran" : ("../src", ["dlr_build.f90", "dlr_it.f90", "dlr_mf.f90", "dlr_utils.f90", "dlr_conv.f90", "dlr_kernels.f90", "utils.f90", "dlr_dyson.f90"]) }
@@ -121,7 +119,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'readthedocs_testdoc'
+htmlhelp_basename = 'libdlr'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -148,7 +146,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'readthedocs_test.tex', u'readthedocs\\_test Documentation',
+    (master_doc, 'libdlr.tex', u'libdlr Documentation',
      u'Hugo U.R. Strand', 'manual'),
 ]
 
@@ -158,7 +156,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'readthedocs_test', u'readthedocs_test Documentation',
+    (master_doc, 'libdlr', u'libdlr Documentation',
      [author], 1)
 ]
 
@@ -169,8 +167,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'readthedocs_test', u'readthedocs_test Documentation',
-     author, 'readthedocs_test', 'One line description of project.',
+    (master_doc, 'libdlr', u'libdlr Documentation',
+     author, 'libdlr', 'Library for the Discrete Lehman Representation (DLR).',
      'Miscellaneous'),
 ]
 
