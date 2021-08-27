@@ -38,9 +38,6 @@ def test_convolution_scalar(verbose=False):
 
     gg_x_dlr = d.convolution(g1_x, g2_x, beta=beta)
     gg_l_dlr = d.tau_from_dlr(gg_x_dlr)
-
-    gg_l_dlr_instab = d.tau_from_dlr(d.convolution_instab(g1_x, g2_x, beta=beta))
-    gg_l_dlr_instab_opt = d.tau_from_dlr(d.convolution_instab_opt(g1_x, g2_x, beta=beta))
     
     # -- DLR convolution matrix
 
@@ -55,8 +52,6 @@ def test_convolution_scalar(verbose=False):
 
     print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_matsub))} (matsubara)')
     print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_dlr))} (dlr)')
-    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_dlr_instab))} (dlr instab)')
-    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_dlr_instab_opt))} (dlr instab opt)')
     print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_mat))} (dlr convmat)')
     
     # --
@@ -86,8 +81,6 @@ def test_convolution_scalar(verbose=False):
 
     np.testing.assert_array_almost_equal(gg_l_anal, gg_l_matsub)
     np.testing.assert_array_almost_equal(gg_l_anal, gg_l_dlr)
-    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_dlr_instab)
-    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_dlr_instab_opt)
     np.testing.assert_array_almost_equal(gg_l_anal, gg_l_mat)
 
 

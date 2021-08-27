@@ -161,87 +161,6 @@ class dlr(object):
     
     # -- Mathematical operations
 
-    def convolution_matrix_slow(self, A_xaa, beta):
-
-        """ Fast DLR convolution matrix construction with scaling: 
-        O(N^3*M^2) flops and O(N^2*M^2) storage. 
-
-        Author: Hugo U.R. Strand """
-        
-        w_x = self.dlrrf
-        tau_l = self.get_tau(1.)
-
-        n = len(w_x)        
-        I = np.eye(n)
-        
-        W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
-
-        k1_x = -np.squeeze(kernel(np.ones(1), w_x))
-
-        C_xxaa = A_xaa[:, None, ...] * W_xx.T[:, :, None, None] + \
-            self.dlr_from_tau(np.einsum('l,lx,x...->lx...', tau_l, self.T_lx, A_xaa))
-        C_xaa = k1_x[:, None, None] * A_xaa + np.tensordot(W_xx, A_xaa, axes=(0, 0))
-        for i in range(n): C_xxaa[i, i, :, :] += C_xaa[i]    
-        C_xxaa *= beta
-
-        C_xaxa = np.moveaxis(C_xxaa, 2, 1)
-        
-        return C_xaxa
-        
-
-    def convolution_slow(self, A_xaa, B_xaa, beta):
-
-        """ Fast DLR convolution with scaling: O(N^3*M^3) flops and O(N^2 + N*M^2) storage.
-
-        Author: Hugo U.R. Strand """
-
-        raise NotImplementedError
-        
-        n, na, _ = A_xaa.shape
-        tau_l = self.get_tau(1.)
-
-        WA_xaa = np.matmul(self.W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
-        WB_xaa = np.matmul(self.W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
-        C_xaa = np.matmul(self.k1_x[:, None, None] * A_xaa + WA_xaa, B_xaa) + np.matmul(A_xaa, WB_xaa)
-
-        # Stabilized version of the tau dependent term in the fast convolution
-        
-        for a in range(na):
-            for b in range(na):
-                t_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx * A_xaa[:, a, b][None, :])
-                C_xaa[:, a, :] += np.einsum('xy,yc->xc', t_xx, B_xaa[:, b, :])
-
-        C_xaa *= beta
-        
-        return C_xaa
-    
-
-    def convolution_instab(self, A_xaa, B_xaa, beta):
-
-        raise NotImplementedError
-        
-        tau_l = self.get_tau(1.)
-        w_x = self.dlrrf
-
-        I = np.eye(len(w_x))
-        W_xx = 1. / (I + w_x[:, None] - w_x[None, :]) - I
-
-        k1_x = -np.squeeze(kernel(np.ones(1), w_x))
-
-        AB_xaa = np.matmul(A_xaa, B_xaa)
-
-        # NB! The term with dlr_from_tau below is *not* numerically stable
-        
-        C_xaa = k1_x[:, None, None] * AB_xaa + \
-            self.dlr_from_tau(tau_l[:, None, None] * self.tau_from_dlr(AB_xaa)) + \
-            np.matmul(np.tensordot(W_xx, A_xaa, axes=(0, 0)), B_xaa) + \
-            np.matmul(A_xaa, np.tensordot(W_xx, B_xaa, axes=(0, 0)))        
-
-        C_xaa *= beta
-        
-        return C_xaa
-
-
     def convolution_matrix(self, A_xaa, beta):
 
         """ DLR convolution matrix with :math:`\mathcal{O}(N^2)` scaling. """
@@ -264,7 +183,7 @@ class dlr(object):
 
     def convolution(self, A_xaa, B_xaa, beta):
 
-        """ DLR convolution with :math:`\mathcal{O}(N^2)` scaling """
+        """ DLR convolution with :math:`\mathcal{O}(N^2)` scaling. """
 
         n, na, _ = A_xaa.shape
         
@@ -283,17 +202,6 @@ class dlr(object):
         
         C_xaa *= beta
         
-        return C_xaa
-
-    
-    def convolution_dense(self, A_xaa, B_xaa, beta):
-        
-        n, na, _ = A_xaa.shape
-        A_AA = self.convolution_matrix(A_xaa, beta).reshape((n*na, n*na))
-        B_Aa = B_xaa.reshape((n*na, na))
-        C_Aa= A_AA @ B_Aa
-        C_xaa = C_Aa.reshape((n, na, na))
-
         return C_xaa
     
 
