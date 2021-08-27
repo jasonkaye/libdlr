@@ -329,7 +329,37 @@ class dlr(object):
 
     def convolution(self, A_xaa, B_xaa, beta):
 
-        """ DLR convolution with :math:`\mathcal{O}(N^2)` scaling. """
+        """ DLR convolution with :math:`\mathcal{O}(N^2)` scaling. 
+
+        Imaginary time convolution
+        
+        .. math:: C = A \ast B
+
+        reformulated in DLR coefficient space. The notation :math:`C = A \ast B` is short hand for:
+
+        .. math:: C_{ij}(\\tau) = \\sum_k \\int_{0}^\\beta d\\bar{\\tau} A_{ik}(\\tau - \\bar{\\tau}) B_{kj}(\\bar{\\tau})
+
+        Author: Hugo U.R. Strand (2021) 
+
+        Parameters
+        ----------
+
+        A_xaa : (n,m,m)
+            Green's function :math:`A` in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        B_xaa : (n,m,m)
+            Green's function :math:`B` in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        C_xaa : (n,m,m), ndarray
+            Green's function :math:`C` in DLR coefficient space with :math:`m \\times m` orbital indices,
+            given by the convolution :math:`C = A \ast B`.
+        """
 
         n, na, _ = A_xaa.shape
         
@@ -353,26 +383,83 @@ class dlr(object):
     
     def convolution_matrix(self, A_xaa, beta):
 
-        """ DLR convolution matrix with :math:`\mathcal{O}(N^2)` scaling. """
+        """ Return DLR convolution matrix with :math:`\mathcal{O}(N^2)` scaling. 
+
+        The imaginary time convolution matrix :math:`M` is given by
+        
+        .. math:: M = [A \\ast]
+
+        i.e. the combination of the Green's function :math:`A` and the convolution operator :math:`\\ast`.
+
+        Author: Hugo U.R. Strand (2021) 
+
+        Parameters
+        ----------
+
+        A_xaa : (n,m,m)
+            Green's function :math:`A` in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        M_xaxa : (n,m,n,m), ndarray
+            Convolution matrix :math:`[A \\ast]` as a rank-4 tensor in DLR and orbital space.
+        """
 
         n, na, _ = A_xaa.shape
 
         Q_xaa = np.einsum('yx,yab->xab', self.W_xx, A_xaa)
         Q_xaa += self.k1_x[:,None,None] * A_xaa
 
-        C_xxaa = np.einsum( 'xy,yab->yxab', self.W_xx,   A_xaa)
-        C_xxaa += np.einsum('xy,yab->xyab', self.TtT_xx, A_xaa)
-        C_xxaa += np.einsum('xy,yab->xyab', np.eye(n),   Q_xaa)
+        M_xxaa = np.einsum( 'xy,yab->yxab', self.W_xx,   A_xaa)
+        M_xxaa += np.einsum('xy,yab->xyab', self.TtT_xx, A_xaa)
+        M_xxaa += np.einsum('xy,yab->xyab', np.eye(n),   Q_xaa)
 
-        C_xxaa *= beta
+        M_xxaa *= beta
 
-        C_xaxa = np.moveaxis(C_xxaa, 2, 1)
+        M_xaxa = np.moveaxis(M_xxaa, 2, 1)
         
-        return C_xaxa
+        return M_xaxa
     
 
     def free_greens_function_dlr(self, H_aa, beta, S_aa=None):
 
+        """ Return the free Green's function in DLR coefficent space.
+
+        The free Green's function is the solution to the Dyson differential equation
+
+        .. math:: (-\\partial_\\tau - H_{ij}) G_{jk}(\\tau) = \\delta(\\tau)
+
+        Parameters
+        ----------
+
+        H_aa : (m,m), array_like
+            Single-particle Hamiltonian matrix in :math:`m \\times m` orbital space.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        S_aa : (m,m), array_like, optional
+            Overlap matrix for the generalized case of non-orthogonal basis functions,
+            where the Dyson equation takes the form 
+            :math:`(-S_{ij} \\partial_\\tau - H_{ij}) G_{jk}(\\tau) = \\delta(\\tau)`.
+            Default is `S_aa = None`.
+
+        Returns
+        -------
+
+        G_xaa : (n,m,m), ndarray
+            Free Green's function :math:`G` in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        Note
+        ----
+
+        The fastest algorithm for calculation of free Green's functions is the `free_greens_function_tau` method.
+        """
+        
         na = H_aa.shape[0]
         I_aa = np.eye(na)
 
@@ -397,6 +484,34 @@ class dlr(object):
         
     def free_greens_function_tau(self, H_aa, beta, S_aa=None):
 
+        """ Return the free Green's function in imaginary time.
+
+        The free Green's function is the solution to the Dyson differential equation
+
+        .. math:: (-\\partial_\\tau - H_{ij}) G_{jk}(\\tau) = \\delta(\\tau)
+
+        Parameters
+        ----------
+
+        H_aa : (m,m), array_like
+            Single-particle Hamiltonian matrix in :math:`m \\times m` orbital space.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        S_aa : (m,m), array_like, optional
+            Overlap matrix for the generalized case of non-orthogonal basis functions,
+            where the Dyson equation takes the form 
+            :math:`(-S_{ij} \\partial_\\tau - H_{ij}) G_{jk}(\\tau) = \\delta(\\tau)`.
+            Default is `S_aa = None`.
+
+        Returns
+        -------
+
+        G_laa : (n,m,m), ndarray
+            Free Green's function :math:`G` in imaginary time with :math:`m \\times m` orbital indices.
+        """
+
         w_x = self.dlrrf
 
         if S_aa is None:
@@ -412,6 +527,34 @@ class dlr(object):
 
 
     def free_greens_function_matsubara(self, H_aa, beta, S_aa=None):
+
+        """ Return the free Green's function in Matsubara frequency.
+
+        The free Green's function is the solution to the Dyson equation
+
+        .. math:: G_{ij}(i \\omega_n ) = \\left[ i\\omega_n - H_{ij} \\right]^{-1}
+
+        Parameters
+        ----------
+
+        H_aa : (m,m), array_like
+            Single-particle Hamiltonian matrix in :math:`m \\times m` orbital space.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        S_aa : (m,m), array_like, optional
+            Overlap matrix for the generalized case of non-orthogonal basis functions,
+            where the Dyson equation takes the form 
+            :math:`= G_{jk}(i\\omega_n) = (-S_{ij} i\\omega_n - H_{ij})^{-1}`.
+            Default is `S_aa = None`.
+
+        Returns
+        -------
+
+        G_qaa : (n,m,m), ndarray
+            Free Green's function :math:`G` in Matsubara frequency with :math:`m \\times m` orbital indices.
+        """
 
         if S_aa is None: S_aa = np.eye(H_aa.shape[0])    
         w_q = self.get_matsubara_frequencies(beta)
