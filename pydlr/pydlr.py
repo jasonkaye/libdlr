@@ -16,6 +16,7 @@ from .kernel import kernel, KernelInterpolativeDecoposition
 
 
 class dlr(object):
+    
     """
     Discrete Lehmann Representation (DLR) class.
 
@@ -82,7 +83,7 @@ class dlr(object):
 
     
     def get_tau(self, beta):
-        """Get :math:`\tau`-grid in imaginary time :math:`\\tau \\in [0, \\beta]`."""
+        """Get :math:`\\tau`-grid in imaginary time :math:`\\tau \\in [0, \\beta]`."""
         tau_l = self.get_tau_over_beta() * beta
         return tau_l
 
@@ -160,7 +161,7 @@ class dlr(object):
     
     # -- Mathematical operations
 
-    def convolution_matrix(self, A_xaa, beta):
+    def convolution_matrix_slow(self, A_xaa, beta):
 
         """ Fast DLR convolution matrix construction with scaling: 
         O(N^3*M^2) flops and O(N^2*M^2) storage. 
@@ -241,39 +242,19 @@ class dlr(object):
         return C_xaa
 
 
-    def convolution_matrix_broken(self, A_xaa, beta):
+    def convolution_matrix(self, A_xaa, beta):
 
-        """ DLR convolution matrix :math:`\mathcal{O}(N^2)` scaling """
+        """ DLR convolution matrix with :math:`\mathcal{O}(N^2)` scaling. """
 
         n, na, _ = A_xaa.shape
 
-        #WA_xaa = np.matmul(self.W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
-        #C_xaa = np.matmul(WA_xaa, B_xaa)
-        #del WA_xaa
+        Q_xaa = np.einsum('yx,yab->xab', self.W_xx, A_xaa)
+        Q_xaa += self.k1_x[:,None,None] * A_xaa
 
-        C1_xaa = np.einsum('yx,yab->xab', self.W_xx, A_xaa)
-        #C_xaa_ref = np.einsum('xab,xbc->xac', C1_xaa, B_xaa)
-        #np.testing.assert_array_almost_equal(C_xaa, C_xaa_ref)
-        
-        #WB_xaa = np.matmul(self.W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
-        #C_xaa = np.matmul(A_xaa, WB_xaa)
-        #del WB_xaa
+        C_xxaa = np.einsum( 'xy,yab->yxab', self.W_xx,   A_xaa)
+        C_xxaa += np.einsum('xy,yab->xyab', self.TtT_xx, A_xaa)
+        C_xxaa += np.einsum('xy,yab->xyab', np.eye(n),   Q_xaa)
 
-        C2_xaa = np.einsum('xy,yab->xab', self.W_xx, A_xaa)
-        #C_xaa_ref = np.einsum('xab,xbc->xac', C2_xaa, B_xaa)
-        #np.testing.assert_array_almost_equal(C_xaa, C_xaa_ref)
-        
-        #AB_xaa = np.matmul(A_xaa, B_xaa)
-        #C_xaa += self.k1_x[:, None, None] * AB_xaa
-        #C_xaa += np.matmul(self.TtT_xx, AB_xaa.reshape((n, na*na))).reshape((n, na, na))
-        #del AB_xaa
-
-        C_xxaa = np.einsum('xy,yab->xyab', self.TtT_xx, A_xaa)
-
-        for i in range(n):
-            C_xxaa[i, i] += C1_xaa[i] + C2_xaa[i] + self.k1_x[i] * A_xaa[i]
-        
-        #C_xaa *= beta
         C_xxaa *= beta
 
         C_xaxa = np.moveaxis(C_xxaa, 2, 1)
