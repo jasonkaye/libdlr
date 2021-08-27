@@ -85,7 +85,7 @@ class dlr(object):
         Returns
         -------
 
-        ttau_l : (n) ndarray
+        ttau_l : (n), ndarray
             Scaled imaginary time points :math:`\\tilde{\\tau}_l = \\tau_l / \\beta` 
             for the DLR representation, :math:`\\tilde{\\tau}_l \\in [0, 1]`.
         """
@@ -107,7 +107,7 @@ class dlr(object):
         Returns
         -------
 
-        tau_l : (n) ndarray
+        tau_l : (n), ndarray
             Imaginary time points :math:`\\tau_l` for the DLR representation, :math:`\\tau_l \\in [0, \\beta]`.
         """
         
@@ -224,7 +224,20 @@ class dlr(object):
 
     def get_matsubara_frequencies(self, beta):
 
-        """Get Matsubara frequency grid."""
+        """Get Matsubara frequency grid.
+
+        Parameters
+        ----------
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        w_q : (n), ndarray
+            Matsubara frequency points :math:`i\\omega_q` for the DLR representation.
+        """
 
         zeta = (1 - self.xi)/2
         w_q = 1.j * np.pi/beta * (2*self.dlrmf + zeta)
@@ -233,7 +246,23 @@ class dlr(object):
 
     def dlr_from_matsubara(self, G_qaa, beta):
 
-        """Transform the rank-3 array_like Green's function `G_qaa` from Matsbuara frequency to DLR space."""
+        """Transform the rank-3 array_like Green's function `G_qaa` from Matsbuara frequency to DLR space.
+
+        Parameters
+        ----------
+
+        G_qaa : (n,m,m), array_like
+            Green's function in Matsubara frequency with :math:`m \\times m` orbital indices.
+        
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        G_xaa : (n,m,m), ndarray
+            Green's function i DLR coefficient space with :math:`m \\times m` orbital indices.
+        """
 
         G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv), G_qaa.conj() / beta)
         return G_xaa
@@ -241,7 +270,23 @@ class dlr(object):
 
     def matsubara_from_dlr(self, G_xaa, beta):
 
-        """Transform the rank-3 array_like Green's function `G_xaa` from DLR space to Matsbuara frequency."""
+        """Transform the rank-3 array_like Green's function `G_xaa` from DLR space to Matsbuara frequency.
+
+        Parameters
+        ----------
+
+        G_xaa : (n,m,m), array_like
+            Green's function i DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        G_qaa : (n,m,m), ndarray
+            Green's function in Matsubara frequency with :math:`m \\times m` orbital indices.
+        """
 
         G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0))
         if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
@@ -249,9 +294,28 @@ class dlr(object):
         return G_qaa
     
     
-    def eval_dlr_freq(self, G_xaa, iwn, beta):
+    def eval_dlr_freq(self, G_xaa, z, beta):
 
-        """Evaluate the DLR coefficient Green's function `G_xaa` at arbibrary points `iwn` in frequency space."""
+        """Evaluate the DLR coefficient Green's function `G_xaa` at arbibrary points `z` in frequency space.
+
+        Parameters
+        ----------
+
+        G_xaa : (n,m,m), array_like
+            Green's function in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        z : (k), array_like
+            Frequency points :math:`z_k` where to evaluate the Green's function.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        G_zaa : (k,m,m), ndarray
+            Green's function at the frequency points :math:`z_k` with :math:`m \\times m` orbital indices.
+        """
 
         w_x = self.dlrrf / beta
         G_qaa = np.einsum('x...,qx->q...', G_xaa, 1./(iwn[:, None] + w_x[None, :]))
