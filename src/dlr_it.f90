@@ -342,7 +342,7 @@
       !!
       !! @param[in]  r        number of DLR basis functions
       !! @param[in]  dlrrf    DLR frequency nodes
-      !! @param[in]  n        number of imaginary time points at which
+      !! @param[in]  nsamp    number of imaginary time points at which
       !!                        Green's function G is sampled
       !! @param[in]  tsamp    imaginary time points at which G is
       !!                        sampled, given in relative format
