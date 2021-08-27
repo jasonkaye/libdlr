@@ -46,9 +46,6 @@ def test_dyson_and_volterra_matsubara():
 
     G_iaa_dyson = tau_from_matsubara(d.dyson_matsubara(E0, delta_qaa, beta))
     check('matsubara dyson', G_iaa_dyson, G_iaa_anal)
-
-    G_iaa_volterra = tau_from_matsubara(d.volterra_matsubara(g0_qaa, delta_qaa, beta))
-    check('matsubara volterra', G_iaa_volterra, G_iaa_anal)
     
 
 def test_dyson_dlr():

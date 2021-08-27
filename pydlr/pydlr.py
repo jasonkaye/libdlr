@@ -212,12 +212,12 @@ class dlr(object):
         w_p, G_paa = w_x[p].T, G_xaa[p][:, 0]
         w_m, G_maa = w_x[m].T, G_xaa[m][:, 0]
 
-        tau = tau[:, None]
+        tau_k = tau_k[:, None]
 
-        G_taa = np.einsum('p...,tp->t...', G_paa, np.exp(-tau*w_p) / (1 + np.exp(-beta*w_p))) + \
-                np.einsum('m...,tm->t...', G_maa, np.exp((beta - tau)*w_m) / ( np.exp(beta*w_m) + 1 ))
+        G_kaa = np.einsum('p...,kp->k...', G_paa, np.exp(-tau_k*w_p) / (1 + np.exp(-beta*w_p))) + \
+                np.einsum('m...,km->k...', G_maa, np.exp((beta - tau_k)*w_m) / ( np.exp(beta*w_m) + 1 ))
 
-        return G_taa
+        return G_kaa
 
     
     # -- Matsubara Frequency
@@ -318,11 +318,11 @@ class dlr(object):
         """
 
         w_x = self.dlrrf / beta
-        G_qaa = np.einsum('x...,qx->q...', G_xaa, 1./(iwn[:, None] + w_x[None, :]))
-        if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
-        G_qaa = G_qaa.conj()
+        G_zaa = np.einsum('x...,zx->z...', G_xaa, 1./(z[:, None] + w_x[None, :]))
+        if len(G_zaa.shape) == 3: G_zaa = np.transpose(G_zaa, axes=(0, 2, 1))
+        G_zaa = G_zaa.conj()
         
-        return G_qaa
+        return G_zaa
     
 
     # -- Mathematical operations
@@ -423,7 +423,9 @@ class dlr(object):
         M_xaxa = np.moveaxis(M_xxaa, 2, 1)
         
         return M_xaxa
-    
+
+
+    # -- Free Green's function solvers
 
     def free_greens_function_dlr(self, H_aa, beta, S_aa=None):
 
@@ -554,6 +556,11 @@ class dlr(object):
 
         G_qaa : (n,m,m), ndarray
             Free Green's function :math:`G` in Matsubara frequency with :math:`m \\times m` orbital indices.
+
+        Note
+        ----
+
+        The fastest algorithm for calculation of free Green's functions is the `free_greens_function_tau` method.
         """
 
         if S_aa is None: S_aa = np.eye(H_aa.shape[0])    
@@ -563,7 +570,43 @@ class dlr(object):
         return g_qaa    
 
     
+    # -- Dyson equation solvers
+
     def dyson_matsubara(self, H_aa, Sigma_qaa, beta, S_aa=None):
+
+        """ Solve the Dyson equation in Matsubara frequency.
+
+        The Dyson equation gives the Green's function as
+
+        .. math:: G_{ij}(i \\omega_n ) = \\left[ i\\omega_n - H_{ij} - \\Sigma(i\\omega_n) \\right]^{-1}
+
+        Parameters
+        ----------
+
+        H_aa : (m,m), array_like
+            Single-particle Hamiltonian matrix in :math:`m \\times m` orbital space.
+
+        Sigma_qaa : (n,m,m), ndarray
+            Self-energy :math:`\\Sigma` in Matsubara frequency with :math:`m \\times m` orbital indices.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        S_aa : (m,m), array_like, optional
+            Overlap matrix for the generalized case of non-orthogonal basis functions. Default is `S_aa = None`.
+
+        Returns
+        -------
+
+        G_qaa : (n,m,m), ndarray
+            Green's function :math:`G` in Matsubara frequency with :math:`m \\times m` orbital indices.
+
+        Note
+        ----
+
+        The Matsubara frequency Dyson solver is the fastest Dyson solver, 
+        albeit not as accurate as the DLR solver `dyson_dlr`.
+        """
 
         if S_aa is None: S_aa = np.eye(H_aa.shape[0])
         w_q = self.get_matsubara_frequencies(beta)
@@ -572,34 +615,65 @@ class dlr(object):
         return G_qaa
 
 
-    def dyson_dlr_integrodiff(self, H_aa, Sigma_xaa, beta, S_aa=None):
-
-        na = H_aa.shape[0]
-        I_aa = np.eye(na)
-
-        if S_aa is None: S_aa = I_aa
-
-        w_x = self.dlrrf
-        n = len(w_x)
-
-        D_lx = self.T_lx * w_x[None, :] / beta
-
-        D_AA = -self.tau_from_dlr(self.convolution_matrix(Sigma_xaa, beta)).reshape((n*na, n*na))
-        D_AA += np.kron(D_lx, S_aa) - np.kron(self.T_lx, H_aa)
-        
-        bc_x = kernel(np.array([0.]), w_x) + kernel(np.array([1.]), w_x)
-        D_AA[(n-1)*na:, :] = np.kron(bc_x, S_aa)
-
-        b_Aa = np.zeros((n*na, na))
-        b_Aa[(n-1)*na:, :] = -I_aa
-
-        g_xaa = np.linalg.solve(D_AA, b_Aa).reshape((n, na, na))
-
-        return g_xaa
-
-
     def dyson_dlr(self, H_aa, Sigma_xaa, beta, S_aa=None,
                   iterative=False, lomem=False, verbose=False, tol=1e-12):
+
+        """ Solve the Dyson equation in DLR coefficient space.
+
+        The Dyson equation gives the imaginary time Green's function :math:`G_{ij}(\\tau)` as
+
+        .. math:: (-\\partial_\\tau - H_{ij} - \\Sigma_{ij} \ast \, ) G_{jk}(\\tau) = \\delta(\\tau)
+
+        Using the free Green's function :math:`g` this can be rewritten as the integral equation
+
+        .. math:: (1 - g \\ast \\Sigma \\ast ) G = g
+
+        which here is solved directly in DLR coefficient space.
+
+        Parameters
+        ----------
+
+        H_aa : (m,m), array_like
+            Single-particle Hamiltonian matrix in :math:`m \\times m` orbital space.
+
+        Sigma_xaa : (n,m,m), ndarray
+            Self-energy :math:`\\Sigma` in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        S_aa : (m,m), array_like, optional
+            Overlap matrix for the generalized case of non-orthogonal basis functions. Default is `S_aa = None`.
+
+        iterative : bool, optional
+            Default `False`
+
+        lomem : bool, optional
+            Default `False`
+
+        tol : float, optional
+            Tolerance for iterative GMRES solver.
+
+        Returns
+        -------
+
+        G_xaa : (n,m,m), ndarray
+            Green's function :math:`G` in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        Note
+        ----
+
+        This DLR space Dyson solver is the most accurate algorithm for solving the Dyson equation. 
+
+        By default it uses Lapack's direct solver on matrix problem in combined DLR and orbital space.
+        This is fast and accurate for small problems. For larger problems the :math:`\\mathcal{O}(N^2M^2)`
+        memory foot-print limits the performance.
+
+        Hence, for large problems the solver should be run with `iterative=True` and `lomem=True` and will
+        then use GMRES to solve the linear system using an implicit matrix formulation. 
+        This formulation gives a memory foot print that is of the same order as storing a single Green's function.
+        However, the requested GMRES tolerance `tol` has to be carefully tuned.
+        """
 
         na = H_aa.shape[0]
         n = Sigma_xaa.shape[0]
@@ -667,13 +741,67 @@ class dlr(object):
         return g_xaa
     
     
-    def volterra_matsubara(self, g_qaa, Sigma_qaa, beta):
+    def dyson_dlr_integrodiff(self, H_aa, Sigma_xaa, beta, S_aa=None):
 
-        N = Sigma_qaa.shape[-1]    
-        A_qaa = np.eye(N) - np.matmul(g_qaa, Sigma_qaa)        
-        G_qaa = np.linalg.solve(A_qaa, g_qaa)
+        """ Solve the Dyson equation in DLR coefficient space.
 
-        return G_qaa
+        The Dyson equation gives the imaginary time Green's function :math:`G_{ij}(\\tau)` as
+
+        .. math:: (-\\partial_\\tau - H_{ij} - \\Sigma_{ij} \ast \, ) G_{jk}(\\tau) = \\delta(\\tau)
+
+        which here is solved directly in DLR coefficient space.
+
+        Parameters
+        ----------
+
+        H_aa : (m,m), array_like
+            Single-particle Hamiltonian matrix in :math:`m \\times m` orbital space.
+
+        Sigma_xaa : (n,m,m), ndarray
+            Self-energy :math:`\\Sigma` in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        S_aa : (m,m), array_like, optional
+            Overlap matrix for the generalized case of non-orthogonal basis functions. Default is `S_aa = None`.
+
+        Returns
+        -------
+
+        G_xaa : (n,m,m), ndarray
+            Green's function :math:`G` in DLR coefficient space with :math:`m \\times m` orbital indices.
+
+        Note
+        ----
+
+        This DLR space Dyson solver should not be used in production, use `dyson_dlr` instead. 
+        The differential formulation gives a worse condition number, as compared to the integral 
+        equation formulation. The method is kept here for educational purposes.
+        """
+
+        na = H_aa.shape[0]
+        I_aa = np.eye(na)
+
+        if S_aa is None: S_aa = I_aa
+
+        w_x = self.dlrrf
+        n = len(w_x)
+
+        D_lx = self.T_lx * w_x[None, :] / beta
+
+        D_AA = -self.tau_from_dlr(self.convolution_matrix(Sigma_xaa, beta)).reshape((n*na, n*na))
+        D_AA += np.kron(D_lx, S_aa) - np.kron(self.T_lx, H_aa)
+        
+        bc_x = kernel(np.array([0.]), w_x) + kernel(np.array([1.]), w_x)
+        D_AA[(n-1)*na:, :] = np.kron(bc_x, S_aa)
+
+        b_Aa = np.zeros((n*na, na))
+        b_Aa[(n-1)*na:, :] = -I_aa
+
+        g_xaa = np.linalg.solve(D_AA, b_Aa).reshape((n, na, na))
+
+        return g_xaa
     
 
 class solver_wrapper:
