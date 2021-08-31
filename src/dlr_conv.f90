@@ -330,6 +330,15 @@
       end subroutine dlr_convmat_vcc
 
 
+      !> Evaluate the function \f$f(\omega) = (1-\xi \cdot \exp(-\omega))/(1+\exp(-\omega))\f$,
+      !! for \f$\xi = \pm 1\f$
+      !!
+      !! @param[in]   om      frequency \f$\omega\f$
+      !! @param[in]   xi      xi=-1 for fermionic case; xi=1 for bosonic
+      !!                        case
+      !!
+      !! @param[out]  expfun  value of the function \f$f(\omega)\f$
+
       function expfun(om,xi)
 
       ! Evaluate the function f(om) = (1-xi*exp(-om))/(1+exp(-om)), for
