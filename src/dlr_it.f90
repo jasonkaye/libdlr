@@ -280,7 +280,7 @@
       !!                         time grid points
       !! @param[out] gc        DLR coefficients of Green's function
 
-      subroutine dlr_expnd(r,it2cf,it2cfp,g,gc)
+      subroutine dlr_it_expnd(r,it2cf,it2cfp,g,gc)
       
       implicit none
       integer r,it2cfp(r)
@@ -295,7 +295,7 @@
 
       call dgetrs('N',r,1,it2cf,r,it2cfp,gc,r,info)
 
-      end subroutine dlr_expnd
+      end subroutine dlr_it_expnd
 
 
 
@@ -309,7 +309,7 @@
       !! @param[in]  t      imaginary time point in relative format
       !! @param[out] gt     value of DLR expansion at t
 
-      subroutine dlr_eval(r,dlrrf,gc,t,gt)
+      subroutine dlr_it_eval(r,dlrrf,gc,t,gt)
 
       implicit none
       integer r
@@ -336,7 +336,7 @@
 
       enddo
 
-      end subroutine dlr_eval
+      end subroutine dlr_it_eval
 
 
 
@@ -354,7 +354,7 @@
       !! @param[in]  gsamp    values of G at sampling points
       !! @param[out] gc       DLR coefficients of Green's function
 
-      subroutine dlr_fit(r,dlrrf,nsamp,tsamp,gsamp,gc)
+      subroutine dlr_it_fit(r,dlrrf,nsamp,tsamp,gsamp,gc)
 
       implicit none
       integer r,nsamp
@@ -401,7 +401,7 @@
 
       gc = tmp(1:r)
 
-      end subroutine dlr_fit
+      end subroutine dlr_it_fit
 
 
       end module dlr_it_mod

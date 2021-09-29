@@ -117,7 +117,7 @@
 
       allocate(gc(r))
 
-      call dlr_fit(r,dlrrf,nsamp,tsamp,gsamp,gc)
+      call dlr_it_fit(r,dlrrf,nsamp,tsamp,gsamp,gc)
 
 
 
@@ -134,7 +134,7 @@
 
       do i=1,ntst_it
 
-        call dlr_eval(r,dlrrf,gc,it_tst(i),gtst_it(i))
+        call dlr_it_eval(r,dlrrf,gc,it_tst(i),gtst_it(i))
 
       enddo
 

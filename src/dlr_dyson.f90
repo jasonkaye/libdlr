@@ -378,7 +378,7 @@
 
       ! Get DLR coefficients of self-energy
 
-      call dlr_expnd(r,it2cf,it2cfp,sig,sigc)
+      call dlr_it_expnd(r,it2cf,it2cfp,sig,sigc)
 
       ! Get self-energy on Matsubara frequency grid
 
@@ -391,7 +391,7 @@
 
       ! Get DLR coefficients of solution
 
-      call dlr_mfexpnd(r,mf2cf,mf2cfp,gmf,g)
+      call dlr_mf_expnd(r,mf2cf,mf2cfp,gmf,g)
 
       ! Evaluate solution on imaginary time grid
 

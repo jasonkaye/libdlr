@@ -157,8 +157,8 @@
 
       allocate(g1c(r),g2c(r))
 
-      call dlr_expnd(r,it2cf,it2cfp,g1,g1c)
-      call dlr_expnd(r,it2cf,it2cfp,g2,g2c)
+      call dlr_it_expnd(r,it2cf,it2cfp,g1,g1c)
+      call dlr_it_expnd(r,it2cf,it2cfp,g2,g2c)
 
 
       ! Initialize Green's function evaluator (semi-circular spectral
@@ -185,9 +185,9 @@
 
       do i=1,ntst
 
-        call dlr_eval(r,dlrrf,g1c,it_tst(i),g1tst(i))
+        call dlr_it_eval(r,dlrrf,g1c,it_tst(i),g1tst(i))
         
-        call dlr_eval(r,dlrrf,g2c,it_tst(i),g2tst(i))
+        call dlr_it_eval(r,dlrrf,g2c,it_tst(i),g2tst(i))
 
         call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,it_tst(i),&
           gtrue(i))

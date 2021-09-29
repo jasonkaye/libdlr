@@ -169,7 +169,7 @@
 
       allocate(gc(r))
 
-      call dlr_expnd(r,it2cf,it2cfp,g,gc)
+      call dlr_it_expnd(r,it2cf,it2cfp,g,gc)
 
 
       ! Get convolution matrix
@@ -308,7 +308,7 @@
 
       allocate(gc(r))
 
-      call dlr_expnd(r,it2cf,it2cfp,g,gc)
+      call dlr_it_expnd(r,it2cf,it2cfp,g,gc)
 
 
       ! Get convolution matrix taking DLR coefficients -> imaginary time

@@ -102,7 +102,7 @@
 
       allocate(gc(r))
 
-      call dlr_expnd(r,it2cf,it2cfp,g,gc)
+      call dlr_it_expnd(r,it2cf,it2cfp,g,gc)
 
 
 
@@ -119,7 +119,7 @@
 
       do i=1,ntst_it
 
-        call dlr_eval(r,dlrrf,gc,it_tst(i),gtst_it(i))
+        call dlr_it_eval(r,dlrrf,gc,it_tst(i),gtst_it(i))
 
       enddo
 
