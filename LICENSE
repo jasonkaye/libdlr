@@ -1,0 +1,40 @@
+Copyright (C) 2021 The Simons Foundation
+Copyright (C) 2021 Hugo U.R. Strand
+
+Authors: Jason Kaye and Hugo U.R. Strand
+
+------
+
+libdlr is licensed under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance with the
+License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+------
+
+Certain parts of this repository include code written by others.
+For their author and license info, see:
+
+src/utils_external/id_dist/doc.pdf
+src/utils_external/jacobi_rule.f90
+pydlr
+
+------
+
+If you find this library useful, or it helps you in creating software or
+publications, please let us know, and acknowledge that fact by citing
+our repository
+
+  https://github.com/jasonkaye/libdlr
+
+and the following preprint:
+
+  Discrete Lehmann representation of imaginary time Green's functions.
+  Jason Kaye, Kun Chen, Olivier Parcollet. arXiv:2107.13094. 2021.
