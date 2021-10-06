@@ -1,5 +1,18 @@
+"""Tests for the barycentric interpolation routines.
 
-""" Author: Hugo U.R. Strand (2021) """
+Copyright 2021 Hugo U.R. Strand
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+or implied. See the License for the specific language governing
+permissions and limitations under the License."""
 
 
 import numpy as np
@@ -10,7 +23,9 @@ from pydlr.kernel import barycentric_chebyshev_interpolation
 
 
 def test_barycentric_interp(verbose=False):
-
+    """ Test Barycentric interpolation by evaluation of 
+    known function on equidistant grid."""
+    
     N = 32
     x_i = chebyshev_collocation_points_1st_kind(N)
     w_i = chebyshev_barycentric_weights_1st_kind(N)
@@ -38,7 +53,11 @@ def test_barycentric_interp(verbose=False):
 
 
 def test_barycentric_interp_on_grid(verbose=False):
+    """The Barycentric interpolation diverges when the 
+    interpolation point is equal to a Chebyshev collocation grid point.
 
+    Here we check that this special case is correctly handled."""
+    
     N = 32
     x_i = chebyshev_collocation_points_1st_kind(N)
     w_i = chebyshev_barycentric_weights_1st_kind(N)

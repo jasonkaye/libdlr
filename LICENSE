@@ -24,7 +24,8 @@ For their author and license info, see:
 
 src/utils_external/id_dist/doc.pdf
 src/utils_external/jacobi_rule.f90
-pydlr
+cmake/FindSphinx.cmake
+pydlr/*
 
 ------
 
