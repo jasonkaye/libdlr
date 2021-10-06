@@ -76,6 +76,17 @@ class dlr(object):
         self.TtT_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx)
 
         
+    def __len__(self):
+        """The length of the DLR expansion
+
+        Returns
+        -------
+
+        rank : int
+            Number of DLR expansion coefficients.
+        """
+        return self.rank
+        
     # -- Imaginary time
 
     def get_tau_over_beta(self):
