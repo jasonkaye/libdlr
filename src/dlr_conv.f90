@@ -1,7 +1,3 @@
-      module dlr_conv_mod
-        use dlr_it_mod
-        implicit none
-      contains
 
       !
       !
@@ -49,7 +45,7 @@
       integer j,k,l,ier,maxrec,numint,info
       real *8 one,rint1,rint2
       real *8, allocatable :: phitmp(:,:,:),phitmp2(:,:)
-      real *8, external :: kfunf,kfunf_rel
+      real *8, external :: kfunf,kfunf_rel,expfun
 
       one = 1.0d0
 
@@ -220,7 +216,7 @@
 
       integer j,k,l,ier,maxrec,numint
       real *8 one,rint1,rint2
-      real *8, external :: kfunf,kfunf_rel
+      real *8, external :: kfunf,kfunf_rel,expfun
 
       one = 1.0d0
 
@@ -356,5 +352,3 @@
       endif
 
       end function expfun
-      
-      end module dlr_conv_mod

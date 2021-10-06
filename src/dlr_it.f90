@@ -1,7 +1,3 @@
-      module dlr_it_mod
-        use dlr_build_mod
-        implicit none
-      contains
 
       !
       !
@@ -402,6 +398,3 @@
       gc = tmp(1:r)
 
       end subroutine dlr_it_fit
-
-
-      end module dlr_it_mod

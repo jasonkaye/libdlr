@@ -1,9 +1,3 @@
-      module dlr_dyson_mod
-        use dlr_it_mod
-        use dlr_mf_mod
-        use dlr_conv_mod
-        implicit none
-      contains
 
       !
       !
@@ -399,6 +393,4 @@
       call dgemv('N',r,r,one,cf2it,r,tmp2,1,0*one,g,1)
 
       end subroutine dyson_mf_lin
-
-      end module dlr_dyson_mod
       

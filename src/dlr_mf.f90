@@ -1,7 +1,3 @@
-      module dlr_mf_mod
-        use dlr_build_mod
-        implicit none
-      contains
       
       !
       !
@@ -335,5 +331,3 @@
       enddo
 
       end subroutine dlr_mf_eval
-
-      end module dlr_mf_mod

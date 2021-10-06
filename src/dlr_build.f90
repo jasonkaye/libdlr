@@ -1,6 +1,3 @@
-      module dlr_build_mod
-        implicit none
-      contains
 
       !
       !
@@ -361,5 +358,3 @@
       dlrrf(1:r) = om(oidx(1:r))
           
       end subroutine dlr_rf
-
-      end module dlr_build_mod

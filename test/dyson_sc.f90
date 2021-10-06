@@ -43,9 +43,6 @@
 
       subroutine dyson_sc_main(lambda,eps,nmax,ntst,fptol,&
           maxit,w,beta,c)
-
-      use dlr_it_mod
-      use dlr_dyson_mod
         
       ! Main driver routine for nonlinear Dyson solver test 
 
