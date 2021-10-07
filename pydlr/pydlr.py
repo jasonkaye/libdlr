@@ -241,6 +241,43 @@ class dlr(object):
 
         return G_kaa
 
+
+    def lstsq_dlr_from_tau(self, tau_i, G_iaa, beta):
+        """Return DLR coefficients by least squares fit to values on arbitrary imaginary time grid.
+
+        Parameters
+        ----------
+
+        tau_i : (i), array_like
+            Imaginary time points :math:`\\tau_i` where the Green's function is sampled.
+
+        G_iaa : (i,m,m), array_like
+            Green's function in imaginary time space :math:`G(\\tau_i)` with :math:`m \\times m` orbital indices.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        G_xaa : (k,m,m), ndarray
+            Green's function in DLR coefficient space with :math:`m \\times m` orbital indices.
+        """
+
+        shape_iaa = G_iaa.shape
+        assert(len(shape_iaa) == 3)
+        
+        shape_iA = (shape_iaa[0], shape_iaa[1]*shape_iaa[2])
+        shape_xaa = (len(self), shape_iaa[1], shape_iaa[2])
+
+        K_ix = kernel(tau_i/beta, self.dlrrf)
+
+        G_xaa = np.linalg.lstsq(
+            K_ix, G_iaa.reshape(shape_iA),
+            rcond=None)[0].reshape(shape_xaa)
+
+        return G_xaa
+    
     
     # -- Matsubara Frequency
 
