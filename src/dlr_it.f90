@@ -38,7 +38,7 @@
       !! @param[out]    dlrrf   DLR frequency nodes
       !! @param[out]    dlrit   DLR imaginary time nodes
 
-      subroutine dlr_buildit(lambda,eps,r,dlrrf,dlrit)
+      subroutine dlr_it_build(lambda,eps,r,dlrrf,dlrit)
 
       implicit none
       integer r
@@ -77,7 +77,7 @@
 
       call dlr_it(lambda,nt,no,t,kmat,r,oidx,dlrit)
 
-      end subroutine dlr_buildit
+      end subroutine dlr_it_build
 
 
 

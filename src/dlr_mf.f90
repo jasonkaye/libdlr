@@ -51,7 +51,7 @@
       !! @param[out]    dlrrf   DLR frequency nodes
       !! @param[out]    dlrmf   DLR Matsubara frequency nodes
 
-      subroutine dlr_buildmf(lambda,eps,nmax,xi,r,dlrrf,dlrmf)
+      subroutine dlr_mf_build(lambda,eps,nmax,xi,r,dlrrf,dlrmf)
 
       implicit none
       integer nmax,xi,r,dlrmf(r)
@@ -90,7 +90,7 @@
 
       call dlr_mf(nmax,r,dlrrf,xi,dlrmf)
 
-      end subroutine dlr_buildmf
+      end subroutine dlr_mf_build
 
 
 

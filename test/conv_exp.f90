@@ -71,7 +71,7 @@
 
       allocate(dlrrf(r),dlrit(r))
 
-      call dlr_buildit(lambda,eps,r,dlrrf,dlrit)
+      call dlr_it_build(lambda,eps,r,dlrrf,dlrit)
 
 
       ! Get imaginary time values -> DLR coefficients matrix (LU form)

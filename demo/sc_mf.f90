@@ -90,7 +90,7 @@
 
       allocate(dlrrf(r),dlrmf(r))
 
-      call dlr_buildmf(lambda,eps,nmax,-1,r,dlrrf,dlrmf)
+      call dlr_mf_build(lambda,eps,nmax,-1,r,dlrrf,dlrmf)
 
 
       ! Get Matsubara frequency values -> DLR coefficients matrix (LU
