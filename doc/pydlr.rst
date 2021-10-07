@@ -15,3 +15,10 @@ kernel
    :members:
    :undoc-members:
 
+utils
+-----
+
+.. automodule:: pydlr.utils
+   :members:
+   :undoc-members:
+

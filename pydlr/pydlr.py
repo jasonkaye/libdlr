@@ -357,7 +357,7 @@ class dlr(object):
         
         .. math:: C = A \\ast B
 
-        reformulated in DLR coefficient space. The notation :math:`C = A \ast B` is short hand for:
+        reformulated in DLR coefficient space. The notation :math:`C = A \\ast B` is short hand for:
 
         .. math:: C_{ij}(\\tau) = \\sum_k \\int_{0}^\\beta d\\bar{\\tau} A_{ik}(\\tau - \\bar{\\tau}) B_{kj}(\\bar{\\tau})
 

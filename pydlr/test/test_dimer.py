@@ -1,4 +1,4 @@
-"""Test Dyson equation solvers on exactly solvable dimer problem.
+"""Test Matsubara Dyson equation solver on exactly solvable dimer problem.
 
 Copyright 2021 Hugo U.R. Strand
 
