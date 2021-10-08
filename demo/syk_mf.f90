@@ -115,7 +115,7 @@
 
       allocate(it2cf(r,r),it2cfp(r))
 
-      call dlr_it2cf(r,dlrrf,dlrit,it2cf,it2cfp)
+      call dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp)
 
 
       ! Get DLR Matsubara frequency grid
@@ -130,14 +130,14 @@
 
       allocate(mf2cf(r,r),mf2cfp(r))
 
-      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,-1,mf2cf,mf2cfp)
+      call dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,-1,mf2cf,mf2cfp)
 
 
       ! Get DLR coefficients -> imaginary time values matrix
 
       allocate(cf2it(r,r))
 
-      call dlr_cf2it(r,dlrrf,dlrit,cf2it)
+      call dlr_cf2it_init(r,dlrrf,dlrit,cf2it)
 
 
       ! Get DLR coefficients -> reflected imaginary time values matrix
@@ -146,14 +146,14 @@
 
       allocate(it2itr(r,r))
 
-      call dlr_it2itr(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
+      call dlr_it2itr_init(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
 
 
       ! Get DLR coefficients -> Matsubara frequency values matrix
 
       allocate(cf2mf(r,r))
 
-      call dlr_cf2mf(r,dlrrf,dlrmf,-1,cf2mf)
+      call dlr_cf2mf_init(r,dlrrf,dlrmf,-1,cf2mf)
 
 
       ! Get free particle Green's function on Matsubara frequency grid
@@ -212,7 +212,7 @@
 
       ! Get DLR coefficients of solution
 
-      call dlr_it_expnd(r,it2cf,it2cfp,g,g)
+      call dlr_it2cf(r,it2cf,it2cfp,g,g)
 
 
       ! Get output points in relative format
@@ -241,7 +241,7 @@
 
       contains
 
-       subroutine sigfun(r,g,sig)
+        subroutine sigfun(r,g,sig)
 
         ! Evaluate SYK self-energy Sigma = G(tau)*G(tau)*G(beta-tau)
 
@@ -249,7 +249,9 @@
         integer r
         real *8 g(r),sig(r)
 
-        sig = c**2*g**2*matmul(it2itr,g)
+        call dlr_it2itr(r,it2itr,g,sig)
+
+        sig = c*c*g*g*sig
 
         end subroutine sigfun
 

@@ -98,7 +98,7 @@
 
       allocate(mf2cf(r,r),mf2cfp(r))
 
-      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,-1,mf2cf,mf2cfp)
+      call dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,-1,mf2cf,mf2cfp)
 
 
 
@@ -132,7 +132,7 @@
 
       allocate(gc(r))
 
-      call dlr_mf_expnd(r,mf2cf,mf2cfp,g,gc)
+      call dlr_mf2cf(r,mf2cf,mf2cfp,g,gc)
 
 
 

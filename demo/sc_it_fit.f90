@@ -73,9 +73,9 @@
       real *8 lambda,eps,beta,noise
 
       integer npg,npo,pg,i,j,r
-      integer, allocatable :: it2cfp(:),mf_tst(:)
+      integer, allocatable :: mf_tst(:)
       real *8 one
-      real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),gsamp(:)
+      real *8, allocatable :: dlrit(:),dlrrf(:),gsamp(:)
       real *8, allocatable :: gc(:),tmp(:)
       real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:)
       real *8, allocatable :: tsamp(:),it_tst(:),gtst_it(:),gtrue_it(:)

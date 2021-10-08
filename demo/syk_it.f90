@@ -91,7 +91,7 @@
       integer, allocatable :: it2cfp(:)
       real *8 gtest,gtest2
       real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:),g(:)
-      real *8, allocatable :: cf2it(:,:),it2itr(:,:),phi(:,:),g0(:)
+      real *8, allocatable :: it2itr(:,:),phi(:,:),g0(:)
       real *8, external :: kfunf_rel
 
 
@@ -108,14 +108,7 @@
 
       allocate(it2cf(r,r),it2cfp(r))
 
-      call dlr_it2cf(r,dlrrf,dlrit,it2cf,it2cfp)
-
-
-      ! Get DLR coefficients -> imaginary time values matrix
-
-      allocate(cf2it(r,r))
-
-      call dlr_cf2it(r,dlrrf,dlrit,cf2it)
+      call dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp)
 
 
       ! Get DLR coefficients -> reflected imaginary time values matrix
@@ -124,7 +117,7 @@
 
       allocate(it2itr(r,r))
 
-      call dlr_it2itr(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
+      call dlr_it2itr_init(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
 
 
       ! Get convolution tensor
@@ -150,7 +143,7 @@
 
       g = g0 ! Initial guess
 
-      call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,cf2it,phi,&
+      call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,phi,&
         sigfun,w,fptol,numit,g0,g,info)
 
       write(6,*) 'mu = ',0.0d0
@@ -171,7 +164,7 @@
 
         call getg0_it(beta,r,dlrit,i*mu/nmu,g0)
 
-        call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,cf2it,phi,&
+        call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,phi,&
           sigfun,w,fptol,numit,g0,g,info)
 
         write(6,*) 'mu = ',i*mu/nmu
@@ -187,7 +180,7 @@
 
       ! Get DLR coefficients of solution
 
-      call dlr_it_expnd(r,it2cf,it2cfp,g,g)
+      call dlr_it2cf(r,it2cf,it2cfp,g,g)
 
 
       ! Get output points in relative format
@@ -224,7 +217,9 @@
         integer r
         real *8 g(r),sig(r)
 
-        sig = c**2*g**2*matmul(it2itr,g)
+        call dlr_it2itr(r,it2itr,g,sig)
+
+        sig = c*c*g*g*sig
 
         end subroutine sigfun
       

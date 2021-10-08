@@ -77,7 +77,7 @@
 
       allocate(it2cf(r,r),it2cfp(r))
 
-      call dlr_it2cf(r,dlrrf,dlrit,it2cf,it2cfp)
+      call dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp)
 
 
       ! Sample G at imaginary time nodes
@@ -95,7 +95,7 @@
 
       allocate(gc(r))
 
-      call dlr_it_expnd(r,it2cf,it2cfp,g,gc)
+      call dlr_it2cf(r,it2cf,it2cfp,g,gc)
 
 
       ! Get test points in relative format

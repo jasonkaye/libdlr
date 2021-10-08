@@ -76,14 +76,13 @@
       !!                          fptol; =-1 if iteration did not
       !!                          converge
 
-      subroutine dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,cf2it,&
+      subroutine dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,&
           phi,sigfun,w,fptol,numit,g0,g,info)
 
       implicit none
       integer r,numit,it2cfp(r),info
       real *8 beta,dlrit(r),it2cf(r,r)
-      real *8 cf2it(r,r),g0(r),g(r),w,fptol
-      real *8 phi(r*r,r)
+      real *8 g0(r),g(r),w,fptol,phi(r*r,r)
 
       integer i,info1
       real *8 one
@@ -380,21 +379,20 @@
       complex *16 mf2cf(r,r),cf2mf(r,r),g0(r)
 
       real *8 one
-      real *8, allocatable :: sigc(:),tmp2(:)
+      real *8, allocatable :: sigc(:),gc(:)
       complex *16, allocatable :: sigmf(:),gmf(:),tmp(:)
 
       one = 1.0d0
 
-      allocate(sigc(r),gmf(r),sigmf(r),tmp(r),tmp2(r))
+      allocate(sigc(r),gmf(r),sigmf(r),tmp(r),gc(r))
 
       ! Get DLR coefficients of self-energy
 
-      call dlr_it_expnd(r,it2cf,it2cfp,sig,sigc)
+      call dlr_it2cf(r,it2cf,it2cfp,sig,sigc)
 
       ! Get self-energy on Matsubara frequency grid
 
-      tmp = sigc
-      call zgemv('N',r,r,one,cf2mf,r,tmp,1,0*one,sigmf,1)
+      call dlr_cf2mf(r,cf2mf,sigc,sigmf)
 
       ! Solve Dyson equation by diagonal inversion
 
@@ -402,12 +400,11 @@
 
       ! Get DLR coefficients of solution
 
-      call dlr_mf_expnd(r,mf2cf,mf2cfp,gmf,g)
+      call dlr_mf2cf(r,mf2cf,mf2cfp,gmf,gc)
 
       ! Evaluate solution on imaginary time grid
 
-      tmp2 = g
-      call dgemv('N',r,r,one,cf2it,r,tmp2,1,0*one,g,1)
+      call dlr_cf2it(r,cf2it,gc,g)
 
       end subroutine dyson_mf_lin
       

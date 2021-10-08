@@ -97,14 +97,14 @@
 
       allocate(it2cf(r,r),it2cfp(r))
 
-      call dlr_it2cf(r,dlrrf,dlrit,it2cf,it2cfp)
+      call dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp)
 
 
       ! Get DLR coefficients -> imaginary time values matrix
 
       allocate(cf2it(r,r))
 
-      call dlr_cf2it(r,dlrrf,dlrit,cf2it)
+      call dlr_cf2it_init(r,dlrrf,dlrit,cf2it)
 
 
       ! Get Matsubara frequency grid
@@ -119,12 +119,12 @@
 
       allocate(mf2cf(r,r),mf2cfp(r),cf2mf(r,r))
 
-      call dlr_mf2cf(nmax,r,dlrrf,dlrmf,-1,mf2cf,mf2cfp)
+      call dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,-1,mf2cf,mf2cfp)
 
 
       ! Get DLR coefficients -> Matsubara frequency values matrix
 
-      call dlr_cf2mf(r,dlrrf,dlrmf,-1,cf2mf)
+      call dlr_cf2mf_init(r,dlrrf,dlrmf,-1,cf2mf)
 
 
 
@@ -157,7 +157,7 @@
 
       g1 = g0it
 
-      call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,cf2it,phi,&
+      call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,phi,&
         sigfun,w,fptol,numit,g0it,g1,info)
 
 
@@ -177,8 +177,8 @@
 
       allocate(g1c(r),g2c(r))
 
-      call dlr_it_expnd(r,it2cf,it2cfp,g1,g1c)
-      call dlr_it_expnd(r,it2cf,it2cfp,g2,g2c)
+      call dlr_it2cf(r,it2cf,it2cfp,g1,g1c)
+      call dlr_it2cf(r,it2cf,it2cfp,g2,g2c)
 
 
       ! Initialize Green's function evaluator (semi-circular spectral
