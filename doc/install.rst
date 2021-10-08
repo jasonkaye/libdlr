@@ -8,11 +8,10 @@ Installation
 Requirements
 ------------
 
-``dlrcode`` (Fortran library)
+``libdlr`` (Fortran library)
 
 - Fortran compiler
-- Blas / Lapack
-- ``id_dist`` library (bundled with ``dlrcode``)
+- BLAS / LAPACK
 - CMake
 
   
@@ -28,26 +27,26 @@ Build
 
 Using ``CMake``::
   
-   git clone https://github.com/jasonkaye/dlrcode.git
-   cd dlrcode
+   git clone https://github.com/jasonkaye/libdlr.git
+   cd libdlr
    mkdir cbuild
    cd cbuild
 
-Only static Fortran library::
-  
-   cmake -DBUILD_SHARED_LIBS=OFF ..
-
-Include python module::
+Include python module (optional)::
   
    cmake -Dwith_python=ON ..
 
-Build documentation::
+Build documentation (optional)::
   
    cmake -Dwith_python=ON -DBUILD_DOCS=ON ..
 
 Compile and build::
   
    make
+
+Run tests::
+
+   make test
 
 Install
 -------

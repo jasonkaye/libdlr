@@ -1,5 +1,12 @@
-dlrcode (Fortran library)
-=========================
+libdlr (Fortran library) subroutines
+====================================
+
+This is a directory of all libdlr Fortran subroutines. The subroutines
+are organized into a collection of .f90 source files, contained in
+libdlr/src.  For more specific information about variable types and
+dimensions for a particular subroutine, take a look at the corresponding
+source file. To see how to use the various subroutines in practice, take
+a look at the demos located in libdlr/demo.
 
 dlr_build.f90
 -------------
