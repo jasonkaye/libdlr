@@ -379,8 +379,8 @@
       complex *16 mf2cf(r,r),cf2mf(r,r),g0(r)
 
       real *8 one
-      real *8, allocatable :: sigc(:),gc(:)
-      complex *16, allocatable :: sigmf(:),gmf(:),tmp(:)
+      real *8, allocatable :: gc(:),sigc(:)
+      complex *16, allocatable :: gmf(:),sigmf(:),tmp(:)
 
       one = 1.0d0
 
@@ -407,4 +407,34 @@
       call dlr_cf2it(r,cf2it,gc,g)
 
       end subroutine dyson_mf_lin
-      
+
+
+
+
+
+      !> Solve the Dyson equation in Matsubara frequency.
+      !!
+      !! This solver takes in the self-energy and returns the imaginary
+      !! time Green's function on the imaginary time grid, but performs
+      !! the solve in the Matsubara frequency domain by diagonal
+      !! inversion.
+      !!
+      !! @param[in]   beta    inverse temperature
+      !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   g0      values of the right hand side G0 on
+      !!                        the Matsubara frequency grid
+      !! @param[in]   sigmf   values of the self-energy on the
+      !!                        Matsubara frequency grid
+      !! @param[out]  gmf     solution of the Dyson equation on the
+      !!                        Matsubara frequency grid
+
+      subroutine dyson_mf_solve(beta,r,g0,sigmf,gmf)
+
+      implicit none
+      integer r
+      real *8 beta
+      complex *16 g0(r),sigmf(r),gmf(r)
+
+      gmf = g0/(1.0d0-beta**2*g0*sigmf)
+
+      end subroutine dyson_mf_solve

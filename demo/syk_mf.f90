@@ -39,10 +39,10 @@
       ! equation, corresponding to fixed self-energy, is solved in the
       ! Matsubara frequency domain, where it is diagonal.
       !
-      ! To solve the equation with a desired single particle energy mu,
+      ! To solve the equation with a desired chemical potential mu,
       ! we pick a number nmu>1, and solve a sequence intermediate
       ! problems to obtain a good initial guess. First we solve the
-      ! equation with single particle energy mu_0 = 0, then use this
+      ! equation with chemical potential mu_0 = 0, then use this
       ! solution as an initial guess for the fixed point iteration with
       ! mu_1 = mu/nmu, then use this the solution as an initial guess
       ! for the fixed point iteration with mu = 2*mu/nmu, and so on,
@@ -174,8 +174,8 @@
 
       call getg0_it(beta,r,dlrit,0.0d0,g)
 
-      call dlr_dyson_mf(beta,r,dlrit,it2cf,it2cfp,cf2it,&
-        dlrmf,mf2cf,mf2cfp,cf2mf,sigfun,w,fptol,numit,g0,g,info)
+      call solvesyk(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
+        dlrmf,mf2cf,mf2cfp,cf2mf,it2itr,w,fptol,numit,g0,g,info)
 
       write(6,*) 'mu = ',0.0d0
 
@@ -195,8 +195,8 @@
 
         call getg0_mf(beta,r,dlrmf,i*mu/nmu,g0)
 
-        call dlr_dyson_mf(beta,r,dlrit,it2cf,it2cfp,cf2it,&
-          dlrmf,mf2cf,mf2cfp,cf2mf,sigfun,w,fptol,numit,g0,&
+        call solvesyk(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
+          dlrmf,mf2cf,mf2cfp,cf2mf,it2itr,w,fptol,numit,g0,&
           g,info)
 
         write(6,*) 'mu = ',i*mu/nmu
@@ -239,23 +239,104 @@
       close(1)
 
 
-      contains
-
-        subroutine sigfun(r,g,sig)
-
-        ! Evaluate SYK self-energy Sigma = G(tau)*G(tau)*G(beta-tau)
-
-        implicit none
-        integer r
-        real *8 g(r),sig(r)
-
-        call dlr_it2itr(r,it2itr,g,sig)
-
-        sig = c*c*g*g*sig
-
-        end subroutine sigfun
-
       end subroutine syk_mf_main
+
+
+      subroutine solvesyk(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
+          dlrmf,mf2cf,mf2cfp,cf2mf,it2itr,w,fptol,numit,g0,g,&
+          info)
+
+      ! Solve SYK equation using weighted fixed point iteration
+
+      implicit none
+      integer r,numit,it2cfp(r),mf2cfp(r),dlrmf(r)
+      integer info
+      real *8 beta,c,dlrit(r),it2cf(r,r),it2itr(r,r)
+      real *8 cf2it(r,r),g(r),w,fptol
+      complex *16 mf2cf(r,r),cf2mf(r,r),g0(r)
+
+      integer i
+      real *8 one
+      real *8, allocatable :: sig(:),gnew(:),gc(:),sigc(:)
+      complex *16, allocatable :: gmf(:),sigmf(:)
+
+      one = 1.0d0
+
+      ! Weighted fixed point iteration
+
+      allocate(sig(r),gnew(r))
+      allocate(gc(r),sigc(r),gmf(r),sigmf(r))
+
+      do i=1,numit
+
+        ! Evaluate self-energy
+
+        call sigfun(r,c,it2itr,g,sig)
+
+
+        ! Get DLR coefficients of self-energy
+
+        call dlr_it2cf(r,it2cf,it2cfp,sig,sigc)
+
+
+        ! Get self-energy on Matsubara frequency grid
+
+        call dlr_cf2mf(r,cf2mf,sigc,sigmf)
+
+
+        ! Solve Dyson equation by diagonal inversion
+
+        call dyson_mf_solve(beta,r,g0,sigmf,gmf)
+
+
+        ! Get DLR coefficients of solution
+
+        call dlr_mf2cf(r,mf2cf,mf2cfp,gmf,gc)
+
+
+        ! Evaluate solution on imaginary time grid
+
+        call dlr_cf2it(r,cf2it,gc,gnew)
+
+
+        ! Check self-consistency
+
+        if (maxval(abs(gnew-g))<fptol) then
+
+          g = gnew
+          numit = i
+          info = 0
+
+          return
+
+        else
+
+          ! Next G is weighted linear combination of previous and
+          ! current iterates
+
+          g = w*gnew + (one-w)*g
+
+        endif
+      enddo
+
+      info = -1
+
+      end subroutine solvesyk
+
+
+      subroutine sigfun(r,c,it2itr,g,sig)
+
+      ! Evaluate SYK self-energy Sigma = G(tau)*G(tau)*G(beta-tau)
+
+      implicit none
+      integer r
+      real *8 c,it2itr(r,r),g(r),sig(r)
+
+      call dlr_it2itr(r,it2itr,g,sig)
+
+      sig = c*c*g*g*sig
+
+      end subroutine sigfun
 
 
       subroutine getg0_it(beta,r,dlrit,mu,g0)
@@ -293,4 +374,3 @@
       enddo
 
       end subroutine getg0_mf
-

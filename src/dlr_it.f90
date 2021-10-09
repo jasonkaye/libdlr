@@ -230,8 +230,7 @@
       integer r,it2cfp(r)
       real *8 dlrrf(r),dlrit(r),it2cf(r,r)
 
-      integer j,k,info
-      real *8, external :: kfunf_rel
+      integer info
 
       ! Get the matrix of DLR basis functions evaluated at DLR imaginary
       ! time nodes
@@ -472,3 +471,108 @@
       gc = tmp(1:r)
 
       end subroutine dlr_it_fit
+
+
+
+
+
+
+
+!      --------------------------------------------------------
+!       THE FOLLOWING CODE IS EXPERIMENTAL AND NOT YET WORKING
+!      --------------------------------------------------------
+!
+!
+!      !> Build transform matrix from values of a Green's function on
+!      !! imaginary time grid to its values on the Matsubara frequency
+!      !! grid
+!      !!
+!      !! Use the subroutine dlr_it2mf to apply the transformation.
+!      !!
+!      !! @param[in]  r       number of DLR basis functions
+!      !! @param[in]  dlrrf   DLR frequency nodes
+!      !! @param[in]  dlrit   DLR imaginary time nodes
+!      !! @param[in]  dlrmf   DLR Matsubara freq nodes
+!      !! @param[in]  xi      xi=-1 for fermionic frequencies; xi=1 for
+!      !!                       bosonic frequencies
+!      !! @param[out] it2mf   imaginary time grid values ->
+!      !!                       Matsubara frequency grid values transform
+!      !!                       matrix
+!
+!      subroutine dlr_it2mf_init(r,dlrrf,dlrit,dlrmf,xi,it2mf)
+!
+!      implicit none
+!      integer r,dlrmf(r),xi
+!      real *8 dlrrf(r),dlrit(r)
+!      complex *16 it2mf(r,r)
+!
+!      integer info,i,j
+!      integer, allocatable :: it2cfp(:)
+!      real *8, allocatable :: it2cf(:,:)
+!      complex *16, allocatable :: cf2mf(:,:),tmp(:,:)
+!
+!      ! Initialize imaginary time grid -> DLR coefficients
+!      ! transformation
+!
+!      allocate(it2cf(r,r),it2cfp(r))
+!
+!      call dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp)
+!
+!
+!      ! Initialize DLR coefficients -> Matsubara frequency grid
+!      ! transformation
+!
+!      allocate(cf2mf(r,r))
+!
+!      call dlr_cf2mf_init(r,dlrrf,dlrmf,xi,cf2mf)
+!
+!
+!      ! Compose DLR coefficients -> Matsubara frequency grid matrix with
+!      ! imaginary time grid -> DLR coefficients matrix
+!
+!      allocate(tmp(r,r))
+!
+!      cf2mf = transpose(cf2mf)
+!
+!      tmp = it2cf
+!      call zgetrs('T',r,r,tmp,r,it2cfp,cf2mf,r,info)
+!
+!      cf2mf = transpose(cf2mf)
+!
+!      end subroutine dlr_it2mf_init
+!
+!
+!
+!
+!
+!      !> Transform values of DLR expansion on imaginary time grid to
+!      !!   values on Matsubara frequency grid
+!      !!
+!      !! @param[in]  r       number of DLR basis functions
+!      !! @param[in]  it2mf   imaginary time grid values ->
+!      !!                       Matsubara frequency grid values transform
+!      !!                       matrix
+!      !! @param[in]  g         values of Green's function at imaginary
+!      !!                         time grid points
+!      !! @param[out] gmf       values of Green's function at Matsubara
+!      !!                         frequency grid points
+!
+!      subroutine dlr_it2mf(r,it2mf,g,gmf)
+!      
+!      implicit none
+!      integer r
+!      real *8 g(r)
+!      complex *16 it2mf(r,r),gmf(r)
+!
+!      integer info
+!      complex *16, allocatable :: tmp(:)
+!
+!      ! Apply transformation matrix to vector of imaginary time grid
+!      ! values
+!
+!      allocate(tmp(r))
+!
+!      tmp = g
+!      call zgemv('N',r,r,1.0d0,it2mf,r,tmp,1,0.0d0,gmf,1)
+!
+!      end subroutine dlr_it2mf

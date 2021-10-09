@@ -35,10 +35,10 @@
       ! fixed point iteration, with weight w assigned to the new iterate
       ! and weight 1-w assigned to the previous iterate.
       !
-      ! To solve the equation with a desired single particle energy mu,
+      ! To solve the equation with a desired chemical potential mu,
       ! we pick a number nmu>1, and solve a sequence intermediate
       ! problems to obtain a good initial guess. First we solve the
-      ! equation with single particle energy mu_0 = 0, then use this
+      ! equation with chemical potential mu_0 = 0, then use this
       ! solution as an initial guess for the fixed point iteration with
       ! mu_1 = mu/nmu, then use this the solution as an initial guess
       ! for the fixed point iteration with mu = 2*mu/nmu, and so on,
