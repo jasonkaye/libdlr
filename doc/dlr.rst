@@ -1,5 +1,5 @@
-libdlr (Fortran library) subroutines
-====================================
+libdlr subroutines
+==================
 
 This is a directory of all libdlr Fortran subroutines. The subroutines
 are organized into a collection of .f90 source files, contained in

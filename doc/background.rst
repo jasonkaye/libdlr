@@ -1,5 +1,5 @@
-libdlr background
-=================
+Background
+==========
 
 For a brief background on the discrete Lehmann representation (DLR), we
 suggest reading the original reference on the DLR:
