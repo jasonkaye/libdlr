@@ -1,2 +1,4 @@
 breathe
 matplotlib
+ipython
+nbsphinx
