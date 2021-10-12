@@ -1,5 +1,5 @@
-"""Imagniary time analytic continuation kernel routines.
-
+"""Imagniary time analytic continuation kernel routines."""
+"""
 Copyright 2021 Hugo U.R. Strand
 
 Licensed under the Apache License, Version 2.0 (the "License");

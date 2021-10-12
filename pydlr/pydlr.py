@@ -1,6 +1,6 @@
 """ Discrete Lehman Representation (DLR) implementation
-using Numpy and Scipy.
-
+using Numpy and Scipy."""
+"""
 Copyright 2021 Hugo U.R. Strand
 
 Licensed under the Apache License, Version 2.0 (the "License");
