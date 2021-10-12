@@ -1,12 +1,8 @@
 
-Welcome to the `libdlr` and `pydlr` documentation!
-===================================================
+``libdlr``: Imaginary time calculations using the Discrete Lehmann Representation
+=================================================================================
 
-To get started, take a look at the installation information and the
-background page. For Python users, look at the Python quick-start page.
-
-Detailed documentation on all Fortran subroutines and the Python module
-is contained here as well.
+The ``libdlr`` library provides routines for efficient imaginary time calculations of single particle Green's functions using the **Discrete Lehmann Representation** (DLR). For more information on the DLR and the imaginary time formalism, please see the :ref:`Background`.
 
 .. toctree::
    :maxdepth: 2
@@ -15,7 +11,7 @@ is contained here as well.
    install.rst
    background.rst
    quickstart_python_notebook
-   dlr.rst
+   libdlr.rst
    pydlr.rst
 
 Indices and tables

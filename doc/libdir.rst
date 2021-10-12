@@ -1,4 +1,6 @@
-libdlr subroutines
+.. _libdlr Fortran API:
+
+libdlr Fortran API
 ==================
 
 This is a directory of all libdlr Fortran subroutines. The subroutines

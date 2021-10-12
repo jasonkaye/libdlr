@@ -1,5 +1,7 @@
-pydlr (Python module)
-=====================
+.. _pydlr Python API:
+
+pydlr Python API
+================
 
 pydlr
 -----
