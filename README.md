@@ -1,25 +1,25 @@
-# Library for the Discrete Lehmann Representation **libdlr**
+# `libdlr`: Imaginary time calculations using the Discrete Lehmann Representation (DLR)
 
-Authors: Jason Kaye and Hugo UR Strand (2021)
+Authors: [Jason Kaye](https://github.com/jasonkaye) and [Hugo UR Strand](https://github.com/HugoStrand) (2021)
 
-This library provides Fortran subroutines to build and work with the
-discrete Lehmann representation for single particle imaginary time
-Green's functions. It also includes a Python module implementing the
-same functionality.
+`libdlr` is a library providing Fortran subroutines to build and work with the
+discrete Lehmann representation for single particle imaginary time Green's functions,
+as well as the stand-alone Python module `pydlr` implementing the same functionality.
 
-For background, installation information, and usage instructions, please
-see the documentation:
+For more information, please see the [documentation](https://libdlr.readthedocs.io).
 
----insert link here---
+## Citation
+
+If this library helps you to create software or publications, please let
+us know, and cite
+
+- our repository https://github.com/jasonkaye/libdlr, and 
+- ["Discrete Lehmann representation of imaginary time Green's functions", Jason Kaye, Kun Chen, and Olivier Parcollet, arXiv:2107.13094](https://arxiv.org/abs/2107.13094)
+
+## Contact
 
 Please email jkaye@flatironinstitute.org with any and all questions.
 
-If this library helps you to create software or publications, please let
-us know, and cite our repository
+## License
 
-https://github.com/jasonkaye/libdlr
-
-and the following preprint:
-
-Discrete Lehmann representation of imaginary time Green's functions.
-Jason Kaye, Kun Chen, Olivier Parcollet. arXiv:2107.13094. 2021.
+`libdlr` is licensed under the Apache License, Version 2.0, for more information see the `LICENSE` file.
