@@ -1,14 +1,14 @@
-.. _libdlr Fortran API:
+.. _API Documentation ``libdlr``:
 
-libdlr Fortran API
-==================
+API Documentation ``libdlr``
+============================
 
-This is a directory of all libdlr Fortran subroutines. The subroutines
-are organized into a collection of .f90 source files, contained in
-libdlr/src.  For more specific information about variable types and
+This is a directory of all ``libdlr`` Fortran subroutines. The subroutines
+are organized into a collection of ``.f90`` source files, contained in
+``./libdlr/src``.  For more specific information about variable types and
 dimensions for a particular subroutine, take a look at the corresponding
 source file. To see how to use the various subroutines in practice, take
-a look at the demos located in libdlr/demo.
+a look at the demos located in ``./libdlr/demo``.
 
 dlr_build.f90
 -------------

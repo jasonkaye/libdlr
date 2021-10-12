@@ -1,7 +1,7 @@
-.. _pydlr Python API:
+.. _API Documentation ``pydlr``:
 
-pydlr Python API
-================
+API Documentation ``pydlr``
+===========================
 
 pydlr
 -----

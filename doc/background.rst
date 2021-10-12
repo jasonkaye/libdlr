@@ -11,6 +11,8 @@ Discrete Lehmann representation of imaginary time Green's functions. Jason Kaye,
 For more information on the Python module, pydlr, please refer to the quick-start section of this documentation.
 
 
+.. _citations:
+
 Citation information
 --------------------
 
@@ -20,29 +22,6 @@ https://github.com/jasonkaye/libdlr
 
 and the preprint referred to above.
 
-
-Directory of examples
----------------------
-
-For the Fortran library, ``libdlr``, the sample programs contained in the folder ``./libdlr/demo`` show standard examples of usage, and should serve as a useful starting point. The demos are thoroughly commented. For more information on specific subroutines, please refer to the `libdlr Fortran API`_.
-
-The following is a list of the demos, with brief descriptions:
-
-`sc_it.f90`_ - Recover DLR of Green's function with semi-circular spectral density from its samples on the DLR imaginary time grid.
-
-`sc_it_fit.f90`_ - Recover DLR of Green's function with semi-circular spectral density from noisy samples on a uniform imaginary time grid.
-
-`sc_mf.f90`_ - Recover DLR of Green's function with semi-circular spectral density from its samples on the DLR Matsubara frequency grid.
-
-`syk_it.f90`_ - Solve the SYK equation (Dyson equation with SYK self-energy) by an imaginary time domain method.
-
-`syk_mf.f90`_ - Solve the SYK equation (Dyson equation with SYK self-energy) by a more standard method, which computes the self-energy in the imaginary time domain, and solves the Dyson equation in the Matsubara frequency domain.
-
-.. _sc_it.f90: https://github.com/jasonkaye/libdlr/blob/main/demo/sc_it.f90#L24
-.. _sc_it_fit.f90: https://github.com/jasonkaye/libdlr/blob/main/demo/sc_it_fit.f90#L24
-.. _sc_mf.f90: https://github.com/jasonkaye/libdlr/blob/main/demo/sc_mf.f90#L24
-.. _syk_it.f90: https://github.com/jasonkaye/libdlr/blob/main/demo/syk_it.f90#L24
-.. _syk_mf.f90: https://github.com/jasonkaye/libdlr/blob/main/demo/syk_mf.f90#L24
 
 Note on libdlr format for representing imaginary time points
 ------------------------------------------------------------

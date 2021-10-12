@@ -10,7 +10,8 @@ The ``libdlr`` library provides routines for efficient imaginary time calculatio
 
    install.rst
    background.rst
-   quickstart_python_notebook
+   fortran_examples.rst
+   python_examples.ipynb
    libdlr.rst
    pydlr.rst
 

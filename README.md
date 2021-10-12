@@ -6,7 +6,7 @@ Authors: [Jason Kaye](https://github.com/jasonkaye) and [Hugo UR Strand](https:/
 discrete Lehmann representation for single particle imaginary time Green's functions,
 as well as the stand-alone Python module `pydlr` implementing the same functionality.
 
-For more information, please see the [documentation](https://libdlr.readthedocs.io).
+For more information see the [documentation](https://libdlr.readthedocs.io).
 
 ## Citation
 
