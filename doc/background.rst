@@ -6,9 +6,7 @@ Background
 
 For a brief background on the discrete Lehmann representation (DLR), we suggest reading the original reference on the DLR:
 
-Discrete Lehmann representation of imaginary time Green's functions. Jason Kaye, Kun Chen, Olivier Parcollet. arXiv:2107.13094. 2021.
-
-For more information on the Python module, pydlr, please refer to the quick-start section of this documentation.
+["Discrete Lehmann representation of imaginary time Green's functions", Jason Kaye, Kun Chen, and Olivier Parcollet, arXiv:2107.13094](https://arxiv.org/abs/2107.13094)
 
 
 .. _citations:
@@ -16,15 +14,15 @@ For more information on the Python module, pydlr, please refer to the quick-star
 Citation information
 --------------------
 
-If this library helps you to create software or publications, please let us know, and cite our repository
+If this library helps you to create software or publications, please let
+us know, and cite
 
-https://github.com/jasonkaye/libdlr
+- our repository https://github.com/jasonkaye/libdlr, and 
+- ["Discrete Lehmann representation of imaginary time Green's functions", Jason Kaye, Kun Chen, and Olivier Parcollet, arXiv:2107.13094](https://arxiv.org/abs/2107.13094)
 
-and the preprint referred to above.
 
-
-Note on libdlr format for representing imaginary time points
-------------------------------------------------------------
+``libdlr`` imaginary time point format
+--------------------------------------
 
 libdlr works with scaled imaginary time and real frequency coordinates,
 in which an imaginary time tau is in [0,1] and a real frequency is in
