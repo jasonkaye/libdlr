@@ -27,9 +27,9 @@ where :math:`\xi = \pm 1` for bosonic and fermionic particles, respectively.
 Discrete Lehmann Representation
 -------------------------------
 
-The discrete Lehmann representation (DLR) is a compact and exact way of representing imaginary time functions numerically. The theory and methodology behind is based on the analysis of an integral kernel (`the analytic continuation kernel <https://en.wikipedia.org/wiki/Numerical_analytic_continuation>`_) combined with a clever linear-algebra factorization (`the interpolative decomposition <https://en.wikipedia.org/wiki/Interpolative_decomposition>`_). 
+The discrete Lehmann representation (DLR) provides and efficient method of representing imaginary time functions numerically. The theory and methodology behind is based on the analysis of an integral kernel (`the analytic continuation kernel <https://en.wikipedia.org/wiki/Numerical_analytic_continuation>`_) combined with a clever linear algebra factorization (`the interpolative decomposition <https://en.wikipedia.org/wiki/Interpolative_decomposition>`_). 
 
-For an indepth background on the discrete Lehmann representation (DLR), we suggest reading the original reference on the DLR:
+For an in depth background on the discrete Lehmann representation (DLR), we suggest reading the original reference on the DLR:
 
 "Discrete Lehmann representation of imaginary time Green's functions", Jason Kaye, Kun Chen, and Olivier Parcollet, `arXiv:2107.13094 <https://arxiv.org/abs/2107.13094>`_
 
@@ -42,7 +42,8 @@ Citation information
 If this library helps you to create software or publications, please let
 us know, and cite
 
-- our repository `<https://github.com/jasonkaye/libdlr>`_, and 
+- our repository `<https://github.com/jasonkaye/libdlr>`_, and
+- "libdlr: Efficient imaginary time calculations using the discrete Lehmann representation", Jason Kaye and Hugo U.R. Strand, `arXiv:2110.06765 <https://arxiv.org/abs/2110.06765>`_
 - "Discrete Lehmann representation of imaginary time Green's functions", Jason Kaye, Kun Chen, and Olivier Parcollet, `arXiv:2107.13094 <https://arxiv.org/abs/2107.13094>`_
 
 
