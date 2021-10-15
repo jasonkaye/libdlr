@@ -3,18 +3,25 @@ module libdlr_c
   implicit none
 contains
 
-  subroutine c_gridparams(lambda,p,npt,npo,nt,no) bind(C)
+  subroutine c_ccfine_init(lambda,p,npt,npo,nt,no) bind(C)
     integer(c_int), intent(out) :: p,npt,npo,nt,no
     real(c_double), intent(in) :: lambda
-    call gridparams(lambda,p,npt,npo,nt,no)
-  end subroutine c_gridparams
+    call ccfine_init(lambda,p,npt,npo,nt,no)
+  end subroutine c_ccfine_init
 
-  subroutine c_kfine_cc(lambda,p,npt,npo,t,om,kmat,err) bind(C)
+  subroutine c_ccfine(lambda,p,npt,npo,nt,no,t,om) bind(C)
+    integer(c_int), intent(in) :: p,npt,npo,nt,no
+    real(c_double), intent(in) :: lambda
+    real(c_double), intent(out) :: t(npt*p), om(2*npo*p)
+    call ccfine(lambda,p,npt,npo,nt,no,t,om)
+  end subroutine c_ccfine
+  
+  subroutine c_dlr_kfine(lambda,p,npt,npo,t,om,kmat,err) bind(C)
     integer(c_int), intent(in) :: p, npt, npo
-    real(c_double), intent(out) :: lambda, t(npt*p), om(2*npo*p)
+    real(c_double), intent(in) :: lambda, t(npt*p), om(2*npo*p)
     real(c_double), intent(out) :: kmat(2*npt*p,2*npo*p), err(2)
-    call kfine_cc(lambda,p,npt,npo,t,om,kmat,err)
-  end subroutine c_kfine_cc
+    call dlr_kfine(lambda,p,npt,npo,t,om,kmat,err)
+  end subroutine c_dlr_kfine
 
   subroutine c_dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx) bind(C)
     integer(c_int), intent(in) :: nt,no
@@ -33,13 +40,13 @@ contains
     call dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
   end subroutine c_dlr_it
 
-  subroutine c_dlr_it2cf(rank,dlrrf,dlrit,dlrit2cf,it2cfpiv) bind(C)
+  subroutine c_dlr_it2cf_init(rank,dlrrf,dlrit,dlrit2cf,it2cfpiv) bind(C)
     integer(c_int), intent(in) :: rank
     integer(c_int), intent(out) :: it2cfpiv(rank)
     real(c_double), intent(in) :: dlrrf(rank),dlrit(rank)
     real(c_double), intent(out) :: dlrit2cf(rank,rank)
-    call dlr_it2cf(rank,dlrrf,dlrit,dlrit2cf,it2cfpiv)
-  end subroutine c_dlr_it2cf
+    call dlr_it2cf_init(rank,dlrrf,dlrit,dlrit2cf,it2cfpiv)
+  end subroutine c_dlr_it2cf_init
 
   subroutine c_dlr_mf(nmax,rank,dlrrf,xi,dlrmf) bind(C)
     integer(c_int), intent(in) :: nmax,rank,xi
@@ -48,14 +55,14 @@ contains
     call dlr_mf(nmax,rank,dlrrf,xi,dlrmf)
   end subroutine c_dlr_mf
 
-  subroutine c_dlr_mf2cf(nmax,rank,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv) bind(C)
+  subroutine c_dlr_mf2cf_init(nmax,rank,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv) bind(C)
     integer(c_int), intent(in) :: nmax,rank,dlrmf(rank),xi
     integer(c_int), intent(out) :: mf2cfpiv(rank)
     real(c_double), intent(in) :: dlrrf(rank)
     !complex(c_double_complex), intent(out) :: dlrmf2cf(rank,rank)
     !complex(c_double), intent(out) :: dlrmf2cf(rank,rank)
     complex *16, intent(out) :: dlrmf2cf(rank,rank)
-    call dlr_mf2cf(nmax,rank,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv)
-  end subroutine c_dlr_mf2cf
+    call dlr_mf2cf_init(nmax,rank,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv)
+  end subroutine c_dlr_mf2cf_init
 
 end module libdlr_c

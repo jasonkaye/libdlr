@@ -68,11 +68,14 @@ class dlr(object):
             
         kid = KID(lamb, eps=eps, xi=xi, max_rank=max_rank, nmax=nmax, verbose=verbose)
 
-        members = ['rank', 't', 'om', 'kmat', 'dlrit', 'dlrrf', 'dlrmf',
-            'dlrit2cf', 'it2cfpiv', 'dlrmf2cf', 'mf2cfpiv', 'T_lx', 'T_qx']
-
+        members = [
+            'rank', 't', 'om', 'kmat', 'dlrit', 'dlrrf', 'dlrmf',
+            'dlrit2cf', 'it2cfpiv', 'dlrmf2cf', 'mf2cfpiv', 'T_lx', 'T_qx',
+            'oidx', 'tidx', #'mfidx',
+            ]
+        
         for member in members: setattr(self, member, getattr(kid, member))
-
+        
         del kid
 
         # -- Auxilliary variables

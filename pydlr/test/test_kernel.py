@@ -21,33 +21,40 @@ from pydlr import dlr, kernel
 
 def test_kernel(verbose=False):
 
-    d = dlr(lamb=100.)
-    d.tt = d.t.copy()
-    d.tt += (d.t[::-1] > 0) * (1 - d.t[::-1])
-
+    d = dlr(lamb=10., python_impl=True, verbose=True)
+    d.tt = (d.t > 0) * d.t + (d.t[::-1] > 0) * (1 - d.t[::-1])
+    
     kmat = kernel(d.tt, d.om)
 
-    np.testing.assert_array_almost_equal(kmat, d.kmat)
+    np.testing.assert_array_almost_equal(kmat, d.kmat)    
 
     if verbose:
         import matplotlib.pyplot as plt
 
         plt.figure(figsize=(6, 8))
 
-        subp = [3, 1, 1]
+        subp = [4, 1, 1]
 
         plt.subplot(*subp); subp[-1] += 1
         plt.title(r'Kernel $K_\Lambda(\tau, \omega)$, $\Lambda = %3.1f$, $\epsilon = %2.2E$' % (d.lamb, d.eps))
-        plt.pcolormesh(d.tt, d.om, d.kmat.T, shading='nearest')
+        plt.pcolormesh(d.tt, d.om, d.kmat.T, shading='nearest',vmin=0, vmax=1.0)
         plt.xlabel(r'$\tau$')
         plt.ylabel(r'$\omega$')
+        plt.colorbar()
 
+        plt.subplot(*subp); subp[-1] += 1
+        plt.title(r'Kernel $K_\Lambda(\tau, \omega)$, $\Lambda = %3.1f$, $\epsilon = %2.2E$' % (d.lamb, d.eps))
+        plt.pcolormesh(d.tt, d.om, kmat.T, shading='nearest',vmin=0, vmax=1.0)
+        plt.xlabel(r'$\tau$')
+        plt.ylabel(r'$\omega$')
+        plt.colorbar()
+        
         plt.subplot(*subp); subp[-1] += 1
         plt.title(r'$N_{dlr} = %i$' % d.rank)
         plt.plot(d.tt, 0*d.tt, '.-')
         plt.plot(0*d.om, d.om, '.-')
-        plt.plot(d.tt[d.tidx - 1], 0*d.tt[d.tidx - 1], 'x', label=r'$\tau_i$ (DLR)')
-        plt.plot(0.*d.om[d.oidx - 1], d.om[d.oidx - 1], 'x', label=r'$\omega_j$ (DLR)')
+        plt.plot(d.tt[d.tidx], 0*d.tt[d.tidx], 'x', label=r'$\tau_i$ (DLR)')
+        plt.plot(0.*d.om[d.oidx], d.om[d.oidx], 'x', label=r'$\omega_j$ (DLR)')
         plt.xlabel(r'$\tau$')
         plt.ylabel(r'$\omega$')
         plt.legend(loc='best')
@@ -59,6 +66,7 @@ def test_kernel(verbose=False):
 
         plt.tight_layout()
         plt.show()
+
 
 
 if __name__ == '__main__':
