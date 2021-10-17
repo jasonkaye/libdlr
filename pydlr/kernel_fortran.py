@@ -30,8 +30,10 @@ ffi.cdef("void c_ccfine(double *lambda, int *p, int *npt, int *npo, double *t, d
 ffi.cdef("void c_dlr_kfine(double *lambda, int *p, int *npt, int *npo, double *t, double *om, double *kmat, double *err);")
 ffi.cdef("void c_dlr_rf(double *lambda, double *eps, int *nt, int *no, double *om, double *kmat, int *rank, double *dlrrf, int *oidx);")
 ffi.cdef("void c_dlr_it(double *lambda, int *nt, int *no, double *t, double *kmat, int *rank, int *oidx, double* dlrit, int *tidx);")
+ffi.cdef("void c_dlr_cf2it_init(int *rank, double *dlrrf, double *dlrit, double *cf2it);")
 ffi.cdef("void c_dlr_it2cf_init(int *rank, double *dlrrf, double *dlrit, double *dlrit2cf, int *it2cfpiv);")
 ffi.cdef("void c_dlr_mf(int *nmax, int *rank, double *dlrrf, int *xi, int *dlrmf);")
+ffi.cdef("void c_dlr_cf2mf_init(int *rank, double *dlrrf,int *dlrmf, int *xi, double _Complex *cf2mf);")
 ffi.cdef("void c_dlr_mf2cf_init(int *nmax, int *rank, double *dlrrf,int *dlrmf, int *xi, double _Complex *dlrmf2cf, int *mf2cfpiv);")
 
 lib = ffi.dlopen(libname)
@@ -176,6 +178,13 @@ class KernelInterpolativeDecopositionFortran:
             print(f'it2cfpiv = {self.it2cfpiv}')
             #print(f'dlrit2cf = \n{self.dlrit2cf}')
 
+        cf2it = ffi.new(f'double [{self.rank**2}]')
+
+        lib.c_dlr_cf2it_init(rank,dlrrf,dlrit,cf2it)
+
+        self.cf2it = np.frombuffer(
+            ffi.buffer(cf2it), dtype=np.float).reshape((self.rank, self.rank)).T
+            
         # -- Matsubara frequency points
 
         if nmax < self.rank: nmax = self.rank
@@ -208,6 +217,15 @@ class KernelInterpolativeDecopositionFortran:
             print(f'mf2cfpiv = {self.mf2cfpiv}')
             #print(f'dlrmf2cf = \n{self.dlrmf2cf}')
 
-        self.T_lx = get_A(self.dlrit2cf, self.it2cfpiv)
-        self.T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv)
+        cf2mf = ffi.new(f'double _Complex [{self.rank**2}]')
+
+        lib.c_dlr_cf2mf_init(rank,dlrrf,dlrmf,xi,cf2mf)
+
+        self.cf2mf = np.frombuffer(ffi.buffer(cf2mf), dtype=np.complex).reshape((self.rank, self.rank)).T
+            
+        #self.T_lx = get_A(self.dlrit2cf, self.it2cfpiv)
+        #self.T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv)
+
+        self.T_lx = self.cf2it
+        self.T_qx = self.cf2mf
         

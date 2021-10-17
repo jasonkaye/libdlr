@@ -446,8 +446,8 @@ class KernelInterpolativeDecoposition:
 
         if verbose: t = time.time()
         n = np.arange(-nmax, nmax+1)
-        eta = 0.5 * (1 - xi) # 0 for bosons, 1 for fermions
-        iwn = 1.j * np.pi * (2*n + eta)
+        zeta = 0.5 * (1 - xi) # 0 for bosons, 1 for fermions
+        iwn = 1.j * np.pi * (2*n + zeta)
         self.kmat_mf = 1./(iwn[:, None] + self.dlrrf[None, :])
         if verbose: print(f'kernel mats {time.time() - t} s')
 

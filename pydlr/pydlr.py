@@ -56,7 +56,7 @@ class dlr(object):
     def __init__(self, lamb, eps=1e-15, xi=-1,
                  max_rank=500, nmax=None, verbose=False, python_impl=True):        
 
-        self.xi = np.sign(xi)
+        self.xi = xi
         self.lamb = lamb
         self.eps = eps
 
@@ -89,6 +89,9 @@ class dlr(object):
         self.k1_x = -np.squeeze(kernel(np.ones(1), w_x))
         self.TtT_xx = self.dlr_from_tau(tau_l[:, None] * self.T_lx)
 
+        self.__bosonic_corr_freq = lambda omega: np.tanh(0.5 * omega)
+        self.bosonic_corr_x = self.__bosonic_corr_freq(self.dlrrf)
+        
         
     def __len__(self):
         """The length of the DLR expansion
@@ -100,7 +103,18 @@ class dlr(object):
             Number of DLR expansion coefficients.
         """
         return self.rank
+
+    
+    def __xi_arg(self, xi):
+        """Internal helper function to filter xi arguments."""
+
+        if xi is None: xi = self.xi
+
+        assert( np.abs(xi) == 1 and type(xi) == int )
+
+        return xi
         
+
     # -- Imaginary time
 
     def get_tau_over_beta(self):
@@ -227,8 +241,6 @@ class dlr(object):
             Green's function at the imaginary time points :math:`\\tau_k` with :math:`m \\times m` orbital indices.
         """
 
-        assert( self.xi == -1. ) # Not implemented for bosons, yet
-        
         w_x = self.dlrrf / beta
         
         p = np.argwhere(w_x > 0.)
@@ -306,7 +318,7 @@ class dlr(object):
         return w_q
 
 
-    def dlr_from_matsubara(self, G_qaa, beta):
+    def dlr_from_matsubara(self, G_qaa, beta, xi=None):
 
         """Transform the rank-3 array_like Green's function `G_qaa` from Matsbuara frequency to DLR space.
 
@@ -319,18 +331,25 @@ class dlr(object):
         beta : float
             Inverse temperature :math:`\\beta`
 
+        xi : int, optional
+            Statistics sign, :math:`\\xi = +1` for bosons and :math:`\\xi = -1` for fermions.
+
         Returns
         -------
 
         G_xaa : (n,m,m), ndarray
             Green's function i DLR coefficient space with :math:`m \\times m` orbital indices.
         """
+        xi = self.__xi_arg(xi)
 
         G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv), G_qaa.conj() / beta)
+
+        if xi == 1: G_xaa /= self.bosonic_corr_x[:, None, None]
+
         return G_xaa
 
 
-    def matsubara_from_dlr(self, G_xaa, beta):
+    def matsubara_from_dlr(self, G_xaa, beta, xi=None):
 
         """Transform the rank-3 array_like Green's function `G_xaa` from DLR space to Matsbuara frequency.
 
@@ -343,20 +362,30 @@ class dlr(object):
         beta : float
             Inverse temperature :math:`\\beta`
 
+        xi : int, optional
+            Statistics sign, :math:`\\xi = +1` for bosons and :math:`\\xi = -1` for fermions.
+
         Returns
         -------
 
         G_qaa : (n,m,m), ndarray
             Green's function in Matsubara frequency with :math:`m \\times m` orbital indices.
         """
+        xi = self.__xi_arg(xi)
 
-        G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0))
+        if xi == 1:
+            G_qaa = beta * np.tensordot(
+                self.T_qx * self.bosonic_corr_x[None, :], G_xaa, axes=(1, 0))
+        else:
+            G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0))
+
         if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
         G_qaa = G_qaa.conj()
+
         return G_qaa
     
     
-    def eval_dlr_freq(self, G_xaa, z, beta):
+    def eval_dlr_freq(self, G_xaa, z, beta, xi=None):
 
         """Evaluate the DLR coefficient Green's function `G_xaa` at arbibrary points `z` in frequency space.
 
@@ -372,15 +401,21 @@ class dlr(object):
         beta : float
             Inverse temperature :math:`\\beta`
 
+        xi : int, optional
+            Statistics sign, :math:`\\xi = +1` for bosons and :math:`\\xi = -1` for fermions.
+
         Returns
         -------
 
         G_zaa : (k,m,m), ndarray
             Green's function at the frequency points :math:`z_k` with :math:`m \\times m` orbital indices.
         """
+        xi = self.__xi_arg(xi)
 
         w_x = self.dlrrf / beta
-        G_zaa = np.einsum('x...,zx->z...', G_xaa, 1./(z[:, None] + w_x[None, :]))
+        kernel_zx = 1./(z[:, None] + w_x[None, :])
+        if xi == 1: kernel_zx *= self.bosonic_corr_x[None, :]
+        G_zaa = np.einsum('x...,zx->z...', G_xaa, kernel_zx)
         if len(G_zaa.shape) == 3: G_zaa = np.transpose(G_zaa, axes=(0, 2, 1))
         G_zaa = G_zaa.conj()
         
@@ -487,7 +522,7 @@ class dlr(object):
 
     # -- Free Green's function solvers
 
-    def free_greens_function_dlr(self, H_aa, beta, S_aa=None):
+    def free_greens_function_dlr(self, H_aa, beta, S_aa=None, xi=None):
 
         """ Return the free Green's function in DLR coefficent space.
 
@@ -510,6 +545,9 @@ class dlr(object):
             :math:`(-S_{ij} \\partial_\\tau - H_{ij}) G_{jk}(\\tau) = \\delta(\\tau)`.
             Default is `S_aa = None`.
 
+        xi : int, optional
+            Statistics sign, :math:`\\xi = +1` for bosons and :math:`\\xi = -1` for fermions.
+
         Returns
         -------
 
@@ -521,6 +559,7 @@ class dlr(object):
 
         The fastest algorithm for calculation of free Green's functions is the `free_greens_function_tau` method.
         """
+        xi = self.__xi_arg(xi)
         
         na = H_aa.shape[0]
         I_aa = np.eye(na)
@@ -533,7 +572,7 @@ class dlr(object):
         D_lx = self.T_lx * w_x[None, :] / beta
         D_AA = np.kron(D_lx, S_aa) - np.kron(self.T_lx, H_aa)
                 
-        bc_x = kernel(np.array([0.]), w_x) + kernel(np.array([1.]), w_x)
+        bc_x = kernel(np.array([0.]), w_x) - xi * kernel(np.array([1.]), w_x)
         D_AA[(n-1)*na:, :] = np.kron(bc_x, S_aa)
 
         b_Aa = np.zeros((n*na, na))
@@ -544,7 +583,7 @@ class dlr(object):
         return g_xaa
         
         
-    def free_greens_function_tau(self, H_aa, beta, S_aa=None):
+    def free_greens_function_tau(self, H_aa, beta, S_aa=None, xi=None):
 
         """ Return the free Green's function in imaginary time.
 
@@ -567,12 +606,16 @@ class dlr(object):
             :math:`(-S_{ij} \\partial_\\tau - H_{ij}) G_{jk}(\\tau) = \\delta(\\tau)`.
             Default is `S_aa = None`.
 
+        xi : int, optional
+            Statistics sign, :math:`\\xi = +1` for bosons and :math:`\\xi = -1` for fermions.
+
         Returns
         -------
 
         G_laa : (n,m,m), ndarray
             Free Green's function :math:`G` in imaginary time with :math:`m \\times m` orbital indices.
         """
+        xi = self.__xi_arg(xi)
 
         w_x = self.dlrrf
 
@@ -583,6 +626,9 @@ class dlr(object):
 
         tau_l = self.get_tau(1.)
         g_lE = -kernel(tau_l, E*beta)
+        
+        if xi == 1: g_lE /= self.__bosonic_corr_freq(E*beta)[None, :]
+        
         g_laa = np.einsum('lE,aE,Eb->lab', g_lE, U, U.T.conj())
 
         return g_laa    
