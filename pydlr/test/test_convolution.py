@@ -22,13 +22,15 @@ from pydlr import dlr
 
 def test_convolution_scalar(verbose=False):
 
+    xi = +1
+    beta = 2.337
     #beta = 3.337
-    beta = 100.
+    #beta = 100.
 
     lamb = np.max([20., 10. * beta])
     e1, e2 = 3., 3.3
 
-    d = dlr(lamb=lamb)
+    d = dlr(lamb=lamb, xi=xi)
 
     g1_l = d.free_greens_function_tau(np.array([[e1]]), beta)
     g2_l = d.free_greens_function_tau(np.array([[e2]]), beta)
@@ -83,7 +85,7 @@ def test_convolution_scalar(verbose=False):
         plt.subplot(*subp); subp[-1] += 1
         plt.plot(tau_l, gg_l_dlr[:, 0, 0].real, 'o', label='DLR conv', alpha=0.5)
         plt.plot(tau_l, gg_l_mat[:, 0, 0].real, '+', label='DLR conv mat')
-        plt.plot(tau_l, gg_l_matsub[:, 0, 0].real, 'x', label='Matsub conv')
+        plt.plot(tau_l, gg_l_matsub[:, 0, 0].real, 's', label='Matsub conv')
         plt.plot(tau_l, gg_l_anal[:, 0, 0].real, 'x', label='Analytic')
         plt.ylabel(r'$(g_1 \ast g_2)(\tau)$')
         plt.xlabel(r'$\tau$')

@@ -91,6 +91,9 @@ class dlr(object):
 
         self.__bosonic_corr_freq = lambda omega: np.tanh(0.5 * omega)
         self.bosonic_corr_x = self.__bosonic_corr_freq(self.dlrrf)
+
+        self.W_bc_xx = self.W_xx * self.bosonic_corr_x[:, None]
+        self.TtT_bc_xx = self.TtT_xx * self.bosonic_corr_x[None, :]
         
         
     def __len__(self):
@@ -424,7 +427,7 @@ class dlr(object):
 
     # -- Mathematical operations
 
-    def convolution(self, A_xaa, B_xaa, beta):
+    def convolution(self, A_xaa, B_xaa, beta, xi=None):
 
         """ DLR convolution with :math:`\mathcal{O}(N^2)` scaling. Author: Hugo U.R. Strand (2021)
 
@@ -448,6 +451,9 @@ class dlr(object):
         beta : float
             Inverse temperature :math:`\\beta`
 
+        xi : int, optional
+            Statistics sign, :math:`\\xi = +1` for bosons and :math:`\\xi = -1` for fermions.
+
         Returns
         -------
 
@@ -455,20 +461,25 @@ class dlr(object):
             Green's function :math:`C` in DLR coefficient space with :math:`m \\times m` orbital indices,
             given by the convolution :math:`C = A \\ast B`.
         """
+        xi = self.__xi_arg(xi)
+        
+        W_xx = self.W_xx if xi == -1 else self.W_bc_xx
+        TtT_xx = self.TtT_xx if xi == -1 else self.TtT_bc_xx
 
         n, na, _ = A_xaa.shape
-        
-        WA_xaa = np.matmul(self.W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
+
+        WA_xaa = np.matmul(W_xx.T, A_xaa.reshape((n, na*na))).reshape((n, na, na))
         C_xaa = np.matmul(WA_xaa, B_xaa)
         del WA_xaa
-        
-        WB_xaa = np.matmul(self.W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
+
+        WB_xaa = np.matmul(W_xx.T, B_xaa.reshape((n, na*na))).reshape((n, na, na))
         C_xaa += np.matmul(A_xaa, WB_xaa)
         del WB_xaa
-
+            
         AB_xaa = np.matmul(A_xaa, B_xaa)
-        C_xaa += self.k1_x[:, None, None] * AB_xaa
-        C_xaa += np.matmul(self.TtT_xx, AB_xaa.reshape((n, na*na))).reshape((n, na, na))
+        C_xaa += -xi * self.k1_x[:, None, None] * AB_xaa
+
+        C_xaa += np.matmul(TtT_xx, AB_xaa.reshape((n, na*na))).reshape((n, na, na))
         del AB_xaa
         
         C_xaa *= beta
@@ -476,7 +487,7 @@ class dlr(object):
         return C_xaa
 
     
-    def convolution_matrix(self, A_xaa, beta):
+    def convolution_matrix(self, A_xaa, beta, xi=None):
 
         """ DLR convolution matrix with :math:`\mathcal{O}(N^2)` scaling. Author: Hugo U.R. Strand (2021) 
 
@@ -497,24 +508,30 @@ class dlr(object):
         beta : float
             Inverse temperature :math:`\\beta`
 
+        xi : int, optional
+            Statistics sign, :math:`\\xi = +1` for bosons and :math:`\\xi = -1` for fermions.
+
         Returns
         -------
 
         M_xaxa : (n,m,n,m), ndarray
             Convolution matrix :math:`[A \\ast]` as a rank-4 tensor in DLR and orbital space.
         """
+        xi = self.__xi_arg(xi)
+        
+        W_xx = self.W_xx if xi == -1 else self.W_bc_xx
+        TtT_xx = self.TtT_xx if xi == -1 else self.TtT_bc_xx
 
         n, na, _ = A_xaa.shape
 
-        Q_xaa = np.einsum('yx,yab->xab', self.W_xx, A_xaa)
-        Q_xaa += self.k1_x[:,None,None] * A_xaa
+        Q_xaa = np.einsum('yx,yab->xab', W_xx, A_xaa)
+        Q_xaa += -xi * self.k1_x[:,None,None] * A_xaa
 
-        M_xxaa = np.einsum( 'xy,yab->yxab', self.W_xx,   A_xaa)
-        M_xxaa += np.einsum('xy,yab->xyab', self.TtT_xx, A_xaa)
+        M_xxaa = np.einsum( 'xy,yab->yxab', W_xx,   A_xaa)
+        M_xxaa += np.einsum('xy,yab->xyab', TtT_xx, A_xaa)
         M_xxaa += np.einsum('xy,yab->xyab', np.eye(n),   Q_xaa)
-
         M_xxaa *= beta
-
+        
         M_xaxa = np.moveaxis(M_xxaa, 2, 1)
         
         return M_xaxa
@@ -847,7 +864,7 @@ class dlr(object):
         return g_xaa
     
     
-    def dyson_dlr_integrodiff(self, H_aa, Sigma_xaa, beta, S_aa=None):
+    def dyson_dlr_integrodiff(self, H_aa, Sigma_xaa, beta, S_aa=None, xi=None):
 
         """ Solve the Dyson equation in DLR coefficient space.
 
@@ -885,6 +902,7 @@ class dlr(object):
         The differential formulation gives a worse condition number, as compared to the integral 
         equation formulation. The method is kept here for educational purposes.
         """
+        xi = self.__xi_arg(xi)
 
         na = H_aa.shape[0]
         I_aa = np.eye(na)
@@ -899,7 +917,7 @@ class dlr(object):
         D_AA = -self.tau_from_dlr(self.convolution_matrix(Sigma_xaa, beta)).reshape((n*na, n*na))
         D_AA += np.kron(D_lx, S_aa) - np.kron(self.T_lx, H_aa)
         
-        bc_x = kernel(np.array([0.]), w_x) + kernel(np.array([1.]), w_x)
+        bc_x = kernel(np.array([0.]), w_x) - xi * kernel(np.array([1.]), w_x)
         D_AA[(n-1)*na:, :] = np.kron(bc_x, S_aa)
 
         b_Aa = np.zeros((n*na, na))

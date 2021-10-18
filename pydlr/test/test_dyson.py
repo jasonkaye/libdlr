@@ -19,15 +19,19 @@ import numpy as np
 
 from pydlr import dlr
 
-
+xi = +1
+#beta = 10.0
 beta = 128.0
-d = dlr(lamb=40. * beta)
+d = dlr(lamb=40. * beta, xi=xi)
 
 tau_from_matsubara = lambda G_qaa : d.tau_from_dlr(d.dlr_from_matsubara(G_qaa, beta))
 matsubara_from_tau = lambda G_iaa : d.matsubara_from_dlr(d.dlr_from_tau(G_iaa), beta)
 
-e0, e1 = -0.55, 0.3
-V = 10.2 # NB! Large hybridization V gives kernel g0 * delta with non-trivial condition number
+#e0, e1 = -0.55, 0.3
+#V = 10.2 # NB! Large hybridization V gives kernel g0 * delta with non-trivial condition number
+
+e0, e1 = 1.0, 0.1
+V = 0.06
 
 E_aa = np.array([
     [e0, V],
