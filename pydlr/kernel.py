@@ -423,7 +423,8 @@ class KernelInterpolativeDecoposition:
         # -- Select real frequency points
 
         if verbose: t = time.time()
-        self.rank, self.oidx, self.proj_w = interp_decomp(self.kmat, self.eps * self.lamb)
+        self.rank, self.oidx, self.proj_w = \
+            interp_decomp(self.kmat, self.eps * self.lamb, rand=False)
         self.oidx = np.sort(self.oidx[:self.rank])
         self.dlrrf = self.om[self.oidx]
         if verbose: print(f'ID w {time.time() - t} s')
