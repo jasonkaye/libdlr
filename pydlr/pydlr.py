@@ -78,6 +78,15 @@ class dlr(object):
         
         del kid
 
+        # -- Sort and split real-frequency nodes
+
+        self.dlrrf[:] = np.sort(self.dlrrf)
+        self.pm_idx = np.argwhere(self.dlrrf > 0)[0,0]
+        self.dlrrf_p = self.dlrrf[self.pm_idx:]
+        self.dlrrf_m = self.dlrrf[:self.pm_idx]
+        self.kernel_nominator_p = 1 / (1 + np.exp(-self.dlrrf_p))
+        self.kernel_nominator_m = 1 / (1 + np.exp(+self.dlrrf_m))
+
         # -- Auxilliary variables
 
         tau_l = self.get_tau(1.)
@@ -244,18 +253,15 @@ class dlr(object):
             Green's function at the imaginary time points :math:`\\tau_k` with :math:`m \\times m` orbital indices.
         """
 
-        w_x = self.dlrrf / beta
+        tau_k = tau_k[:, None] / beta
         
-        p = np.argwhere(w_x > 0.)
-        m = np.argwhere(w_x <= 0.)
-        
-        w_p, G_paa = w_x[p].T, G_xaa[p][:, 0]
-        w_m, G_maa = w_x[m].T, G_xaa[m][:, 0]
+        w_p = self.dlrrf_p[None, :]
+        K_kp = np.exp(-tau_k*w_p) * self.kernel_nominator_p[None, :]
+        G_kaa = np.einsum('kp,p...->k...', K_kp, G_xaa[self.pm_idx:])
 
-        tau_k = tau_k[:, None]
-
-        G_kaa = np.einsum('p...,kp->k...', G_paa, np.exp(-tau_k*w_p) / (1 + np.exp(-beta*w_p))) + \
-                np.einsum('m...,km->k...', G_maa, np.exp((beta - tau_k)*w_m) / ( np.exp(beta*w_m) + 1 ))
+        w_m = self.dlrrf_m[None, :]
+        K_km = np.exp((1 - tau_k)*w_m) * self.kernel_nominator_m[None, :]
+        G_kaa += np.einsum('km,m...->k...', K_km, G_xaa[:self.pm_idx])
 
         return G_kaa
 
