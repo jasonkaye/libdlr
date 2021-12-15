@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 # project name and language
-project(dlr LANGUAGES Fortran)
+project(dlr LANGUAGES Fortran C)
 
 # Path for local cmake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
@@ -49,7 +49,6 @@ add_executable(dyson_sc ./test/dyson_sc.f90)
 target_link_libraries(dyson_sc PRIVATE dlr)
 add_test(NAME dyson_sc COMMAND dyson_sc)
 
-
 # C-library: dlr_c
 
 file(GLOB dlr_c_SRC CONFIGURE_DEPENDS "./src/dlr_c/*.f*")
@@ -57,6 +56,14 @@ add_library(dlr_c SHARED ${dlr_c_SRC})
 target_link_libraries(dlr_c PUBLIC dlr BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS dlr_c LIBRARY)
 set_target_properties(dlr_c PROPERTIES INSTALL_RPATH "@loader_path/")
+
+target_include_directories(dlr_c PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
+target_include_directories(dlr_c SYSTEM INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include>)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/dlr_c DESTINATION include FILES_MATCHING PATTERN "*.h")
+
+add_executable(c_example ./test/c_example.c)
+target_link_libraries(c_example PRIVATE dlr_c)
+add_test(NAME c_example COMMAND c_example)
 
 # Macro for finding Python modules
 
@@ -93,6 +100,7 @@ if(with_python)
   install(FILES pydlr/pydlr.py DESTINATION pydlr)
   install(FILES pydlr/kernel.py DESTINATION pydlr)
   install(FILES pydlr/kernel_fortran.py DESTINATION pydlr)
+  install(FILES pydlr/utils.py DESTINATION pydlr)
   install(FILES pydlr/__init__.py DESTINATION pydlr)
 
   add_test(NAME python-test_kernel
