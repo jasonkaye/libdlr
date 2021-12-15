@@ -23,60 +23,87 @@ contains
     call dlr_kfine(lambda,p,npt,npo,t,om,kmat,err)
   end subroutine c_dlr_kfine
 
-  subroutine c_dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx) bind(C)
+  subroutine c_dlr_rf(lambda,eps,nt,no,om,kmat,r,dlrrf,oidx) bind(C)
     integer(c_int), intent(in) :: nt,no
-    integer(c_int), intent(inout) :: rank
-    integer(c_int), intent(out) :: oidx(rank)
+    integer(c_int), intent(inout) :: r
+    integer(c_int), intent(out) :: oidx(r)
     real(c_double), intent(in) :: lambda,eps,om(no),kmat(nt,no)
-    real(c_double), intent(out) :: dlrrf(rank)
-    call dlr_rf(lambda,eps,nt,no,om,kmat,rank,dlrrf,oidx)
+    real(c_double), intent(out) :: dlrrf(r)
+    call dlr_rf(lambda,eps,nt,no,om,kmat,r,dlrrf,oidx)
   end subroutine c_dlr_rf
 
-  subroutine c_dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx) bind(C)
-    integer(c_int), intent(in) :: nt,no,rank,oidx(rank)
-    integer(c_int), intent(out) :: tidx(rank)
+  subroutine c_dlr_it_build(lambda,eps,r,dlrrf,dlrit) bind(C)
+    integer(c_int), intent(in) :: r
+    real(c_double), intent(in) :: lambda,eps
+    real(c_double), intent(out) :: dlrrf(r),dlrit(r)
+    call dlr_it_build(lambda,eps,r,dlrrf,dlrit)
+  end subroutine c_dlr_it_build
+
+  subroutine c_dlr_it(lambda,nt,no,t,kmat,r,oidx,dlrit,tidx) bind(C)
+    integer(c_int), intent(in) :: nt,no,r,oidx(r)
+    integer(c_int), intent(out) :: tidx(r)
     real(c_double), intent(in) :: lambda,t(nt),kmat(nt,no)
-    real(c_double), intent(out) :: dlrit(rank)
-    call dlr_it(lambda,nt,no,t,kmat,rank,oidx,dlrit,tidx)
+    real(c_double), intent(out) :: dlrit(r)
+    call dlr_it(lambda,nt,no,t,kmat,r,oidx,dlrit,tidx)
   end subroutine c_dlr_it
 
-  subroutine c_dlr_cf2it_init(rank,dlrrf,dlrit,cf2it) bind(C)
-    integer(c_int), intent(in) :: rank
-    real(c_double), intent(in) :: dlrrf(rank),dlrit(rank)
-    real(c_double), intent(out) :: cf2it(rank,rank)
-    call dlr_cf2it_init(rank,dlrrf,dlrit,cf2it)
+  subroutine c_dlr_cf2it_init(r,dlrrf,dlrit,cf2it) bind(C)
+    integer(c_int), intent(in) :: r
+    real(c_double), intent(in) :: dlrrf(r),dlrit(r)
+    real(c_double), intent(out) :: cf2it(r,r)
+    call dlr_cf2it_init(r,dlrrf,dlrit,cf2it)
   end subroutine c_dlr_cf2it_init
 
-  subroutine c_dlr_it2cf_init(rank,dlrrf,dlrit,dlrit2cf,it2cfpiv) bind(C)
-    integer(c_int), intent(in) :: rank
-    integer(c_int), intent(out) :: it2cfpiv(rank)
-    real(c_double), intent(in) :: dlrrf(rank),dlrit(rank)
-    real(c_double), intent(out) :: dlrit2cf(rank,rank)
-    call dlr_it2cf_init(rank,dlrrf,dlrit,dlrit2cf,it2cfpiv)
+  subroutine c_dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp) bind(C)
+    integer(c_int), intent(in) :: r
+    integer(c_int), intent(out) :: it2cfp(r)
+    real(c_double), intent(in) :: dlrrf(r),dlrit(r)
+    real(c_double), intent(out) :: it2cf(r,r)
+    call dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp)
   end subroutine c_dlr_it2cf_init
 
-  subroutine c_dlr_mf(nmax,rank,dlrrf,xi,dlrmf) bind(C)
-    integer(c_int), intent(in) :: nmax,rank,xi
-    integer(c_int), intent(out) :: dlrmf(rank)
-    real(c_double), intent(in) :: dlrrf(rank)
-    call dlr_mf(nmax,rank,dlrrf,xi,dlrmf)
+  subroutine c_dlr_it2cf(r,it2cf,it2cfp,g,gc) bind(C)
+    integer(c_int), intent(in) :: r,it2cfp(r)
+    real(c_double), intent(in) :: it2cf(r,r),g(r)
+    real(c_double), intent(out) :: gc(r)
+    call dlr_it2cf(r,it2cf,it2cfp,g,gc)
+  end subroutine c_dlr_it2cf
+
+  subroutine c_dlr_it_eval(r,dlrrf,gc,t,g) bind(C)
+    integer(c_int), intent(in) :: r
+    real(c_double), intent(in) :: dlrrf(r),gc(r),t
+    real(c_double), intent(out) :: g
+    call dlr_it_eval(r,dlrrf,gc,t,g)
+  end subroutine c_dlr_it_eval
+
+  subroutine c_dlr_mf(nmax,r,dlrrf,xi,dlrmf) bind(C)
+    integer(c_int), intent(in) :: nmax,r,xi
+    integer(c_int), intent(out) :: dlrmf(r)
+    real(c_double), intent(in) :: dlrrf(r)
+    call dlr_mf(nmax,r,dlrrf,xi,dlrmf)
   end subroutine c_dlr_mf
 
-  subroutine c_dlr_cf2mf_init(rank,dlrrf,dlrmf,xi,cf2mf) bind(C)
-    integer(c_int), intent(in) :: rank,dlrmf(rank),xi
-    real(c_double), intent(in) :: dlrrf(rank)
-    !complex(c_double_complex), intent(out) :: cf2mf(rank,rank)
-    complex *16, intent(out) :: cf2mf(rank,rank)
-    call dlr_cf2mf_init(rank,dlrrf,dlrmf,xi,cf2mf)
+  subroutine c_dlr_cf2mf_init(r,dlrrf,dlrmf,xi,cf2mf) bind(C)
+    integer(c_int), intent(in) :: r,dlrmf(r),xi
+    real(c_double), intent(in) :: dlrrf(r)
+    !complex(c_double_complex), intent(out) :: cf2mf(r,r)
+    complex *16, intent(out) :: cf2mf(r,r)
+    call dlr_cf2mf_init(r,dlrrf,dlrmf,xi,cf2mf)
   end subroutine c_dlr_cf2mf_init
 
-  subroutine c_dlr_mf2cf_init(nmax,rank,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv) bind(C)
-    integer(c_int), intent(in) :: nmax,rank,dlrmf(rank),xi
-    integer(c_int), intent(out) :: mf2cfpiv(rank)
-    real(c_double), intent(in) :: dlrrf(rank)
-    !complex(c_double_complex), intent(out) :: dlrmf2cf(rank,rank)
-    complex *16, intent(out) :: dlrmf2cf(rank,rank)
-    call dlr_mf2cf_init(nmax,rank,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv)
+  subroutine c_dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv) bind(C)
+    integer(c_int), intent(in) :: nmax,r,dlrmf(r),xi
+    integer(c_int), intent(out) :: mf2cfpiv(r)
+    real(c_double), intent(in) :: dlrrf(r)
+    !complex(c_double_complex), intent(out) :: dlrmf2cf(r,r)
+    complex *16, intent(out) :: dlrmf2cf(r,r)
+    call dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv)
   end subroutine c_dlr_mf2cf_init
+
+  subroutine c_eqpts_rel(n,t) bind(C)
+    integer(c_int), intent(in) :: n
+    real(c_double), intent(out) :: t(n)
+    call eqpts_rel(n,t)
+  end subroutine c_eqpts_rel
 
 end module libdlr_c
