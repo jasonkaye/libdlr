@@ -26,4 +26,8 @@ void c_dlr_cf2mf_init(int *rank, double *dlrrf,int *dlrmf, int *xi, double _Comp
 
 void c_dlr_mf2cf_init(int *nmax, int *rank, double *dlrrf,int *dlrmf, int *xi, double _Complex *dlrmf2cf, int *mf2cfpiv);
 
+void c_dlr_convtens(double *beta, int *xi, int *r, double *dlrrf, double *dlrit, double *it2cf, int *it2cfp, double *phi);
+
+void c_dlr_convmat(int *r, double *it2cf, int *it2cfp, double *phi, double *g, double *gmat);
+
 void c_eqpts_rel(int *n, double *t);

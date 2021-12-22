@@ -100,10 +100,25 @@ contains
     call dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv)
   end subroutine c_dlr_mf2cf_init
 
+  subroutine c_dlr_convtens(beta,xi,r,dlrrf,dlrit,it2cf,it2cfp,phi) bind(C)
+    integer(c_int), intent(in) :: xi,r,it2cfp(r)
+    real(c_double), intent(in) :: beta,dlrrf(r),dlrit(r),it2cf(r,r)
+    real(c_double), intent(out) :: phi(r*r,r)
+    call dlr_convtens(beta,xi,r,dlrrf,dlrit,it2cf,it2cfp,phi)
+  end subroutine c_dlr_convtens
+
+  subroutine c_dlr_convmat(r,it2cf,it2cfp,phi,g,gmat) bind(C)
+    integer(c_int), intent(in) :: r,it2cfp(r)
+    real(c_double), intent(in) :: it2cf(r,r),phi(r*r,r),g(r)
+    real(c_double), intent(out) :: gmat(r,r)
+    call dlr_convmat(r,it2cf,it2cfp,phi,g,gmat)
+  end subroutine c_dlr_convmat
+
   subroutine c_eqpts_rel(n,t) bind(C)
     integer(c_int), intent(in) :: n
     real(c_double), intent(out) :: t(n)
     call eqpts_rel(n,t)
   end subroutine c_eqpts_rel
+
 
 end module libdlr_c
