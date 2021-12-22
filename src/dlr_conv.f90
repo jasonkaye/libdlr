@@ -346,6 +346,117 @@
       end subroutine dlr_convmat_vcc
 
 
+
+
+
+      !> Get weight matrix for computing L2 inner products of Green's
+      !! functions:
+      !!
+      !! int_0^beta F(tau) * G(tau) dtau
+      !!
+      !! is approximated by
+      !!
+      !! sum_jk f(j) ipmat(j,k) g(k)
+      !!
+      !! with f and g the values of F and G at the DLR imaginary time
+      !! nodes.
+      !!
+      !! @param[in]   beta    inverse temperature
+      !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   dlrrf   DLR frequency nodes
+      !! @param[in]   it2cf   imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU factors
+      !! @param[in]   it2cfp  imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU pivots
+      !! @param[out]  ipmat   weight matrix for L2 inner products of
+      !!                        Green's functions
+
+      subroutine dlr_ipmat(beta,r,dlrit,dlrrf,it2cf,it2cfp,ipmat)
+
+      implicit none
+      integer r,it2cfp(r)
+      real *8 beta,dlrit(r),dlrrf(r),it2cf(r,r)
+      real *8 ipmat(r,r)
+
+      integer j,k,info
+      integer, allocatable :: qit2cfp(:)
+      real *16, external :: qexpm1
+      real *16, allocatable :: qipmat(:,:),qdlrit(:),qdlrrf(:)
+      real *16, allocatable :: qit2cf(:,:)
+      real *16, external :: qkfunf_rel
+
+      allocate(qipmat(r,r),qdlrit(r),qdlrrf(r),qit2cf(r,r),qit2cfp(r))
+
+      qdlrit = dlrit
+      qdlrrf = dlrrf
+
+      ! Get weight matrix take DLR coefficients of two Green's functions
+      ! to their inner product
+
+      do k=1,r
+        do j=1,r
+
+          if (qdlrrf(j)+qdlrrf(k).gt.0.0q0) then
+            qipmat(j,k) = qkfunf_rel(0.0q0,qdlrrf(j))&
+              *qkfunf_rel(0.0q0,qdlrrf(k))*qexpm1(qdlrrf(j)+qdlrrf(k))
+          else
+            qipmat(j,k) = qkfunf_rel(1.0q0,qdlrrf(j))&
+              *qkfunf_rel(1.0q0,qdlrrf(k))&
+              *qexpm1(-(qdlrrf(j)+qdlrrf(k)))
+          endif
+
+        enddo
+      enddo
+
+
+      ! Get imaginary time grid values -> DLR coefficients
+      ! transformation in quad
+
+      do k=1,r
+        do j=1,r
+          qit2cf(j,k) = qkfunf_rel(qdlrit(j),qdlrrf(k))
+        enddo
+      enddo
+
+      call qgefa(qit2cf,r,r,qit2cfp,info)
+
+
+      ! Postcompose with transpose of imaginary time grid values -> DLR coefficients
+      ! transformation
+
+      do k=1,r
+        call qgesl(qit2cf,r,r,qit2cfp,qipmat(:,k),1)
+      enddo
+
+
+      ! Precompose with imaginary time grid values -> DLR
+      ! coefficients transformation to obtain final weight matrix
+
+      qipmat = transpose(qipmat)
+
+      do k=1,r
+        call qgesl(qit2cf,r,r,qit2cfp,qipmat(:,k),1)
+      enddo
+
+      qipmat = transpose(qipmat)
+
+
+      ipmat = qipmat
+
+      ! Scale by beta for inner product on [0,beta]
+
+      ipmat = beta*ipmat
+
+
+      end subroutine dlr_ipmat
+
+
+      
+      
       !> Evaluate the function \f$f(\omega) = (1-\xi \cdot \exp(-\omega))/(1+\exp(-\omega))\f$,
       !! for \f$\xi = \pm 1\f$
       !!

@@ -98,3 +98,55 @@
       kfunmf = 1.0d0/(n*pi*eye+om)
 
       end function kfunmf
+
+
+
+
+
+      !> Evaluate Lehmann kernel with imaginary time point given in
+      !! relative format, quadruple precision.
+      !!
+      !! @param[in] t   imaginary time point, in relative format
+      !! @param[in] om  real frequency point
+
+      real *16 function qkfunf_rel(t,om)
+
+      implicit none
+      real *16 t,om
+
+      real *16, external :: qkfunf
+
+      if (t.ge.0.0q0) then
+        qkfunf_rel = qkfunf(t,om)
+      else
+        qkfunf_rel = qkfunf(-t,-om)
+      endif
+
+      end function qkfunf_rel
+
+
+
+
+
+      !> Evaluate Lehmann kernel with imaginary time point given in
+      !! absolute format, quadruple precision.
+      !!
+      !! Note: the result will not be accurate if t is very close to 1.
+      !! To maintain full accuracy, represent t in relative format and
+      !! use the function qkfunf_rel.
+      !!
+      !! @param[in] t   imaginary time point, in absolute format
+      !! @param[in] om  real frequency point
+
+      real *16 function qkfunf(t,om)
+
+      implicit none
+      real *16 t,om
+
+      if (om.ge.0.0q0) then
+        qkfunf = exp(-t*om)/(1.0q0+exp(-om))
+      else
+        qkfunf = exp((1.0q0-t)*om)/(1.0q0+exp(om))
+      endif
+
+      end function qkfunf

@@ -99,3 +99,45 @@
       val = num/den
 
       end subroutine barycheb
+
+
+
+
+
+      !> Evaluate the function \f$f(x) = (1- \exp(-x))/(x)\f$ in
+      !! quadruple precision
+      !!
+      !! @param[in]   x       input x
+      !!
+      !! @param[out]  qexpm1  value of the function \f$f(x)\f$
+
+      function qexpm1(x)
+
+      ! Evaluate the function (1-e^(-x))/x
+
+      implicit none
+      real *16 qexpm1,x
+
+      integer i
+      real *16 one,x1,c
+
+      one = 1.0q0
+
+      if (x>1.0q-1) then
+
+        qexpm1 = (one-exp(-x))/x
+
+      else
+
+        qexpm1 = one
+        c = one
+        x1 = x
+        do i=1,18 ! i=10 for double precision
+          c = c*(i+1)
+          qexpm1 = qexpm1 + ((-1)**i)*x1/c
+          x1 = x1*x
+        enddo
+
+      endif
+
+      end function qexpm1

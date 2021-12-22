@@ -24,7 +24,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
-file(GLOB dlr_SRC CONFIGURE_DEPENDS "./src/*.f*" "./src/utils_external/*.f*" "./src/utils_external/id_dist/*.f*")
+file(GLOB dlr_SRC CONFIGURE_DEPENDS "./src/*.f*" "./src/utils_external/*.f*" "./src/utils_external/id_dist/*.f*" "./src/utils_external/qlinpack/*.f*")
 
 add_library(dlr ${dlr_SRC})
 target_link_libraries(dlr PUBLIC BLAS::BLAS LAPACK::LAPACK)
@@ -40,6 +40,10 @@ add_test(NAME ha_it COMMAND ha_it)
 add_executable(ha_mf ./test/ha_mf.f90)
 target_link_libraries(ha_mf PRIVATE dlr)
 add_test(NAME ha_mf COMMAND ha_mf)
+
+add_executable(ip_exp ./test/ip_exp.f90)
+target_link_libraries(ip_exp PRIVATE dlr)
+add_test(NAME ip_exp COMMAND ip_exp)
 
 add_executable(conv_exp ./test/conv_exp.f90)
 target_link_libraries(conv_exp PRIVATE dlr)
