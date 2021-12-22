@@ -1,0 +1,10 @@
+The file qlinpack.f contains modified versions of several subroutines from the Fortran
+library LINPACK. LINPACK was developed by Jack Dongarra, Jim Bunch,
+Cleve Moler, and Pete Stewart. LINPACK can
+be downloaded from
+
+www.netlib.org/linpack
+
+Specifically, we have included versions of the subroutines dgefa and
+dgesl, which have been upgraded to quadruple precision and renamed qgefa
+and qgesl, respectively.
