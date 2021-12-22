@@ -432,7 +432,7 @@ class KernelInterpolativeDecoposition:
         # -- Select imaginary time points
 
         if verbose: t = time.time()
-        self.tidx, self.proj_t = interp_decomp(self.kmat[:, self.oidx].T, self.rank)
+        self.tidx, self.proj_t = interp_decomp(self.kmat[:, self.oidx].T, self.rank, rand=False)
         self.tidx = np.sort(self.tidx[:self.rank])
 
         #self.dlrit = self.t[self.tidx]
@@ -453,7 +453,7 @@ class KernelInterpolativeDecoposition:
         if verbose: print(f'kernel mats {time.time() - t} s')
 
         if verbose: t = time.time()
-        self.mfidx, self.proj_mf = interp_decomp(self.kmat_mf.T, self.rank, rand=True)
+        self.mfidx, self.proj_mf = interp_decomp(self.kmat_mf.T, self.rank, rand=False)
         self.mfidx = np.sort(self.mfidx[:self.rank])
         if verbose: print(f'ID mats {time.time() - t} s')
             
