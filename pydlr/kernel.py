@@ -453,10 +453,10 @@ class KernelInterpolativeDecoposition:
         if verbose: print(f'kernel mats {time.time() - t} s')
 
         if verbose: t = time.time()
-        self.mfidx, self.proj_mf = interp_decomp(self.kmat_mf.T, self.rank, rand=False)
+        self.mfidx, self.proj_mf = interp_decomp(self.kmat_mf.T, self.rank, rand=True)
         self.mfidx = np.sort(self.mfidx[:self.rank])
         if verbose: print(f'ID mats {time.time() - t} s')
-            
+
         self.nmax = nmax
         self.dlrmf = n[self.mfidx]
 
