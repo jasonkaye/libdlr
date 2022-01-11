@@ -377,3 +377,72 @@
       enddo
 
       end subroutine dlr_mf_eval
+
+
+
+
+
+      !> Get DLR coefficients from scattered data by least squares
+      !! fitting
+      !!
+      !! @param[in]  r        number of DLR basis functions
+      !! @param[in]  dlrrf    DLR frequency nodes
+      !! @param[in]  xi       xi=-1 for fermionic frequencies; xi=1 for
+      !!                        bosonic frequencies
+      !! @param[in]  m        number of Matsubara frequency points at
+      !!                        which Green's function G is sampled
+      !! @param[in]  nsamp    Matsubara frequency integers at which G is
+      !!                        sampled
+      !! @param[in]  gsamp    values of G at sampling points
+      !! @param[out] gc       DLR coefficients of Green's function
+
+      subroutine dlr_mf_fit(r,dlrrf,xi,m,nsamp,gsamp,gc)
+
+      implicit none
+      integer r,xi,m,nsamp(m)
+      real *8 dlrrf(r),gc(r)
+      complex *16 gsamp(m)
+
+      integer i,j,rank,lwork,info
+      real *8 rcond
+      integer, allocatable :: jpvt(:)
+      real *8, allocatable :: rwork(:)
+      complex *16, allocatable :: kls(:,:),work(:),tmp(:)
+      complex *16, external :: kfunmf
+
+      
+      ! Get system matrix for least squares fitting; columns are DLR
+      ! basis functions evaluated at Matsubara frequency sampling points
+
+      allocate(kls(m,r))
+
+      do j=1,r
+        do i=1,m
+          kls(i,j) = kfunmf(2*nsamp(i)+(1-xi)/2,dlrrf(j))
+        enddo
+      enddo
+
+
+      ! Get size of work array for least squares fitting
+
+      allocate(work(1),jpvt(r),tmp(m),rwork(2*r))
+
+      call zgelsy(m,r,1,kls,m,tmp,m,jpvt,rcond,rank,work,-1,rwork,info)
+
+      lwork = work(1)
+
+      deallocate(work)
+
+
+      ! Least squares fitting of data to determine DLR coefficients
+
+      allocate(work(lwork))
+
+      tmp = gsamp
+
+      call zgelsy(m,r,1,kls,m,tmp,m,jpvt,rcond,rank,work,lwork,rwork,&
+        info)
+
+      gc = real(tmp(1:r))
+
+      end subroutine dlr_mf_fit

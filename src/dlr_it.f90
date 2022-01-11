@@ -416,18 +416,18 @@
       !!
       !! @param[in]  r        number of DLR basis functions
       !! @param[in]  dlrrf    DLR frequency nodes
-      !! @param[in]  nsamp    number of imaginary time points at which
+      !! @param[in]  m        number of imaginary time points at which
       !!                        Green's function G is sampled
       !! @param[in]  tsamp    imaginary time points at which G is
       !!                        sampled, given in relative format
       !! @param[in]  gsamp    values of G at sampling points
       !! @param[out] gc       DLR coefficients of Green's function
 
-      subroutine dlr_it_fit(r,dlrrf,nsamp,tsamp,gsamp,gc)
+      subroutine dlr_it_fit(r,dlrrf,m,tsamp,gsamp,gc)
 
       implicit none
-      integer r,nsamp
-      real *8 dlrrf(r),tsamp(nsamp),gsamp(nsamp),gc(r)
+      integer r,m
+      real *8 dlrrf(r),tsamp(m),gsamp(m),gc(r)
 
       integer i,j,rank,lwork,info
       real *8 rcond
@@ -438,10 +438,10 @@
       ! Get system matrix for least squares fitting; columns are DLR
       ! basis functions evaluated at imaginary time sampling points
 
-      allocate(kls(nsamp,r))
+      allocate(kls(m,r))
 
       do j=1,r
-        do i=1,nsamp
+        do i=1,m
           kls(i,j) = kfunf_rel(tsamp(i),dlrrf(j))
         enddo
       enddo
@@ -449,10 +449,9 @@
 
       ! Get size of work array for least squares fitting
 
-      allocate(work(1),jpvt(r),tmp(nsamp))
+      allocate(work(1),jpvt(r),tmp(m))
 
-      call dgelsy(nsamp,r,1,kls,nsamp,tmp,nsamp,jpvt,rcond,rank,&
-        work,-1,info)
+      call dgelsy(m,r,1,kls,m,tmp,m,jpvt,rcond,rank,work,-1,info)
 
       lwork = work(1)
 
@@ -465,8 +464,7 @@
 
       tmp = gsamp
 
-      call dgelsy(nsamp,r,1,kls,nsamp,tmp,nsamp,jpvt,rcond,rank,&
-        work,lwork,info)
+      call dgelsy(m,r,1,kls,m,tmp,m,jpvt,rcond,rank,work,lwork,info)
 
       gc = tmp(1:r)
 

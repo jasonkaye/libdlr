@@ -40,7 +40,7 @@
       ! accuracy of the DLR expansion.
       
       implicit none
-      integer nsamp,ntst_it,ntst_mf
+      integer m,ntst_it,ntst_mf
       real *8 lambda,eps,beta,noise
 
       ! Input parameters
@@ -50,7 +50,7 @@
 
       beta = 1000.0d0   ! Inverse temperature
 
-      nsamp = 5000      ! Number of points in uniform sampling grid
+      m = 5000          ! Number of points in uniform sampling grid
       noise = 1.0d-6    ! Noise level
 
       ntst_it = 2000    ! # imaginary time test points
@@ -59,17 +59,17 @@
 
       ! Main subroutine
 
-      call sc_it_fit_main(lambda,eps,ntst_it,ntst_mf,beta,nsamp,noise)
+      call sc_it_fit_main(lambda,eps,ntst_it,ntst_mf,beta,m,noise)
 
 
       end program sc_it_fit
 
 
-      subroutine sc_it_fit_main(lambda,eps,ntst_it,ntst_mf,beta,nsamp,&
+      subroutine sc_it_fit_main(lambda,eps,ntst_it,ntst_mf,beta,m,&
           noise)
 
       implicit none
-      integer nsamp,ntst_it,ntst_mf
+      integer m,ntst_it,ntst_mf
       real *8 lambda,eps,beta,noise
 
       integer npg,npo,pg,i,j,r
@@ -95,9 +95,9 @@
 
       ! Get sampling grid in relative format
 
-      allocate(tsamp(nsamp))
+      allocate(tsamp(m))
 
-      call eqpts_rel(nsamp,tsamp)
+      call eqpts_rel(m,tsamp)
 
 
 
@@ -117,9 +117,9 @@
 
       ! Sample G at imaginary time nodes
 
-      allocate(gsamp(nsamp))
+      allocate(gsamp(m))
 
-      do i=1,nsamp
+      do i=1,m
 
         call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,tsamp(i),gsamp(i))
         
@@ -128,7 +128,7 @@
 
       ! Add random noise
 
-      allocate(tmp(nsamp))
+      allocate(tmp(m))
 
       call random_number(tmp)
       tmp = 2*tmp-1
@@ -140,7 +140,7 @@
 
       allocate(gc(r))
 
-      call dlr_it_fit(r,dlrrf,nsamp,tsamp,gsamp,gc)
+      call dlr_it_fit(r,dlrrf,m,tsamp,gsamp,gc)
 
 
 
