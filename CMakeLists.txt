@@ -94,58 +94,35 @@ if(with_python)
 
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
   find_python_module("numpy")
-  find_python_module("cffi")
-  find_python_module("nose")
+  find_python_module("scipy")
+  #find_python_module("pytest")
 
-  FILE(GLOB_RECURSE pydlr_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
+  # Get pydlr tests
+
+  file(GLOB_RECURSE PythonTests RELATIVE ${CMAKE_SOURCE_DIR}/pydlr/test test_*.py)
+
+  # Copy pydlr files
+
+  FILE(GLOB_RECURSE pydlr_SRC RELATIVE ${CMAKE_SOURCE_DIR} ./pydlr/*.py)
   foreach(f ${pydlr_SRC})
    configure_file(${f} ${f} COPYONLY)
   endforeach()
-  install(FILES pydlr/pydlr.py DESTINATION pydlr)
-  install(FILES pydlr/kernel.py DESTINATION pydlr)
-  install(FILES pydlr/kernel_fortran.py DESTINATION pydlr)
-  install(FILES pydlr/utils.py DESTINATION pydlr)
-  install(FILES pydlr/__init__.py DESTINATION pydlr)
 
-  add_test(NAME python-test_kernel
-    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_kernel.py -v
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-    )
+  # Install only module files (excluding tests)
 
-  add_test(NAME python-test_free_greens_function
-    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_free_greens_function.py -v
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-    )
+  FILE(GLOB pydlr_module_SRC RELATIVE ${CMAKE_SOURCE_DIR} ./pydlr/*.py)
+  foreach(f ${pydlr_module_SRC})
+   install(FILES ${f} DESTINATION pydlr)
+  endforeach()
 
-  add_test(NAME python-test_convolution
-    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_convolution.py -v
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-    )
-
-  add_test(NAME python-test_dimer
-    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_dimer.py -v
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-    )
-
-  add_test(NAME python-test_barycentric
-    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_barycentric.py -v
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-    )
-
-  add_test(NAME python-test_gridding
-    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_gridding.py -v
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-    )
-
-  add_test(NAME python-test_dyson
-    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_dyson.py -v
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-    )
-
-  add_test(NAME python-test_semi_circ
-    COMMAND ${Python3_EXECUTABLE} -m nose ./test/test_semi_circ.py -v
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pydlr
-    )
+  # Setup python tests
+  
+  foreach(PythonTest ${PythonTests})
+    add_test(NAME ${PythonTest}
+      COMMAND ${Python3_EXECUTABLE} -m pytest ./pydlr/test/${PythonTest} -v
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      )
+  endforeach()
 
 endif()
 

@@ -20,7 +20,7 @@ Requirements
 - Python 3.x
 - Numpy
 - Scipy
-- ``nosetest`` (for running the tests)
+- ``pytest`` (for running the tests)
 
 Build
 -----
