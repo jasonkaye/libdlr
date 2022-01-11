@@ -243,7 +243,7 @@ def kernel(tau, omega):
     return kernel
 
 
-def gridparams(lamb, order=24):
+def gridparams(lamb, order=24, lambda_scale=1.):
     """
     Empirical discretization parameters of :math:`K(\\tau, \\omega)` for given :math:`\Lambda`
 
@@ -276,6 +276,8 @@ def gridparams(lamb, order=24):
 
     """
 
+    lamb *= lambda_scale
+    
     npt = int(np.max([np.ceil(np.log(lamb)/np.log(2.))-2, 1]))
     npo = int(np.max([np.ceil(np.log(lamb)/np.log(2.)), 1]))
 
@@ -316,9 +318,8 @@ def kernel_discretization(lamb, error_est=False):
 
     #print(f'order = {order}, npt = {npt}, npo = {npo}, nt = {nt}, no = {no}')
     
-    N = 24
-    x_i = chebyshev_collocation_points_1st_kind(N)
-    w_i = chebyshev_barycentric_weights_1st_kind(N)
+    x_i = chebyshev_collocation_points_1st_kind(order)
+    w_i = chebyshev_barycentric_weights_1st_kind(order)
 
     # -- Tau panel discretization
     
@@ -423,12 +424,14 @@ class KernelInterpolativeDecoposition:
         # -- Select real frequency points
 
         if verbose: t = time.time()
-        self.rank, self.oidx, self.proj_w = \
-            interp_decomp(self.kmat, self.eps * self.lamb, rand=False)
+
+        id_eps = self.eps * self.lamb
+        if id_eps >= 0.1: id_eps = 0.1
+        self.rank, self.oidx, self.proj_w = interp_decomp(self.kmat, id_eps, rand=False)
         self.oidx = np.sort(self.oidx[:self.rank])
         self.dlrrf = self.om[self.oidx]
         if verbose: print(f'ID w {time.time() - t} s')
-
+        
         # -- Select imaginary time points
 
         if verbose: t = time.time()
