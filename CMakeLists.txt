@@ -33,25 +33,13 @@ install(TARGETS dlr ARCHIVE)
 
 # Test programs
 
-add_executable(ha_it ./test/ha_it.f90)
-target_link_libraries(ha_it PRIVATE dlr)
-add_test(NAME ha_it COMMAND ha_it)
-
-add_executable(ha_mf ./test/ha_mf.f90)
-target_link_libraries(ha_mf PRIVATE dlr)
-add_test(NAME ha_mf COMMAND ha_mf)
-
-add_executable(ip_exp ./test/ip_exp.f90)
-target_link_libraries(ip_exp PRIVATE dlr)
-add_test(NAME ip_exp COMMAND ip_exp)
-
-add_executable(conv_exp ./test/conv_exp.f90)
-target_link_libraries(conv_exp PRIVATE dlr)
-add_test(NAME conv_exp COMMAND conv_exp)
-
-add_executable(dyson_sc ./test/dyson_sc.f90)
-target_link_libraries(dyson_sc PRIVATE dlr)
-add_test(NAME dyson_sc COMMAND dyson_sc)
+FILE(GLOB TestPrograms RELATIVE ${CMAKE_SOURCE_DIR} ./test/*.f90)
+foreach(f ${TestPrograms})
+  get_filename_component(name ${f} NAME)
+  add_executable(${name} ${f})
+  target_link_libraries(${name} PRIVATE dlr)
+  add_test(NAME ${name} COMMAND ${name})
+endforeach()
 
 # C-library: dlr_c
 
@@ -97,10 +85,6 @@ if(with_python)
   find_python_module("scipy")
   #find_python_module("pytest")
 
-  # Get pydlr tests
-
-  file(GLOB_RECURSE PythonTests RELATIVE ${CMAKE_SOURCE_DIR}/pydlr/test test_*.py)
-
   # Copy pydlr files
 
   FILE(GLOB_RECURSE pydlr_SRC RELATIVE ${CMAKE_SOURCE_DIR} ./pydlr/*.py)
@@ -117,9 +101,11 @@ if(with_python)
 
   # Setup python tests
   
-  foreach(PythonTest ${PythonTests})
-    add_test(NAME ${PythonTest}
-      COMMAND ${Python3_EXECUTABLE} -m pytest ./pydlr/test/${PythonTest} -v
+  file(GLOB PythonTests RELATIVE ${CMAKE_SOURCE_DIR} ./pydlr/test/test_*.py)
+  foreach(f ${PythonTests})
+    get_filename_component(name ${f} NAME)
+    add_test(NAME ${name}
+      COMMAND ${Python3_EXECUTABLE} -m pytest ${f} -v
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       )
   endforeach()
