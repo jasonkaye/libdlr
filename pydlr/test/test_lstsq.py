@@ -16,7 +16,6 @@ permissions and limitations under the License."""
 
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from pydlr import dlr
 from pydlr import kernel
@@ -46,6 +45,8 @@ def test_lstsq_dlr_tau(verbose=False):
     G_iaa_ref = d.eval_dlr_tau(G_xaa, tau_i, beta)
     
     if verbose:
+        import matplotlib.pyplot as plt
+        
         plt.figure(figsize=(10, 12))
         subp = [1, 1, 1]
 
