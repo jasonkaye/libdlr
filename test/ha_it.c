@@ -143,10 +143,10 @@
 
       printf("\n");
       printf("DLR rank = %i\n",r);
-      printf("Abs L^inf err = %2.2f\n",errlinf);
-      printf("Abs L^2 err   = %2.2f\n",errl2);
-      printf("Rel L^inf err = %2.2f\n",errlinf/gmax);
-      printf("Rel L^2 err   = %2.2f\n",errl2/gl2);
+      printf("Abs L^inf err = %2.2e\n",errlinf);
+      printf("Abs L^2 err   = %2.2e\n",errl2);
+      printf("Rel L^inf err = %2.2e\n",errlinf/gmax);
+      printf("Rel L^2 err   = %2.2e\n",errl2/gl2);
       printf("\n");
 
       free(it2cfp);
