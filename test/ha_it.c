@@ -27,7 +27,7 @@
       #include "dlr_c/dlr_c.h"
 
       void ha_it_main(double, double, int, double);
-      void gfun(double, double, double *);
+      double gfun(double, double);
       double max(double a, double b){ return a > b ? a : b; }
 
       int main() {
@@ -89,9 +89,9 @@
 
       g = malloc(r*sizeof(double));
 
-      for(i = 1; i <= r; ++i) {
+      for(i = 0; i < r; ++i) {
 
-        gfun(beta,dlrit[i],g+i);
+        g[i] = gfun(beta,dlrit[i]);
 
       }
 
@@ -117,11 +117,11 @@
       gmax = 0*one;
       gl2 = 0*one;
 
-      for(i = 1; i <= ntst; ++i) {
+      for(i = 0; i < ntst; ++i) {
 
         // Evaluate Green's function
 
-        gfun(beta,ttst[i],&gtrue);
+        gtrue = gfun(beta,ttst[i]);
 
         // Evaluate DLR
 
@@ -137,8 +137,8 @@
 
       }
 
-      errl2 = sqrt((ttst[2]-ttst[1])*errl2);
-      gl2 = sqrt((ttst[2]-ttst[1])*gl2);
+      errl2 = sqrt((ttst[1]-ttst[0])*errl2);
+      gl2 = sqrt((ttst[1]-ttst[0])*gl2);
 
 
       printf("\n");
@@ -163,7 +163,7 @@
 
 
 
-      void gfun(double beta, double t, double *g) {
+      double gfun(double beta, double t) {
 
       // Evaluate Green's function with sum-of-delta-functions spectral
       // density 
@@ -176,8 +176,8 @@
       a4 =  0.915*beta;
       a5 =  0.929*beta;
 
-      *g = kfunf_rel_(&t,&a1) + kfunf_rel_(&t,&a2)
-         + kfunf_rel_(&t,&a3) + kfunf_rel_(&t,&a4)
-         + kfunf_rel_(&t,&a5);
+      return kfunf_rel_(&t,&a1) + kfunf_rel_(&t,&a2)
+           + kfunf_rel_(&t,&a3) + kfunf_rel_(&t,&a4)
+           + kfunf_rel_(&t,&a5);
 
       }
