@@ -33,3 +33,5 @@ void c_dlr_convmat(int *r, double *it2cf, int *it2cfp, double *phi, double *g, d
 void c_eqpts_rel(int *n, double *t);
 
 void c_kfunf_rel(double *t, double *om, double *val);
+
+double kfunf_rel_(double *t, double *om);
