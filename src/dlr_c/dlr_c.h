@@ -31,3 +31,5 @@ void c_dlr_convtens(double *beta, int *xi, int *r, double *dlrrf, double *dlrit,
 void c_dlr_convmat(int *r, double *it2cf, int *it2cfp, double *phi, double *g, double *gmat);
 
 void c_eqpts_rel(int *n, double *t);
+
+void c_kfunf_rel(double *t, double *om, double *val);

@@ -120,5 +120,11 @@ contains
     call eqpts_rel(n,t)
   end subroutine c_eqpts_rel
 
+  subroutine c_kfunf_rel(t,om,val) bind(C)
+    real(c_double), intent(in) :: t,om
+    real(c_double), intent(out) :: val
+    val = kfunf_rel(t,om)
+  end subroutine c_kfunf_rel
+
 
 end module libdlr_c
