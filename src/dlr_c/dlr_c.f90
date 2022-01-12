@@ -124,7 +124,7 @@ contains
     real(c_double), intent(in) :: t,om
     real(c_double), intent(out) :: val
 
-    real *8, external kfunf_rel
+    real *8, external :: kfunf_rel
 
     val = kfunf_rel(t,om)
 
