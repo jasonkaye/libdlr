@@ -57,7 +57,7 @@ add_test(NAME dyson_sc COMMAND dyson_sc)
 
 file(GLOB dlr_c_SRC CONFIGURE_DEPENDS "./src/dlr_c/*.f*")
 add_library(dlr_c SHARED ${dlr_c_SRC})
-target_link_libraries(dlr_c PUBLIC dlr m BLAS::BLAS LAPACK::LAPACK)
+target_link_libraries(dlr_c PUBLIC dlr BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS dlr_c LIBRARY)
 set_target_properties(dlr_c PROPERTIES INSTALL_RPATH "@loader_path/")
 
@@ -70,7 +70,7 @@ target_link_libraries(c_example PRIVATE dlr_c)
 add_test(NAME c_example COMMAND c_example)
 
 add_executable(ha_it_c ./test/ha_it.c)
-target_link_libraries(ha_it_c PRIVATE dlr_c)
+target_link_libraries(ha_it_c PRIVATE dlr_c m)
 add_test(NAME ha_it_c COMMAND ha_it_c)
 
 # Macro for finding Python modules
