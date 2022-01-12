@@ -123,7 +123,11 @@ contains
   subroutine c_kfunf_rel(t,om,val) bind(C)
     real(c_double), intent(in) :: t,om
     real(c_double), intent(out) :: val
+
+    real *8, external kfunf_rel
+
     val = kfunf_rel(t,om)
+
   end subroutine c_kfunf_rel
 
 
