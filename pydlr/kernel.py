@@ -352,6 +352,7 @@ def kernel_discretization(lamb, error_est=False):
     else:
         # -- Error estimate
 
+        N = order
         x2_i = chebyshev_collocation_points_1st_kind(2*N)
 
         err = 0.
