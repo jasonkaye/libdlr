@@ -69,6 +69,10 @@ add_executable(c_example ./test/c_example.c)
 target_link_libraries(c_example PRIVATE dlr_c)
 add_test(NAME c_example COMMAND c_example)
 
+add_executable(ha_it_c ./test/ha_it.c)
+target_link_libraries(ha_it_c PRIVATE dlr_c m)
+add_test(NAME ha_it_c COMMAND ha_it_c)
+
 # Macro for finding Python modules
 
 macro(find_python_module _module_name)
