@@ -168,7 +168,7 @@
       // Evaluate Green's function with sum-of-delta-functions spectral
       // density 
 
-      double a1,a2,a3,a4,a5;
+      double a1,a2,a3,a4,a5,tmp,val=0.;
 
       a1 = -0.804*beta;
       a2 = -0.443*beta;
@@ -176,8 +176,11 @@
       a4 =  0.915*beta;
       a5 =  0.929*beta;
 
-      return kfunf_rel_(&t,&a1) + kfunf_rel_(&t,&a2)
-           + kfunf_rel_(&t,&a3) + kfunf_rel_(&t,&a4)
-           + kfunf_rel_(&t,&a5);
-
+      c_kfunf_rel(&t, &a1, &tmp); val += tmp;
+      c_kfunf_rel(&t, &a2, &tmp); val += tmp;
+      c_kfunf_rel(&t, &a3, &tmp); val += tmp;
+      c_kfunf_rel(&t, &a4, &tmp); val += tmp;
+      c_kfunf_rel(&t, &a5, &tmp); val += tmp;
+      
+      return val;
       }
