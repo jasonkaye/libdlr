@@ -15,51 +15,58 @@ or implied. See the License for the specific language governing
 permissions and limitations under the License."""
 
 
+import unittest
+
 import numpy as np
 
 from pydlr import dlr
 from pydlr import kernel
 
-def test_lstsq_dlr_tau(verbose=False):
 
-    d = dlr(lamb=100., eps=1e-10)
+class TestLstsq(unittest.TestCase):
 
-    beta = 10.
 
-    tau_i = np.linspace(0, beta, num=400)
-    shape = (len(tau_i), 1, 1)
+    def test_lstsq_dlr_tau(self, verbose=False):
 
-    k = 100
-    w_k = 1.0 + np.random.randn(k)
-    c_k = np.random.rand(k)
-    c_k /= np.sum(c_k)
+        d = dlr(lamb=100., eps=1e-10)
 
-    G_iaa = - (kernel(tau_i/beta, beta*w_k) @ c_k).reshape(shape)
-    np.testing.assert_almost_equal(-1., G_iaa[0,0,0] + G_iaa[-1,0,0])
+        beta = 10.
 
-    G_xaa = d.lstsq_dlr_from_tau(tau_i, G_iaa, beta)
-    
-    G_laa = d.tau_from_dlr(G_xaa)
-    tau_l = d.get_tau(beta)
+        tau_i = np.linspace(0, beta, num=400)
+        shape = (len(tau_i), 1, 1)
 
-    G_iaa_ref = d.eval_dlr_tau(G_xaa, tau_i, beta)
-    
-    if verbose:
-        import matplotlib.pyplot as plt
-        
-        plt.figure(figsize=(10, 12))
-        subp = [1, 1, 1]
+        k = 100
+        w_k = 1.0 + np.random.randn(k)
+        c_k = np.random.rand(k)
+        c_k /= np.sum(c_k)
 
-        plt.subplot(*subp); subp[-1] += 1
-        plt.plot(tau_i, G_iaa[:,0,0], 'x-')
-        plt.plot(tau_l, G_laa[:,0,0], '.')
-        plt.plot(tau_i, G_iaa_ref[:,0,0], '+')
-        
-        plt.xlabel(r'$\tau$')
-        plt.ylabel(r'$G(\tau)$')
+        G_iaa = - (kernel(tau_i/beta, beta*w_k) @ c_k).reshape(shape)
+        self.assertTrue(np.allclose(-1., G_iaa[0,0,0] + G_iaa[-1,0,0]))
 
-        plt.show(); exit()
+        G_xaa = d.lstsq_dlr_from_tau(tau_i, G_iaa, beta)
+
+        G_laa = d.tau_from_dlr(G_xaa)
+        tau_l = d.get_tau(beta)
+
+        G_iaa_ref = d.eval_dlr_tau(G_xaa, tau_i, beta)
+        self.assertTrue(np.allclose(G_iaa, G_iaa_ref))
+
+        if verbose:
+            import matplotlib.pyplot as plt
+
+            plt.figure(figsize=(10, 12))
+            subp = [1, 1, 1]
+
+            plt.subplot(*subp); subp[-1] += 1
+            plt.plot(tau_i, G_iaa[:,0,0], 'x-')
+            plt.plot(tau_l, G_laa[:,0,0], '.')
+            plt.plot(tau_i, G_iaa_ref[:,0,0], '+')
+
+            plt.xlabel(r'$\tau$')
+            plt.ylabel(r'$G(\tau)$')
+
+            plt.show(); exit()
+
 
 if __name__ == '__main__':
-
-    test_lstsq_dlr_tau(verbose=True)
+    unittest.main()

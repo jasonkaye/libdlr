@@ -87,7 +87,6 @@ if(with_python)
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
   find_python_module("numpy")
   find_python_module("scipy")
-  #find_python_module("pytest")
 
   # Copy pydlr files
 
@@ -109,7 +108,7 @@ if(with_python)
   foreach(f ${PythonTests})
     get_filename_component(name ${f} NAME)
     add_test(NAME ${name}
-      COMMAND ${Python3_EXECUTABLE} -m pytest ${f} -v
+      COMMAND ${Python3_EXECUTABLE} -m unittest ${f} -v
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       )
   endforeach()

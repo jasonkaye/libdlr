@@ -15,153 +15,151 @@ or implied. See the License for the specific language governing
 permissions and limitations under the License."""
 
 
+import unittest
+
 import numpy as np
 
 from pydlr import dlr
 
 
-def test_convolution_scalar(verbose=False):
+class TestConvolution(unittest.TestCase):
 
-    xi = +1
-    beta = 2.337
-    #beta = 3.337
-    #beta = 100.
-
-    lamb = np.max([20., 10. * beta])
-    e1, e2 = 3., 3.3
-
-    d = dlr(lamb=lamb, xi=xi)
-
-    g1_l = d.free_greens_function_tau(np.array([[e1]]), beta)
-    g2_l = d.free_greens_function_tau(np.array([[e2]]), beta)
-
-    c = 1./(e1 - e2)
-    gg_l_anal = c * g1_l - c * g2_l
     
-    g1_q = d.free_greens_function_matsubara(np.array([[e1]]), beta)
-    g2_q = d.free_greens_function_matsubara(np.array([[e2]]), beta)
-    
-    # -- DLR Matsubara convolution
+    def test_convolution_scalar(self, verbose=False):
 
-    gg_q = np.einsum('qab,qbc->qac', g1_q, g2_q)
-    gg_l_matsub = d.tau_from_dlr(d.dlr_from_matsubara(gg_q, beta))
+        xi = +1
+        beta = 2.337
+        #beta = 3.337
+        #beta = 100.
 
-    # -- DLR coeff convolution
+        lamb = np.max([20., 10. * beta])
+        e1, e2 = 3., 3.3
 
-    g1_x = d.dlr_from_matsubara(g1_q, beta)
-    g2_x = d.dlr_from_matsubara(g2_q, beta)
+        d = dlr(lamb=lamb, xi=xi)
 
-    gg_x_dlr = d.convolution(g1_x, g2_x, beta=beta)
-    gg_l_dlr = d.tau_from_dlr(gg_x_dlr)
-    
-    # -- DLR convolution matrix
+        g1_l = d.free_greens_function_tau(np.array([[e1]]), beta)
+        g2_l = d.free_greens_function_tau(np.array([[e2]]), beta)
 
-    n, na, _ = g1_x.shape
-    
-    C_xaxa = d.convolution_matrix(g1_x, beta=beta)
-    C_AA = C_xaxa.reshape((n*na, n*na))
-    
-    B_Aa = g2_x.reshape((n*na, na))
-    gg_x_mat = np.matmul(C_AA, B_Aa).reshape((n, na, na))
-    gg_l_mat = d.tau_from_dlr(gg_x_mat)
+        c = 1./(e1 - e2)
+        gg_l_anal = c * g1_l - c * g2_l
 
-    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_matsub))} (matsubara)')
-    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_dlr))} (dlr)')
-    print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_mat))} (dlr convmat)')
-    
-    # --
-    
-    if verbose:
+        g1_q = d.free_greens_function_matsubara(np.array([[e1]]), beta)
+        g2_q = d.free_greens_function_matsubara(np.array([[e2]]), beta)
 
-        # -- Viz
+        # -- DLR Matsubara convolution
 
-        tau_l = d.get_tau(beta)
+        gg_q = np.einsum('qab,qbc->qac', g1_q, g2_q)
+        gg_l_matsub = d.tau_from_dlr(d.dlr_from_matsubara(gg_q, beta))
 
-        import matplotlib.pyplot as plt
+        # -- DLR coeff convolution
 
-        plt.figure(figsize=(6, 6))
-        subp = [1, 1, 1]
+        g1_x = d.dlr_from_matsubara(g1_q, beta)
+        g2_x = d.dlr_from_matsubara(g2_q, beta)
 
-        plt.subplot(*subp); subp[-1] += 1
-        plt.plot(tau_l, gg_l_dlr[:, 0, 0].real, 'o', label='DLR conv', alpha=0.5)
-        plt.plot(tau_l, gg_l_mat[:, 0, 0].real, '+', label='DLR conv mat')
-        plt.plot(tau_l, gg_l_matsub[:, 0, 0].real, 's', label='Matsub conv')
-        plt.plot(tau_l, gg_l_anal[:, 0, 0].real, 'x', label='Analytic')
-        plt.ylabel(r'$(g_1 \ast g_2)(\tau)$')
-        plt.xlabel(r'$\tau$')
-        plt.legend(loc='best')
-        plt.show()
+        gg_x_dlr = d.convolution(g1_x, g2_x, beta=beta)
+        gg_l_dlr = d.tau_from_dlr(gg_x_dlr)
 
-    # -- Test
+        # -- DLR convolution matrix
 
-    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_matsub)
-    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_dlr)
-    np.testing.assert_array_almost_equal(gg_l_anal, gg_l_mat)
+        n, na, _ = g1_x.shape
 
+        C_xaxa = d.convolution_matrix(g1_x, beta=beta)
+        C_AA = C_xaxa.reshape((n*na, n*na))
 
-def test_convolution_matrix():
+        B_Aa = g2_x.reshape((n*na, na))
+        gg_x_mat = np.matmul(C_AA, B_Aa).reshape((n, na, na))
+        gg_l_mat = d.tau_from_dlr(gg_x_mat)
 
-    beta = 5.337
+        if verbose:
+            print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_matsub))} (matsubara)')
+            print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_dlr))} (dlr)')
+            print(f'diff scalar = {np.max(np.abs(gg_l_anal - gg_l_mat))} (dlr convmat)')
 
-    E1_aa = np.array([
-        [-1., 0.2, 0.4 + 1.j],
-        [0.2, 0, 0.1j],
-        [0.4 - 1.j, -0.1j, 1],
-        ])
+            # -- Viz
 
-    np.testing.assert_array_almost_equal(E1_aa, E1_aa.conj().T)
+            tau_l = d.get_tau(beta)
 
-    E2_aa = np.array([
-        [-3., 0.3, 0.1 + 0.2j],
-        [0.3, 1, 0.3j],
-        [0.1 - 0.2j, -0.3j, 0],
-        ])
+            import matplotlib.pyplot as plt
 
-    np.testing.assert_array_almost_equal(E2_aa, E2_aa.conj().T)
-    
-    d = dlr(lamb=40.)
-    w_q = d.get_matsubara_frequencies(beta=beta)
+            plt.figure(figsize=(6, 6))
+            subp = [1, 1, 1]
 
-    g1_qaa = d.free_greens_function_matsubara(E1_aa, beta)
-    g2_qaa = d.free_greens_function_matsubara(E2_aa, beta)
+            plt.subplot(*subp); subp[-1] += 1
+            plt.plot(tau_l, gg_l_dlr[:, 0, 0].real, 'o', label='DLR conv', alpha=0.5)
+            plt.plot(tau_l, gg_l_mat[:, 0, 0].real, '+', label='DLR conv mat')
+            plt.plot(tau_l, gg_l_matsub[:, 0, 0].real, 's', label='Matsub conv')
+            plt.plot(tau_l, gg_l_anal[:, 0, 0].real, 'x', label='Analytic')
+            plt.ylabel(r'$(g_1 \ast g_2)(\tau)$')
+            plt.xlabel(r'$\tau$')
+            plt.legend(loc='best')
+            plt.show()
 
-    # -- DLR Matsubara convolution
+        # -- Test
 
-    gg_qaa = np.einsum('qab,qbc->qac', g1_qaa, g2_qaa)
-
-    gg_xaa = d.dlr_from_matsubara(gg_qaa, beta)
-    gg_laa = d.tau_from_dlr(gg_xaa)
-
-    # -- DLR coeff convolution
-    
-    g1_xaa = d.dlr_from_matsubara(g1_qaa, beta)
-    g2_xaa = d.dlr_from_matsubara(g2_qaa, beta)
-
-    gg_xaa_ref = d.convolution(g1_xaa, g2_xaa, beta)
-    gg_laa_ref = d.tau_from_dlr(gg_xaa_ref)
-
-    # -- DLR convolution matrix
-
-    n, na, _ = g1_xaa.shape
-    
-    C_xaxa = d.convolution_matrix(g1_xaa, beta=beta)
-    C_AA = C_xaxa.reshape((n*na, n*na))
-    
-    B_Aa = g2_xaa.reshape((n*na, na))
-    gg_xaa_mat = np.matmul(C_AA, B_Aa).reshape((n, na, na))
-    gg_laa_mat = d.tau_from_dlr(gg_xaa_mat)
+        self.assertTrue(np.allclose(gg_l_anal, gg_l_matsub))
+        self.assertTrue(np.allclose(gg_l_anal, gg_l_dlr))
+        self.assertTrue(np.allclose(gg_l_anal, gg_l_mat))
 
 
-    # -- Test
+    def test_convolution_matrix(self, verbose=False):
 
-    print(f'diff matrix = {np.max(np.abs(gg_laa - gg_laa_ref))}')
-    print(f'diff matrix (convmat) = {np.max(np.abs(gg_laa - gg_laa_mat))}')
+        beta = 5.337
 
-    np.testing.assert_array_almost_equal(gg_laa, gg_laa_ref)
-    np.testing.assert_array_almost_equal(gg_laa, gg_laa_mat)
+        E1_aa = np.array([
+            [-1., 0.2, 0.4 + 1.j],
+            [0.2, 0, 0.1j],
+            [0.4 - 1.j, -0.1j, 1],
+            ])
+
+        self.assertTrue(np.allclose(E1_aa, E1_aa.conj().T))
+
+        E2_aa = np.array([
+            [-3., 0.3, 0.1 + 0.2j],
+            [0.3, 1, 0.3j],
+            [0.1 - 0.2j, -0.3j, 0],
+            ])
+
+        self.assertTrue(np.allclose(E2_aa, E2_aa.conj().T))
+
+        d = dlr(lamb=40.)
+        w_q = d.get_matsubara_frequencies(beta=beta)
+
+        g1_qaa = d.free_greens_function_matsubara(E1_aa, beta)
+        g2_qaa = d.free_greens_function_matsubara(E2_aa, beta)
+
+        # -- DLR Matsubara convolution
+
+        gg_qaa = np.einsum('qab,qbc->qac', g1_qaa, g2_qaa)
+
+        gg_xaa = d.dlr_from_matsubara(gg_qaa, beta)
+        gg_laa = d.tau_from_dlr(gg_xaa)
+
+        # -- DLR coeff convolution
+
+        g1_xaa = d.dlr_from_matsubara(g1_qaa, beta)
+        g2_xaa = d.dlr_from_matsubara(g2_qaa, beta)
+
+        gg_xaa_ref = d.convolution(g1_xaa, g2_xaa, beta)
+        gg_laa_ref = d.tau_from_dlr(gg_xaa_ref)
+
+        # -- DLR convolution matrix
+
+        n, na, _ = g1_xaa.shape
+
+        C_xaxa = d.convolution_matrix(g1_xaa, beta=beta)
+        C_AA = C_xaxa.reshape((n*na, n*na))
+
+        B_Aa = g2_xaa.reshape((n*na, na))
+        gg_xaa_mat = np.matmul(C_AA, B_Aa).reshape((n, na, na))
+        gg_laa_mat = d.tau_from_dlr(gg_xaa_mat)
+
+        if verbose:
+            print(f'diff matrix = {np.max(np.abs(gg_laa - gg_laa_ref))}')
+            print(f'diff matrix (convmat) = {np.max(np.abs(gg_laa - gg_laa_mat))}')
+
+        self.assertTrue(np.allclose(gg_laa, gg_laa_ref))
+        self.assertTrue(np.allclose(gg_laa, gg_laa_mat))
     
 
 if __name__ == '__main__':
-
-    test_convolution_scalar(verbose=True)
-    test_convolution_matrix()
+    unittest.main()

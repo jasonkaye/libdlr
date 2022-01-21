@@ -15,6 +15,8 @@ or implied. See the License for the specific language governing
 permissions and limitations under the License."""
 
 
+import unittest
+
 import numpy as np
 
 from pydlr.kernel import chebyshev_collocation_points_1st_kind
@@ -22,66 +24,60 @@ from pydlr.kernel import chebyshev_barycentric_weights_1st_kind
 from pydlr.kernel import barycentric_chebyshev_interpolation
 
 
-def test_barycentric_interp(verbose=False):
-    """ Test Barycentric interpolation by evaluation of 
-    known function on equidistant grid."""
+class TestBarycentricInterpolation(unittest.TestCase):
+
     
-    N = 32
-    x_i = chebyshev_collocation_points_1st_kind(N)
-    w_i = chebyshev_barycentric_weights_1st_kind(N)
+    def test_barycentric_interp(self, verbose=False):
+        """ Test Barycentric interpolation by evaluation of 
+        known function on equidistant grid."""
 
-    f = lambda x : np.sin(4 * np.pi * x)
-    
-    f_i = f(x_i)
+        N = 32
+        x_i = chebyshev_collocation_points_1st_kind(N)
+        w_i = chebyshev_barycentric_weights_1st_kind(N)
 
-    x_j = np.linspace(-1, 1, num=1000)
-    f_j = f(x_j)
+        f = lambda x : np.sin(4 * np.pi * x)
 
-    f_j_interp = barycentric_chebyshev_interpolation(x_j, x_i, f_i, w_i)
+        f_i = f(x_i)
 
-    print(f'diff = {np.max(np.abs(f_j - f_j_interp))}')
-    np.testing.assert_array_almost_equal(f_j, f_j_interp)
-    
-    if verbose:
+        x_j = np.linspace(-1, 1, num=1000)
+        f_j = f(x_j)
 
-        import matplotlib.pyplot as plt
-        plt.plot(x_i, f_i, '.')
-        plt.plot(x_j, f_j, '-')
-        plt.plot(x_j, f_j_interp, '-', label='interp')
-        plt.legend()
-        plt.show()
+        f_j_interp = barycentric_chebyshev_interpolation(x_j, x_i, f_i, w_i)
+
+        if verbose:
+            print(f'f_j = \n{f_j}')
+            print(f'f_j_interp = \n{f_j_interp}')
+            print(f'diff = {np.max(np.abs(f_j - f_j_interp))}')
+
+        self.assertTrue(np.allclose(f_j, f_j_interp))
 
 
-def test_barycentric_interp_on_grid(verbose=False):
-    """The Barycentric interpolation diverges when the 
-    interpolation point is equal to a Chebyshev collocation grid point.
+    def test_barycentric_interp_on_grid(self, verbose=False):
+        """The Barycentric interpolation diverges when the 
+        interpolation point is equal to a Chebyshev collocation grid point.
 
-    Here we check that this special case is correctly handled."""
-    
-    N = 32
-    x_i = chebyshev_collocation_points_1st_kind(N)
-    w_i = chebyshev_barycentric_weights_1st_kind(N)
+        Here we check that this special case is correctly handled."""
 
-    f = lambda x : np.sin(4 * np.pi * x)
-    
-    f_i = f(x_i)
+        N = 32
+        x_i = chebyshev_collocation_points_1st_kind(N)
+        w_i = chebyshev_barycentric_weights_1st_kind(N)
 
-    x_j = np.concatenate((x_i[::8]*0.99, [x_i[0], x_i[-1]], x_i[1::4]*0.99))
-    f_j = f(x_j)
+        f = lambda x : np.sin(4 * np.pi * x)
 
-    f_j_interp = barycentric_chebyshev_interpolation(x_j, x_i, f_i, w_i)
+        f_i = f(x_i)
 
-    if verbose:
-        print(f'f_j = \n{f_j}')
-        print(f'f_j_interp = \n{f_j_interp}')
-    
-        print(f'diff = {np.max(np.abs(f_j - f_j_interp))}')
-    
-    np.testing.assert_array_almost_equal(f_j, f_j_interp)
-            
+        x_j = np.concatenate((x_i[::8]*0.99, [x_i[0], x_i[-1]], x_i[1::4]*0.99))
+        f_j = f(x_j)
+
+        f_j_interp = barycentric_chebyshev_interpolation(x_j, x_i, f_i, w_i)
+
+        if verbose:
+            print(f'f_j = \n{f_j}')
+            print(f'f_j_interp = \n{f_j_interp}')
+            print(f'diff = {np.max(np.abs(f_j - f_j_interp))}')
+
+        self.assertTrue(np.allclose(f_j, f_j_interp))
+
 
 if __name__ == '__main__':
-
-    test_barycentric_interp_on_grid(verbose=True)
-    test_barycentric_interp(verbose=True)
-    
+    unittest.main()
