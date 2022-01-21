@@ -848,7 +848,7 @@ class dlr(object):
 
             x0_Aa = M_AA.matvec(b_Aa)
             
-            g_Aa, info = solver_wrapper(scipy_gmres, verbose=verbose)(D_AA, b_Aa, x0=x0_Aa, M=M_AA, tol=tol)
+            g_Aa, info = solver_wrapper(scipy_gmres, verbose=verbose)(D_AA, b_Aa, x0=x0_Aa, M=M_AA, atol=tol)
             g_xaa = g_Aa.reshape((n, na, na))
 
             if verbose:
@@ -948,6 +948,6 @@ class solver_wrapper:
 
     def __call__(self, A, b, **kwargs):
         self.iter = 1
-        ret = self.solver(A, b, callback=self.callback, **kwargs)
+        ret = self.solver(A, b, callback=self.callback, callback_type='legacy', **kwargs)
         if self.verbose: print('GMRES N iter:', self.iter)
         return ret
