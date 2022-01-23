@@ -431,7 +431,78 @@ class dlr(object):
         return G_zaa
     
 
+    def lstsq_dlr_from_matsubara(self, w_q, G_qaa, beta):
+        """Return DLR coefficients by least squares fit to values on arbitrary Matsubara frequency grid.
+
+        Parameters
+        ----------
+
+        w_q : (q), array_like
+            Imaginary frequency points :math:`\i\omega_q` where the Green's function is sampled.
+
+        G_qaa : (q,m,m), array_like
+            Green's function in imaginary frequency space :math:`G(\i\omega_q)` with :math:`m \\times m` orbital indices.
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        G_xaa : (k,m,m), ndarray
+            Green's function in DLR coefficient space with :math:`m \\times m` orbital indices.
+        """
+
+        shape_qaa = G_qaa.shape
+        assert(len(shape_qaa) == 3)
+        
+        shape_qA = (shape_qaa[0], shape_qaa[1]*shape_qaa[2])
+        shape_xaa = (len(self), shape_qaa[1], shape_qaa[2])
+
+        K_qx = -1./(w_q[:, None] - self.dlrrf[None, :]/beta)
+
+        G_xaa = np.linalg.lstsq(
+            K_qx, G_qaa.reshape(shape_qA),
+            rcond=None)[0].reshape(shape_xaa)
+
+        return G_xaa
+
+
     # -- Mathematical operations
+
+    def quadratic_hamiltonian(self, G_xaa, beta, xi=None):
+
+        """ Get quadratic Hamiltonian contribution of physical Green's function.
+
+        Parameters
+        ----------
+
+        G_xaa : (k,m,m), ndarray
+            Green's function in DLR coefficient space with :math:`m \\times m` orbital indices.        
+
+        beta : float
+            Inverse temperature :math:`\\beta`
+
+        Returns
+        -------
+
+        H_aa : (m,m), ndarray
+            Quadratic Hamiltonian contribution to the Green's function.
+
+        """
+
+        xi = self.__xi_arg(xi)
+
+        w_x = self.dlrrf
+
+        K0_x = kernel(np.array([0.]), w_x)
+        K1_x = kernel(np.array([1.]), w_x)
+
+        D_x = (-K0_x + xi * K1_x) * w_x / beta
+        H_aa = np.tensordot(D_x, G_xaa, axes=([-1, 0]))
+
+        return H_aa
+    
 
     def convolution(self, A_xaa, B_xaa, beta, xi=None):
 
