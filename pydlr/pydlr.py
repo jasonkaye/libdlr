@@ -499,7 +499,7 @@ class dlr(object):
         K1_x = kernel(np.array([1.]), w_x)
 
         D_x = (-K0_x + xi * K1_x) * w_x / beta
-        H_aa = np.tensordot(D_x, G_xaa, axes=([-1, 0]))
+        H_aa = np.tensordot(D_x, G_xaa, axes=([-1, 0]))[0]
 
         return H_aa
     
