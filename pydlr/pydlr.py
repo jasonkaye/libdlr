@@ -127,6 +127,20 @@ class dlr(object):
         return xi
         
 
+    def get_dlr_frequencies(self):
+        """Get real frequency DLR grid :math:`\\omega_x \\in [-\\Lambda, \\Lambda]`
+
+        Returns
+        -------
+
+        w_x : (n), ndarray
+            Scaled real frequency points :math:`\\omega_x`
+            for the DLR representation.
+        """
+        
+        return self.dlrrf
+
+    
     # -- Imaginary time
 
     def get_tau_over_beta(self):
@@ -438,10 +452,10 @@ class dlr(object):
         ----------
 
         w_q : (q), array_like
-            Imaginary frequency points :math:`\i\omega_q` where the Green's function is sampled.
+            Imaginary frequency points :math:`i\\omega_q` where the Green's function is sampled.
 
         G_qaa : (q,m,m), array_like
-            Green's function in imaginary frequency space :math:`G(\i\omega_q)` with :math:`m \\times m` orbital indices.
+            Green's function in imaginary frequency space :math:`G(i\\omega_q)` with :math:`m \\times m` orbital indices.
 
         beta : float
             Inverse temperature :math:`\\beta`
