@@ -12,7 +12,7 @@ The Python module ``pydlr`` is available on the `Python Package Index (PyPi) <ht
 
   pip3 install pydlr
 
-If you do not have root privileges add the flag ``--user`` to install to your home directory. Note that ``pydlr`` requires Python version 3 as well as the standard Pythnon modules ``numpy`` and ``scipy``.
+If you do not have root privileges add the flag ``--user`` to install to your home directory. Note that ``pydlr`` requires Python version 3 as well as the standard Python modules ``numpy`` and ``scipy``.
 
 Developer installation
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -21,7 +21,7 @@ If you want to contribute to the development of  ``pydlr`` consider doing a "dev
 
    cd /my/install/directory
    git clone https://github.com/jasonkaye/libdlr.git
-   export PYTONPATH=/my/install/directory/libdlr:$PYTHOPATH
+   export PYTHONPATH=/my/install/directory/libdlr:$PYTHONPATH
    python -c "import pydlr; print(pydlr.__file__)"
 
 The last command is a test that the ``pydlr`` module can be found by python and should print::
@@ -74,7 +74,7 @@ Custom install location
    
 To install ``libdlr`` to a non standard location, e.g. in your home directory, add the CMake flag::
 
-  -DCMAKE_INSTALL_PREFIX="/some/path/to/install/to"
+  -DCMAKE_INSTALL_PREFIX="/my/install/directory"
 
 when calling ``cmake``.
 
@@ -92,9 +92,9 @@ Linking with ``libdlr``
 
 With ``libdlr`` correctly installed on your system, linking with the library requires only the link flag ``-ldlr``.
 
-When using a custom install location also the path needs to be supplied::
+When using a custom install location, the path also needs to be specified::
 
-  -L/some/path/to/install/to/lib -ldlr
+  -L/my/install/directory/lib -ldlr
 
 The same path has also to be present in your ``LD_LIBRARY_PATH`` environment variable at runtime.
   
