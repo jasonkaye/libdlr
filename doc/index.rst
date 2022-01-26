@@ -6,7 +6,7 @@ The ``libdlr`` library provides routines for efficient imaginary time calculatio
 
 Take a look at our recent preprint for an introduction to the library:
 
-- "libdlr: Efficient imaginary time calculations using the discrete Lehmann representation", Jason Kaye and Hugo U.R. Strand, `arXiv:2110.06765 <https://arxiv.org/abs/2110.06765>`_
+- "libdlr: Efficient imaginary time calculations using the discrete Lehmann representation", Jason Kaye, Kun Chen, and Hugo U.R. Strand, `arXiv:2110.06765 <https://arxiv.org/abs/2110.06765>`_
 
 .. toctree::
    :maxdepth: 2
