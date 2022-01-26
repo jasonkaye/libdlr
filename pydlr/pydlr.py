@@ -1013,12 +1013,20 @@ class solver_wrapper:
     def __init__(self, solver, verbose=False):
         self.solver = solver
         self.verbose = verbose
+        self.callback_kwargs = dict(callback=self.callback)
+
+        # -- Hack to suppress missing paramter warning 'callback_type'
+        # -- in new Scipy GMRES
+        
+        from inspect import signature
+        if 'callback_type' in signature(solver).parameters:
+            self.callback_kwargs['callback_type'] = 'legacy'
 
     def callback(self, x):
         self.iter += 1
 
     def __call__(self, A, b, **kwargs):
         self.iter = 1
-        ret = self.solver(A, b, callback=self.callback, callback_type='legacy', **kwargs)
+        ret = self.solver(A, b, **self.callback_kwargs, **kwargs)
         if self.verbose: print('GMRES N iter:', self.iter)
         return ret
