@@ -23,17 +23,20 @@
            
       program syk_it
 
-      ! Demonstration of solution of SYK equation in imaginary time
-      ! using the discrete Lehmann representation
-      !
-      ! The SYK equation is the nonlinear Dyson equation corresponding
-      ! to self-energy
+      ! Demonstration of solution of SYK equation by weighted fixed
+      ! point iteration with Dyson equation solved in imaginary time
+      ! using the DLR
+
+      ! The SYK equation is the Dyson equation with self-energy
       !
       ! Sigma(tau) = c^2 * G^2(tau) * G(beta-tau).
       !
-      ! We solve the Dyson equation self-consistently by a weighted
+      ! We solve the SYK equation self-consistently by a weighted
       ! fixed point iteration, with weight w assigned to the new iterate
-      ! and weight 1-w assigned to the previous iterate.
+      ! and weight 1-w assigned to the previous iterate. The self-energy
+      ! is evaluated in the imaginary time domain, and the linear Dyson
+      ! equation, corresponding to fixed self-energy, is also solved in
+      ! the imaginary time domain.
       !
       ! To solve the equation with a desired chemical potential mu,
       ! we pick a number nmu>1, and solve a sequence intermediate
@@ -143,8 +146,8 @@
 
       g = g0 ! Initial guess
 
-      call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,phi,&
-        sigfun,w,fptol,numit,g0,g,info)
+      call solvesyk_it(beta,c,r,dlrit,it2cf,it2cfp,it2itr,&
+          phi,w,fptol,numit,g0,g,info)
 
       write(6,*) 'mu = ',0.0d0
 
@@ -164,8 +167,8 @@
 
         call getg0_it(beta,r,dlrit,i*mu/nmu,g0)
 
-        call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,phi,&
-          sigfun,w,fptol,numit,g0,g,info)
+        call solvesyk_it(beta,c,r,dlrit,it2cf,it2cfp,it2itr,&
+          phi,w,fptol,numit,g0,g,info)
 
         write(6,*) 'mu = ',i*mu/nmu
 
@@ -206,24 +209,86 @@
 
       close(1)
 
-
-      contains
-
-        subroutine sigfun(r,g,sig)
-
-        ! Evaluate SYK self-energy Sigma = G(tau)*G(tau)*G(beta-tau)
-
-        implicit none
-        integer r
-        real *8 g(r),sig(r)
-
-        call dlr_it2itr(r,it2itr,g,sig)
-
-        sig = c*c*g*g*sig
-
-        end subroutine sigfun
-      
       end subroutine syk_it_main
+
+
+
+      subroutine solvesyk_it(beta,c,r,dlrit,it2cf,it2cfp,it2itr,&
+          phi,w,fptol,numit,g0,g,info)
+
+      ! Solve SYK equation using weighted fixed point iteration; Dyson
+      ! equation is solved in imaginary time
+
+      implicit none
+      integer r,numit,it2cfp(r),info
+      real *8 beta,c,dlrit(r),it2cf(r,r),it2itr(r,r)
+      real *8 g0(r),g(r),w,fptol,phi(r*r,r)
+
+      integer i,info1
+      real *8, allocatable :: g0mat(:,:),sig(:),gnew(:)
+
+      ! Get matrix of convolution by G0
+
+      allocate(g0mat(r,r))
+
+      call dlr_convmat(r,it2cf,it2cfp,phi,g0,g0mat)
+
+
+      ! Weighted fixed point iteration
+
+      allocate(sig(r),gnew(r))
+
+      do i=1,numit
+
+        ! Evaluate self-energy
+
+        call sigfun(r,c,it2itr,g,sig)
+
+        ! Solve linear Dyson equation
+
+        call dyson_it_lin(r,it2cf,it2cfp,phi,g0,g0mat,sig,gnew)
+
+        ! Check self-consistency
+
+        if (maxval(abs(gnew-g))<fptol) then
+
+          g = gnew
+          numit = i
+          info = 0
+
+          return
+
+        else
+
+          ! Next G is weighted linear combination of previous and
+          ! current iterates
+
+          g = w*gnew + (1.0d0-w)*g
+
+        endif
+      enddo
+
+      info = -1
+
+      end subroutine solvesyk_it
+
+
+
+      subroutine sigfun(r,c,it2itr,g,sig)
+
+      ! Evaluate SYK self-energy Sigma = G(tau)*G(tau)*G(beta-tau)
+
+      implicit none
+      integer r
+      real *8 c,it2itr(r,r),g(r),sig(r)
+
+      call dlr_it2itr(r,it2itr,g,sig)
+
+      sig = c*c*g*g*sig
+
+      end subroutine sigfun
+
+
 
 
       subroutine getg0_it(beta,r,dlrit,mu,g0)

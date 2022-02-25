@@ -23,19 +23,18 @@
            
       program syk_mf
 
-      ! Demonstration of solution of SYK equation by Matsubara
-      ! frequency/imaginary time alternation method using the discrete
-      ! Lehmann representation
+      ! Demonstration of solution of SYK equation by weighted fixed
+      ! point iteration with Dyson equation solved in Matsubara
+      ! frequency using the DLR
       !
-      ! The SYK equation is the nonlinear Dyson equation corresponding
-      ! to self-energy
+      ! The SYK equation is the Dyson equation with self-energy
       !
       ! Sigma(tau) = c^2 * G^2(tau) * G(beta-tau).
       !
-      ! We solve the Dyson equation self-consistently by a weighted
+      ! We solve the SYK equation self-consistently by a weighted
       ! fixed point iteration, with weight w assigned to the new iterate
       ! and weight 1-w assigned to the previous iterate. The self-energy
-      ! is evaluated in the imaginary time domain, and each linear Dyson
+      ! is evaluated in the imaginary time domain, and the linear Dyson
       ! equation, corresponding to fixed self-energy, is solved in the
       ! Matsubara frequency domain, where it is diagonal.
       !
@@ -174,7 +173,7 @@
 
       call getg0_it(beta,r,dlrit,0.0d0,g)
 
-      call solvesyk(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
+      call solvesyk_mf(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
         dlrmf,mf2cf,mf2cfp,cf2mf,it2itr,w,fptol,numit,g0,g,info)
 
       write(6,*) 'mu = ',0.0d0
@@ -195,7 +194,7 @@
 
         call getg0_mf(beta,r,dlrmf,i*mu/nmu,g0)
 
-        call solvesyk(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
+        call solvesyk_mf(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
           dlrmf,mf2cf,mf2cfp,cf2mf,it2itr,w,fptol,numit,g0,&
           g,info)
 
@@ -242,11 +241,12 @@
       end subroutine syk_mf_main
 
 
-      subroutine solvesyk(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
+      subroutine solvesyk_mf(beta,c,r,dlrit,it2cf,it2cfp,cf2it,&
           dlrmf,mf2cf,mf2cfp,cf2mf,it2itr,w,fptol,numit,g0,g,&
           info)
 
-      ! Solve SYK equation using weighted fixed point iteration
+      ! Solve SYK equation using weighted fixed point iteration; Dyson
+      ! equation is solved in Matsubara frequency
 
       implicit none
       integer r,numit,it2cfp(r),mf2cfp(r),dlrmf(r)
@@ -321,7 +321,7 @@
 
       info = -1
 
-      end subroutine solvesyk
+      end subroutine solvesyk_mf
 
 
       subroutine sigfun(r,c,it2itr,g,sig)
