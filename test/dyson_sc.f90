@@ -23,22 +23,20 @@
       
       program dyson_sc
 
-      ! Solve nonlinear Dyson equation with self-energy Sigma = c^2*G
-      ! self-consistently by weighted fixed point iteration using both
-      ! pure imaginary time method and Matsubara frequency/imaginary
-      ! time method
+      ! Solve Dyson equation with self-energy Sigma = c^2*G both in
+      ! imaginary time and Matsubara frequency
       !
-      ! We solve the Dyson equation self-consistently by a weighted
-      ! fixed point iteration, with weight w assigned to the new iterate
-      ! and weight 1-w assigned to the previous iterate.
+      ! Since we know the solution has a semi-circular spectral
+      ! function, we can begin with the correct self-energy, and make
+      ! sure we recover the correct Green's function
       !
-      ! The solution has a semi-circular spectral function, and we
-      ! measure the error against a reference solution computed from the
-      ! Lehmann representation using high-order numerical integration
+      ! The self-energy and correct reference Green's function are
+      ! computed from the Lehmann representation in imaginary time using
+      ! high-order numerical integration
       
       implicit none
-      integer ntst,maxit,nmax
-      real *8 lambda,eps,fptol,w,beta,c
+      integer ntst,nmax
+      real *8 lambda,eps,beta,c
 
       ! Input parameters
 
@@ -49,38 +47,34 @@
       beta = 20.0d0     ! Inverse temperature
       c = 1.0d0/2       ! Self-energy strength
 
-      maxit = 1000      ! Max # fixed point iterations
-      fptol = 1.0d-12   ! Fixed point tolerance
-      w = 0.8d0         ! Fixed point iteration weighting
-      
       ntst = 1000       ! # output points
 
 
       ! Main test subroutine
 
-      call dyson_sc_main(lambda,eps,nmax,ntst,fptol,maxit,w,&
-        beta,c)
+      call dyson_sc_main(lambda,eps,nmax,ntst,beta,c)
 
       end program dyson_sc
 
 
-      subroutine dyson_sc_main(lambda,eps,nmax,ntst,fptol,&
-          maxit,w,beta,c)
+      subroutine dyson_sc_main(lambda,eps,nmax,ntst,beta,c)
         
       ! Main driver routine for nonlinear Dyson solver test 
 
       implicit none
-      integer ntst,maxit,nmax
-      real *8 lambda,eps,fptol,w,beta,c
+      integer ntst,nmax
+      real *8 lambda,eps,beta,c
 
-      integer i,j,r,info,numit,npg,npo,pg
+      integer i,r,npg,pg
       integer, allocatable :: dlrmf(:),it2cfp(:),mf2cfp(:)
       real *8 err1,err2
-      real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),g1(:),g2(:)
-      real *8, allocatable :: cf2it(:,:),phi(:,:),g0it(:),g1c(:),g2c(:)
+      real *8, allocatable :: it2cf(:,:),dlrit(:),dlrrf(:),g1(:)
+      real *8, allocatable :: phi(:,:),g0it(:),g1c(:),g2c(:)
       real *8, allocatable :: xgl(:),wgl(:),xgj(:),wgj(:),pbpg(:)
+      real *8, allocatable :: sig(:),sigc(:),g0mat(:,:)
       real *8, allocatable :: it_tst(:),g1tst(:),g2tst(:),gtrue(:)
-      complex *16, allocatable :: mf2cf(:,:),cf2mf(:,:),g0mf(:)
+      complex *16, allocatable :: mf2cf(:,:),cf2mf(:,:),g0mf(:),sigmf(:)
+      complex *16, allocatable :: gmf(:)
       real *8, external :: kfunf_rel
 
 
@@ -98,13 +92,6 @@
       allocate(it2cf(r,r),it2cfp(r))
 
       call dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp)
-
-
-      ! Get DLR coefficients -> imaginary time values matrix
-
-      allocate(cf2it(r,r))
-
-      call dlr_cf2it_init(r,dlrrf,dlrit,cf2it)
 
 
       ! Get Matsubara frequency grid
@@ -149,40 +136,16 @@
       call getg0_mf(beta,r,dlrmf,0.0d0,g0mf)
 
 
-      ! Solve nonlinear Dyson equation by imaginary time method
+      ! Get matrix of convolution by free particle Green's function
 
-      allocate(g1(r))
+      allocate(g0mat(r,r))
 
-      numit = maxit
-
-      g1 = g0it
-
-      call dlr_dyson_it(beta,r,dlrit,it2cf,it2cfp,phi,&
-        sigfun,w,fptol,numit,g0it,g1,info)
+      call dlr_convmat(r,it2cf,it2cfp,phi,g0it,g0mat)
 
 
-      ! Solve nonlinear Dyson equation by Matsubara frequency method
 
-      allocate(g2(r))
-
-      numit = maxit
-
-      g2 = g0it
-
-      call dlr_dyson_mf(beta,r,dlrit,it2cf,it2cfp,cf2it,&
-        dlrmf,mf2cf,mf2cfp,cf2mf,sigfun,w,fptol,numit,g0mf,g2,info)
-
-
-      ! Get DLR coefficients of solutions
-
-      allocate(g1c(r),g2c(r))
-
-      call dlr_it2cf(r,it2cf,it2cfp,g1,g1c)
-      call dlr_it2cf(r,it2cf,it2cfp,g2,g2c)
-
-
-      ! Initialize Green's function evaluator (semi-circular spectral
-      ! density)
+      ! Initialize evaluator for Green's function with semi-circular
+      ! spectral density
 
       pg = 24
       npg = max(ceiling(log(lambda)/log(2.0d0)),1)
@@ -190,6 +153,60 @@
       allocate(xgl(pg),wgl(pg),xgj(pg),wgj(pg),pbpg(2*npg+1))
 
       call gfun_init(pg,npg,pbpg,xgl,wgl,xgj,wgj)
+
+
+      ! Get self-energy at imaginary time nodes
+
+      allocate(sig(r))
+
+      do i=1,r
+
+        call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,dlrit(i),&
+          sig(i))
+
+        sig(i) = c*c*sig(i)
+
+      enddo
+
+
+      ! Solve Dyson equation in imaginary time
+      
+      allocate(g1(r),g1c(r))
+
+      call dyson_it_lin(r,it2cf,it2cfp,phi,g0it,g0mat,sig,g1)
+
+
+      ! Get DLR coefficients of solution
+
+      call dlr_it2cf(r,it2cf,it2cfp,g1,g1c)
+
+
+
+
+      ! Transform self-energy to Matsubara frequency and solve Dyson
+      ! equation
+
+      allocate(sigc(r),sigmf(r),gmf(r),g2c(r))
+
+      ! Get DLR coefficients of self-energy
+
+      call dlr_it2cf(r,it2cf,it2cfp,sig,sigc)
+
+
+      ! Get self-energy on Matsubara frequency grid
+
+      call dlr_cf2mf(r,cf2mf,sigc,sigmf)
+
+
+      ! Solve Dyson equation by diagonal inversion
+
+      call dyson_mf_solve(beta,r,g0mf,sigmf,gmf)
+
+
+      ! Get DLR coefficients of solution
+
+      call dlr_mf2cf(r,mf2cf,mf2cfp,gmf,g2c)
+
 
 
       ! Get test points in relative format
@@ -234,21 +251,6 @@
         call exit(1)
       endif
 
-
-      contains
-
-        subroutine sigfun(r,g,sig)
-
-        ! Self-energy evaluator
-
-        implicit none
-        integer r
-        real *8 g(r),sig(r)
-
-        sig = c**2*g
-
-        end subroutine sigfun
-      
       end subroutine dyson_sc_main
 
 
@@ -375,4 +377,3 @@
       val = -2/pi*val
 
       end subroutine gfun_it
-
