@@ -286,7 +286,7 @@
 
         ! Solve Dyson equation by diagonal inversion
 
-        call dyson_mf_solve(beta,r,g0,sigmf,gmf)
+        call dyson_mf(beta,r,g0,sigmf,gmf)
 
 
         ! Get DLR coefficients of solution

@@ -173,7 +173,7 @@
       
       allocate(g1(r),g1c(r))
 
-      call dyson_it_lin(r,it2cf,it2cfp,phi,g0it,g0mat,sig,g1)
+      call dyson_it(r,it2cf,it2cfp,phi,g0it,g0mat,sig,g1)
 
 
       ! Get DLR coefficients of solution
@@ -200,7 +200,7 @@
 
       ! Solve Dyson equation by diagonal inversion
 
-      call dyson_mf_solve(beta,r,g0mf,sigmf,gmf)
+      call dyson_mf(beta,r,g0mf,sigmf,gmf)
 
 
       ! Get DLR coefficients of solution

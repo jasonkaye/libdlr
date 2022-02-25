@@ -246,7 +246,7 @@
 
         ! Solve linear Dyson equation
 
-        call dyson_it_lin(r,it2cf,it2cfp,phi,g0,g0mat,sig,gnew)
+        call dyson_it(r,it2cf,it2cfp,phi,g0,g0mat,sig,gnew)
 
         ! Check self-consistency
 
