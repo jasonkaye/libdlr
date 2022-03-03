@@ -59,7 +59,7 @@
 
       subroutine dyson_sc_main(lambda,eps,nmax,ntst,beta,c)
         
-      ! Main driver routine for nonlinear Dyson solver test 
+      ! Main driver routine for Dyson solver test 
 
       implicit none
       integer ntst,nmax
