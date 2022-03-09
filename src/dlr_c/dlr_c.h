@@ -18,6 +18,10 @@ void c_dlr_it2cf_init(int *rank, double *dlrrf, double *dlrit, double *it2cf, in
 
 void c_dlr_it2cf(int *r, double *it2cf, int *it2cfp, double *g, double *gc);
 
+void c_dlr_it2itr_init(int *r, double *dlrrf, double *dlrit, double *it2cf, double *it2cfp, double *it2itr);
+
+void c_dlr_it2itr(int *r, double *it2itr, double *g, double *gr);
+
 void c_dlr_it_eval(int *r, double *dlrrf, double *gc, double *t, double *g);
 
 void c_dlr_mf(int *nmax, int *rank, double *dlrrf, int *xi, int *dlrmf);
@@ -29,6 +33,8 @@ void c_dlr_mf2cf_init(int *nmax, int *rank, double *dlrrf,int *dlrmf, int *xi, d
 void c_dlr_convtens(double *beta, int *xi, int *r, double *dlrrf, double *dlrit, double *it2cf, int *it2cfp, double *phi);
 
 void c_dlr_convmat(int *r, double *it2cf, int *it2cfp, double *phi, double *g, double *gmat);
+
+void c_dlr_ipmat(double *beta, int *r, double *dlrit, double *dlrrf, double *it2cf, double *it2cfp, double *ipmat);
 
 void c_eqpts_rel(int *n, double *t);
 

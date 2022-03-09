@@ -69,6 +69,20 @@ contains
     call dlr_it2cf(r,it2cf,it2cfp,g,gc)
   end subroutine c_dlr_it2cf
 
+  subroutine c_dlr_it2itr_init(r,dlrrf,dlrit,it2cf,it2cfp,it2itr) bind(C)
+    integer(c_int), intent(in) :: r,it2cfp(r)
+    real(c_double), intent(in) :: dlrrf(r),dlrit(r),it2cf(r,r)
+    real(c_double), intent(out) :: it2itr(r,r)
+    call dlr_it2itr_init(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
+  end subroutine c_dlr_it2itr_init
+
+  subroutine c_dlr_it2itr(r,it2itr,g,gr) bind(C)
+    integer(c_int), intent(in) :: r
+    real(c_double), intent(in) :: it2itr(r,r),g(r)
+    real(c_double), intent(out) :: gr(r)
+    call dlr_it2itr(r,it2itr,g,gr)
+  end subroutine c_dlr_it2itr
+
   subroutine c_dlr_it_eval(r,dlrrf,gc,t,g) bind(C)
     integer(c_int), intent(in) :: r
     real(c_double), intent(in) :: dlrrf(r),gc(r),t
@@ -113,6 +127,13 @@ contains
     real(c_double), intent(out) :: gmat(r,r)
     call dlr_convmat(r,it2cf,it2cfp,phi,g,gmat)
   end subroutine c_dlr_convmat
+
+  subroutine c_dlr_ipmat(beta,r,dlrit,dlrrf,it2cf,it2cfp,ipmat) bind(C)
+    integer(c_int), intent(in) :: r,it2cfp(r)
+    real(c_double), intent(in) :: beta,dlrit(r),dlrrf(r),it2cf(r,r)
+    real(c_double), intent(out) :: ipmat(r,r)
+    call dlr_ipmat(beta,r,dlrit,dlrrf,it2cf,it2cfp,ipmat)
+  end subroutine c_dlr_ipmat
 
   subroutine c_eqpts_rel(n,t) bind(C)
     integer(c_int), intent(in) :: n
