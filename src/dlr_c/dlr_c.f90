@@ -121,11 +121,11 @@ contains
     call dlr_convtens(beta,xi,r,dlrrf,dlrit,it2cf,it2cfp,phi)
   end subroutine c_dlr_convtens
 
-  subroutine c_dlr_convmat(r,it2cf,it2cfp,phi,g,gmat) bind(C)
-    integer(c_int), intent(in) :: r,it2cfp(r)
+  subroutine c_dlr_convmat(r,n,it2cf,it2cfp,phi,g,gmat) bind(C)
+    integer(c_int), intent(in) :: r,n,it2cfp(r)
     real(c_double), intent(in) :: it2cf(r,r),phi(r*r,r),g(r)
     real(c_double), intent(out) :: gmat(r,r)
-    call dlr_convmat(r,it2cf,it2cfp,phi,g,gmat)
+    call dlr_convmat(r,n,it2cf,it2cfp,phi,g,gmat)
   end subroutine c_dlr_convmat
 
   subroutine c_dlr_ipmat(beta,r,dlrit,dlrrf,it2cf,it2cfp,ipmat) bind(C)
@@ -134,6 +134,15 @@ contains
     real(c_double), intent(out) :: ipmat(r,r)
     call dlr_ipmat(beta,r,dlrit,dlrrf,it2cf,it2cfp,ipmat)
   end subroutine c_dlr_ipmat
+
+  subroutine c_dyson_it(r,n,it2cf,it2cfp,phi,g0,g0mat,sig,g)
+    integer(c_int), intent(in) :: r,n,it2cfp(r)
+    real(c_double), intent(in) :: it2cf(r,r)
+    real(c_double), intent(in) :: phi(r*r,r),g0(r,n,n),g0mat(r*n,r*n)
+    real(c_double), intent(in) :: sig(r,n,n)
+    real(c_double), intent(out) :: g(r,n,n)
+    call dyson_it(r,n,it2cf,it2cfp,phi,g0,g0mat,sig,g)
+  end subroutine c_dyson_it
 
   subroutine c_eqpts_rel(n,t) bind(C)
     integer(c_int), intent(in) :: n

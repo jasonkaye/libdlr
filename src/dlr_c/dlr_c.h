@@ -32,9 +32,11 @@ void c_dlr_mf2cf_init(int *nmax, int *rank, double *dlrrf,int *dlrmf, int *xi, d
 
 void c_dlr_convtens(double *beta, int *xi, int *r, double *dlrrf, double *dlrit, double *it2cf, int *it2cfp, double *phi);
 
-void c_dlr_convmat(int *r, double *it2cf, int *it2cfp, double *phi, double *g, double *gmat);
+void c_dlr_convmat(int *r, int*n, double *it2cf, int *it2cfp, double *phi, double *g, double *gmat);
 
 void c_dlr_ipmat(double *beta, int *r, double *dlrit, double *dlrrf, double *it2cf, int *it2cfp, double *ipmat);
+
+void c_dlr_dysonit(int *r, int *n, double *it2cf, int *it2cfp, double *phi, double *g0, double *g0mat, double *sig, double *g);
 
 void c_eqpts_rel(int *n, double *t);
 

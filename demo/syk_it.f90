@@ -231,7 +231,7 @@
 
       allocate(g0mat(r,r))
 
-      call dlr_convmat(r,it2cf,it2cfp,phi,g0,g0mat)
+      call dlr_convmat(r,1,it2cf,it2cfp,phi,g0,g0mat)
 
 
       ! Weighted fixed point iteration
@@ -246,7 +246,7 @@
 
         ! Solve linear Dyson equation
 
-        call dyson_it(r,it2cf,it2cfp,phi,g0,g0mat,sig,gnew)
+        call dyson_it(r,1,it2cf,it2cfp,phi,g0,g0mat,sig,gnew)
 
         ! Check self-consistency
 

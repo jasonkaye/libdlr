@@ -104,7 +104,7 @@
 
       allocate(gmat(r,r))
 
-      call dlr_convmat(r,it2cf,it2cfp,phi,g1,gmat)
+      call dlr_convmat(r,1,it2cf,it2cfp,phi,g1,gmat)
 
 
       ! Apply matrix to G2 to obtain convolution G3

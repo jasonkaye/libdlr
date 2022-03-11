@@ -156,6 +156,7 @@
       !! G * F at the imaginary time grid points.
       !!
       !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   n       number of orbital indices
       !! @param[in]   it2cf   imaginary time grid values ->
       !!                        DLR coefficients transform matrix,
       !!                        stored in LAPACK LU factored format;
@@ -171,26 +172,33 @@
       !!                        time grid points
       !! @param[out]  gmat    matrix of convolution by g
 
-      subroutine dlr_convmat(r,it2cf,it2cfp,phi,g,gmat)
+      subroutine dlr_convmat(r,n,it2cf,it2cfp,phi,g,gmat)
 
       implicit none
-      integer r,it2cfp(r)
-      real *8 phi(r*r,r),it2cf(r,r),g(r)
-      real *8 gmat(r,r)
+      integer r,n,it2cfp(r)
+      real *8 phi(r*r,r),it2cf(r,r),g(r,n,n)
+      real *8 gmat(r*n,r*n)
 
-      integer info
+      integer i,j,info
       real *8, allocatable :: gc(:)
-
-      ! Get DLR coefficients of G
 
       allocate(gc(r))
 
-      call dlr_it2cf(r,it2cf,it2cfp,g,gc)
+      do j=1,n
+        do i=1,n
+
+          ! Get DLR coefficients of G_ij
+
+          call dlr_it2cf(r,it2cf,it2cfp,g(:,i,j),gc)
 
 
-      ! Get convolution matrix
+          ! Get convolution matrix
 
-      call dgemv('N',r*r,r,1.0d0,phi,r*r,gc,1,0.0d0,gmat,1)
+          call dgemv('N',r*r,r,1.0d0,phi,r*r,gc,1,0.0d0,&
+            gmat((i-1)*r+1:i*r,(j-1)*r+1:j*r),1)
+
+        enddo
+      enddo
 
       end subroutine dlr_convmat
 

@@ -140,7 +140,7 @@
 
       allocate(g0mat(r,r))
 
-      call dlr_convmat(r,it2cf,it2cfp,phi,g0it,g0mat)
+      call dlr_convmat(r,1,it2cf,it2cfp,phi,g0it,g0mat)
 
 
 
@@ -173,7 +173,7 @@
       
       allocate(g1(r),g1c(r))
 
-      call dyson_it(r,it2cf,it2cfp,phi,g0it,g0mat,sig,g1)
+      call dyson_it(r,1,it2cf,it2cfp,phi,g0it,g0mat,sig,g1)
 
 
       ! Get DLR coefficients of solution

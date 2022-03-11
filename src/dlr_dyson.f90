@@ -29,78 +29,9 @@
 
       !> Solve the Dyson equation in imaginary time.
       !!
-      !! Given a fixed self-energy, this routine forms the linear Dyson
-      !! equation in imaginary time and solves it using Gaussian
-      !! elimination.
-      !!
-      !! @param[in]   r       number of DLR basis functions
-      !! @param[in]   it2cf   imaginary time grid values ->
-      !!                        DLR coefficients transform matrix,
-      !!                        stored in LAPACK LU factored format;
-      !!                        LU factors
-      !! @param[in]   it2cfp  imaginary time grid values ->
-      !!                        DLR coefficients transform matrix,
-      !!                        stored in LAPACK LU factored format;
-      !!                        LU pivots
-      !! @param[in]   phi     tensor taking DLR coefficients of g to
-      !!                        matrix of convolution by g.
-      !! @param[in]   g0      values of the right hand side G0 on
-      !!                        the imaginary time grid
-      !! @param[in]   g0mat   matrix of convolution by G0
-      !! @param[in]   sig     values of the self-energy on the
-      !!                          imaginary time grid
-      !! @param[out]  g       solution of the linear Dyson equation
-      !!                          on imaginary time grid
-
-      subroutine dyson_it(r,it2cf,it2cfp,phi,g0,g0mat,sig,g)
-
-      implicit none
-      integer r,it2cfp(r)
-      real *8 it2cf(r,r)
-      real *8 g0(r),g0mat(r,r),sig(r),g(r)
-      real *8 phi(r*r,r)
-
-      integer j,info
-      integer, allocatable :: ipiv(:)
-      real *8 one
-      real *8, allocatable :: sigmat(:,:),sysmat(:,:)
-
-      one = 1.0d0
-
-      allocate(sigmat(r,r),sysmat(r,r),ipiv(r))
-
-      ! Get matrix of convolution by self-energy
-
-      call dlr_convmat(r,it2cf,it2cfp,phi,sig,sigmat)
-
-      ! Form system matrix for linear Dyson equation
-
-      call dgemm('N','N',r,r,r,-one,g0mat,r,sigmat,r,0*one,sysmat,r)
-
-      do j=1,r
-        sysmat(j,j) = one + sysmat(j,j)
-      enddo
-
-      ! Solve linear equation by LU factorization + backsolve
-
-      call dgetrf(r,r,sysmat,r,ipiv,info)
-
-      g = g0
-
-      call dgetrs('N',r,1,sysmat,r,ipiv,g,r,info)
-
-
-      end subroutine dyson_it
-
-
-
-
-
-      !> Solve the matrix-valued Dyson equation in imaginary time.
-      !!
-      !! Given a fixed self-energy, this routine forms the matrix-valued
-      !! linear Dyson equation in imaginary time and solves it using
-      !! Gaussian elimination.
+      !! Given a fixed self-energy, this routine forms the DLR
+      !! discretization of the linear Dyson equation in imaginary time
+      !! and solves it using Gaussian elimination.
       !!
       !! @param[in]   r       number of DLR basis functions
       !! @param[in]   n       number of orbital indices
@@ -122,7 +53,7 @@
       !! @param[out]  g       solution of the linear Dyson equation
       !!                          on imaginary time grid
 
-      subroutine dyson_it_mat(r,n,it2cf,it2cfp,phi,g0,g0mat,sig,g)
+      subroutine dyson_it(r,n,it2cf,it2cfp,phi,g0,g0mat,sig,g)
 
       implicit none
       integer r,n,it2cfp(r)
@@ -141,12 +72,7 @@
 
       ! Get matrix of convolution by self-energy
 
-      do j=1,n
-        do i=1,n
-          call dlr_convmat(r,it2cf,it2cfp,phi,sig(:,i,j),&
-            sigmat((i-1)*r+1:i*r,(j-1)*r+1:j*r))
-        enddo
-      enddo
+      call dlr_convmat(r,n,it2cf,it2cfp,phi,sig,sigmat)
 
       ! Form system matrix for linear Dyson equation
 
@@ -165,7 +91,7 @@
 
       call dgetrs('N',r*n,n,sysmat,r*n,ipiv,g,r*n,info)
 
-      end subroutine dyson_it_mat
+      end subroutine dyson_it
 
 
 
