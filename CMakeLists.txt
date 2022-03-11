@@ -53,10 +53,6 @@ target_include_directories(dlr_c PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/
 target_include_directories(dlr_c SYSTEM INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include>)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/dlr_c DESTINATION include FILES_MATCHING PATTERN "*.h")
 
-add_executable(c_example ./test/c_example.c)
-target_link_libraries(c_example PRIVATE dlr_c)
-add_test(NAME c_example COMMAND c_example)
-
 add_executable(ha_it_c ./test/ha_it.c)
 target_link_libraries(ha_it_c PRIVATE dlr_c m)
 add_test(NAME ha_it_c COMMAND ha_it_c)
