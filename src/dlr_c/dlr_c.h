@@ -36,7 +36,7 @@ void c_dlr_convmat(int *r, int*n, double *it2cf, int *it2cfp, double *phi, doubl
 
 void c_dlr_ipmat(double *beta, int *r, double *dlrit, double *dlrrf, double *it2cf, int *it2cfp, double *ipmat);
 
-void c_dlr_dysonit(int *r, int *n, double *it2cf, int *it2cfp, double *phi, double *g0, double *g0mat, double *sig, double *g);
+void c_dyson_it(int *r, int *n, double *it2cf, int *it2cfp, double *phi, double *g0, double *g0mat, double *sig, double *g);
 
 void c_eqpts_rel(int *n, double *t);
 
