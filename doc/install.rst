@@ -72,7 +72,7 @@ To build the documentation locally add the CMake flags::
 Custom install location
 ^^^^^^^^^^^^^^^^^^^^^^^
    
-To install ``libdlr`` to a non standard location, e.g. in your home directory, add the CMake flag::
+To install ``libdlr`` to a non-standard location, e.g. in your home directory, add the CMake flag::
 
   -DCMAKE_INSTALL_PREFIX="/my/install/directory"
 
@@ -83,22 +83,34 @@ Custom Blas/Lapack
 
 CMake will attempt to auto-detect the available `BLAS libraries <https://cmake.org/cmake/help/latest/module/FindBLAS.html>`_ and `LAPACK libraries <https://cmake.org/cmake/help/latest/module/FindLAPACK.html>`_.
 
-If the auto-detection fails and you have libraries installed in custom locations try adding your custom location in the CMake flag::
+If the auto-detection fails and you have libraries installed in custom locations, try adding your custom location in the CMake flag::
 
   -DCMAKE_LIBRARY_PATH="/custom/path/to/blas/lapack/"
 
 Linking with ``libdlr``
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-With ``libdlr`` correctly installed on your system, linking with the library requires only the link flag ``-ldlr``.
+With ``libdlr`` installed on your system in a standard location, linking with the library should only require using the link flag ``-ldlr``.
 
-When using a custom install location, the path also needs to be specified::
+When using a custom install location, the path to your installation also needs to be specified::
 
   -L/my/install/directory/lib -ldlr
 
-The same path has also to be present in your ``LD_LIBRARY_PATH`` environment variable at runtime.
+The same path also has to be present in your ``LD_LIBRARY_PATH`` environment variable at runtime.
+
+Compiling a Fortran program which uses ``libdlr``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As an example, if you wish to compile the demo ``sc_it.f90`` using gfortran, and you have installed ``libdlr`` in a standard location, navigate to the ``demo`` folder and use the command::
+
+  gfortran sc_it.f90 -ldlr -o my_demo
+
+If you have installed ``libdlr`` in a custom location, use the commands::
+
+  export LD_LIBRARY_PATH=/my/install/directory/lib
+  gfortran sc_it.f90 -L/my/install/directory/lib -ldlr -o my_demo
   
 Support
 ^^^^^^^
 
-If you experience issues installing ``libdlr`` or ``pydlr`` please consider openinig an issue on `our GitHub repository <https://github.com/jasonkaye/libdlr/issues>`_.
+If you experience problems installing ``libdlr`` or ``pydlr`` please consider opening an issue on `our GitHub repository <https://github.com/jasonkaye/libdlr/issues>`_, or contacting us directly. All systems are different, and letting us know about your issue will help us to make the user experience more seamless in a wider variety of environments. 
