@@ -135,7 +135,7 @@ contains
     call dlr_ipmat(beta,r,dlrit,dlrrf,it2cf,it2cfp,ipmat)
   end subroutine c_dlr_ipmat
 
-  subroutine c_dyson_it(r,n,it2cf,it2cfp,phi,g0,g0mat,sig,g)
+  subroutine c_dyson_it(r,n,it2cf,it2cfp,phi,g0,g0mat,sig,g) bind(C)
     integer(c_int), intent(in) :: r,n,it2cfp(r)
     real(c_double), intent(in) :: it2cf(r,r)
     real(c_double), intent(in) :: phi(r*r,r),g0(r,n,n),g0mat(r*n,r*n)
