@@ -151,9 +151,10 @@
       !> Get the matrix of convolution by a Green's function.
       !!
       !! The output of this subroutine is the matrix gmat of convolution
-      !! by G. gmat is applied to a vector of imaginary time grid
-      !! values of a Green's function F, and returns the values of
-      !! G * F at the imaginary time grid points.
+      !! by a Green's function G. The subroutine dlr_conv can be used to
+      !! apply gmat to a vector of imaginary time grid values of a
+      !! Green's function F, giving the values of G * F at the imaginary
+      !! time grid points.
       !!
       !! @param[in]   r       number of DLR basis functions
       !! @param[in]   n       number of orbital indices
@@ -201,6 +202,37 @@
       enddo
 
       end subroutine dlr_convmat
+
+
+
+
+
+      !> Convolve two Green's functions.
+      !!
+      !! This subroutine takes the matrix of convolution by a Green's
+      !! function G produced by dlr_convmat, and performs the
+      !! convolution between G and a Green's function F, given by its
+      !! values on the imaginary time grid. It returns the values of the
+      !! convolution H = G * F at the imaginary time grid points.
+      !!
+      !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   n       number of orbital indices
+      !! @param[in]   gmat    matrix of convolution by G
+      !! @param[in]   f       values of Green's function F at imaginary
+      !!                        time grid points
+      !! @param[out]  h       values of convolution H = G * F at
+      !!                        imaginary time grid points
+
+
+      subroutine dlr_conv(r,n,gmat,f,h)
+
+      implicit none
+      integer r,n
+      real *8 gmat(r*n,r*n),f(r,n,n),h(r,n,n)
+
+      call dgemm('N','N',r*n,n,r*n,1.0d0,gmat,r*n,f,r*n,0.0d0,h,r*n)
+
+      end subroutine dlr_conv
 
 
 

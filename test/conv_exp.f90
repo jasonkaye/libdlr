@@ -107,9 +107,9 @@
       call dlr_convmat(r,1,it2cf,it2cfp,phi,g1,gmat)
 
 
-      ! Apply matrix to G2 to obtain convolution G3
+      ! Get convolution G3 of G1 with G2
 
-      g3 = matmul(gmat,g2)
+      call dlr_conv(r,1,gmat,g2,g3)
 
       
       ! Get DLR coefficients of G3
