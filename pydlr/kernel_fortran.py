@@ -18,7 +18,8 @@ permissions and limitations under the License."""
 import os
 import glob
 
-libname = glob.glob(os.path.dirname(__file__) + '/../lib/libdlr_c.*')[0]
+#libname = glob.glob(os.path.dirname(__file__) + '/../lib/libdlr_c.*')[0]
+libname = '/Users/hugstr/apps/libdlr/lib/libdlr_c.dylib'
 
 # -- CFFI
 
@@ -28,8 +29,9 @@ ffi = FFI()
 ffi.cdef("void c_ccfine_init(double *lambda, int *p, int *npt, int *npo, int *nt, int *no);")
 ffi.cdef("void c_ccfine(double *lambda, int *p, int *npt, int *npo, double *t, double *om);")
 ffi.cdef("void c_dlr_kfine(double *lambda, int *p, int *npt, int *npo, double *t, double *om, double *kmat, double *err);")
-ffi.cdef("void c_dlr_rf(double *lambda, double *eps, int *nt, int *no, double *om, double *kmat, int *rank, double *dlrrf, int *oidx);")
-ffi.cdef("void c_dlr_it(double *lambda, int *nt, int *no, double *t, double *kmat, int *rank, int *oidx, double* dlrit, int *tidx);")
+#ffi.cdef("void c_dlr_rf(double *lambda, double *eps, int *nt, int *no, double *om, double *kmat, int *rank, double *dlrrf, int *oidx);")
+#ffi.cdef("void c_dlr_it(double *lambda, int *nt, int *no, double *t, double *kmat, int *rank, int *oidx, double* dlrit, int *tidx);")
+ffi.cdef("void c_dlr_it_build(double *lambda, double *eps, int *r, double *dlrrf, double *dlrit);")
 ffi.cdef("void c_dlr_cf2it_init(int *rank, double *dlrrf, double *dlrit, double *cf2it);")
 ffi.cdef("void c_dlr_it2cf_init(int *rank, double *dlrrf, double *dlrit, double *dlrit2cf, int *it2cfpiv);")
 ffi.cdef("void c_dlr_mf(int *nmax, int *rank, double *dlrrf, int *xi, int *dlrmf);")
@@ -74,7 +76,7 @@ class KernelInterpolativeDecopositionFortran:
     def __init__(self, lamb, eps=1e-15, xi=-1,
                  max_rank=500, nmax=None, verbose=False):
 
-        print('--> Fortran driver')
+        if verbose: print('--> Fortran driver')
         
         self.xi = xi
         self.lamb = lamb
@@ -86,82 +88,50 @@ class KernelInterpolativeDecopositionFortran:
             print(f'eps = {self.eps}')
 
         if nmax is None: nmax = int(lamb)
+
         
-        # -- Determine kernel discretization from heuristics
-
-        lamb = ffi.new('double *', lamb)
-        res = [ ffi.new('int [1]') for n in range(5) ]
-
-        lib.c_ccfine_init(lamb, *res)
-
-        p, npt, npo, nt, no = [ x for x in res ]
-        self.p, self.npt, self.npo, self.nt, self.no = [ x[0] for x in res ]
+        r_r = ffi.new('int [1]', [max_rank])
+        r_eps = ffi.new('double [1]', [eps])
+        r_lamb = ffi.new('double [1]', [lamb])
         
-        if verbose:
-            print(f'p = {self.p}')
-            print(f'npt = {self.npt}')
-            print(f'npo = {self.npo}')
-            print(f'nt = {self.nt}')
-            print(f'no = {self.no}')
+        dlrit = ffi.new(f'double [{max_rank}]')
+        dlrrf = ffi.new(f'double [{max_rank}]')
 
-        # -- Build analytical continuation kernel
-        t = ffi.new(f'double [{self.nt}]')
-        om = ffi.new(f'double [{self.no}]')
+        lib.c_dlr_it_build(r_lamb, r_eps, r_r, dlrrf, dlrit)
 
-        lib.c_ccfine(lamb, p, npt, npo, t, om)
+        rank = r_r
+        self.rank = int(r_r[0])
 
-        self.t = np.frombuffer(ffi.buffer(t), dtype=np.float)
-        self.om = np.frombuffer(ffi.buffer(om), dtype=np.float)
-
-        if verbose:
-            print(f't.shape = {self.t.shape}')
-            print(f'om.shape = {self.om.shape}')        
-
-        kmat = ffi.new(f'double [{self.nt*self.no}]')
-        err = ffi.new('double [2]')
-
-        lib.c_dlr_kfine(lamb, p, npt, npo, t, om, kmat, err)
-
-        self.kmat = np.frombuffer(ffi.buffer(kmat), dtype=np.float).reshape((self.no, self.nt)).T
-        self.err = np.frombuffer(ffi.buffer(err), dtype=np.float)
+        self.dlrrf = np.frombuffer(ffi.buffer(dlrrf), dtype=np.float)[:self.rank].copy()
+        self.dlrit = np.frombuffer(ffi.buffer(dlrit), dtype=np.float)[:self.rank].copy()
+        del dlrrf, dlrit
         
-        if verbose:
-            print(f'kmat.shape = {self.kmat.shape}')
-            print(f'err.shape = {self.err.shape}')
-            print(f'err = {self.err}')
+        # -- Sort real frequencies
 
-        # -- Select real frequency points
-
-        eps = ffi.new('double *', eps)
-        rank = ffi.new('int *', max_rank)
-        oidx = ffi.new(f'int [{rank[0]}]')
-        dlrrf = ffi.new(f'double [{rank[0]}]')
-
-        lib.c_dlr_rf(lamb, eps, nt, no, om, kmat, rank, dlrrf, oidx)
-
-        self.rank = rank[0]
-        self.oidx = np.frombuffer(ffi.buffer(oidx), dtype=np.int32)[:self.rank] - 1
-        self.dlrrf = np.frombuffer(ffi.buffer(dlrrf), dtype=np.float)[:self.rank]
+        sidx = np.argsort(self.dlrrf)
+        self.dlrrf = self.dlrrf[sidx]
+        dlrrf = ffi.cast('double *', self.dlrrf.ctypes.data)
 
         if verbose:
             print(f'rank = {self.rank}')
-            print(f'oidx = {self.oidx}')
             print(f'dlrrf = {self.dlrrf}')
+            print(f'dlrit = {self.dlrit}')
 
-        # -- Select imaginary time points
+        # -- Sort imaginary times
 
-        tidx = ffi.new(f'int [{self.rank}]')
-        dlrit = ffi.new(f'double [{self.rank}]')
+        dlrit_pos = (self.dlrit > 0) * self.dlrit + (self.dlrit < 0) * (1 + self.dlrit)
+        sidx = np.argsort(dlrit_pos)
+        self.dlrit = self.dlrit[sidx]
 
-        lib.c_dlr_it(lamb, nt, no, t, kmat, rank, oidx, dlrit, tidx)
+        self.dlrit_org = self.dlrit.copy()
+        dlrit = ffi.cast('double *', self.dlrit_org.ctypes.data)
 
-        self.tidx = np.frombuffer(ffi.buffer(tidx), dtype=np.int32) - 1
-        self.dlrit = np.frombuffer(ffi.buffer(dlrit), dtype=np.float)
+        # -- Make times positive
+
         self.dlrit = (self.dlrit > 0) * self.dlrit + (self.dlrit < 0) * (1 + self.dlrit)
 
         if verbose:
-            print(f'tidx = {self.tidx}')
-            print(f'dlrit = {self.dlrit}')
+            print(f'dlrit (trans) = {self.dlrit}')
         
         # -- Transform matrix (LU-decomposed)
 
@@ -184,6 +154,14 @@ class KernelInterpolativeDecopositionFortran:
 
         self.cf2it = np.frombuffer(
             ffi.buffer(cf2it), dtype=np.float).reshape((self.rank, self.rank)).T
+
+        # -- Store raw ffi objects
+
+        self.r_r = rank
+        self.r_dlrrf = dlrrf
+        self.r_dlrit = dlrit
+        self.r_it2cf = dlrit2cf
+        self.r_it2cfp = it2cfpiv
             
         # -- Matsubara frequency points
 
