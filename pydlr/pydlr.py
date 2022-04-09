@@ -69,18 +69,16 @@ class dlr(object):
         kid = KID(lamb, eps=eps, xi=xi, max_rank=max_rank, nmax=nmax, verbose=verbose)
 
         members = [
-            'rank', 't', 'om', 'kmat', 'dlrit', 'dlrrf', 'dlrmf',
+            'rank', 'dlrit', 'dlrrf', 'dlrmf',
             'dlrit2cf', 'it2cfpiv', 'dlrmf2cf', 'mf2cfpiv', 'T_lx', 'T_qx',
-            'oidx', 'tidx', #'mfidx',
             ]
         
         for member in members: setattr(self, member, getattr(kid, member))
         
         del kid
 
-        # -- Sort and split real-frequency nodes
-
-        self.dlrrf[:] = np.sort(self.dlrrf)
+        # -- Split real-frequency nodes (assuming sorted)
+        
         self.pm_idx = np.argwhere(self.dlrrf > 0)[0,0]
         self.dlrrf_p = self.dlrrf[self.pm_idx:]
         self.dlrrf_m = self.dlrrf[:self.pm_idx]
