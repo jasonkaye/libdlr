@@ -181,21 +181,20 @@
       real *8 gmat(r*n,r*n)
 
       integer i,j,info
-      real *8, allocatable :: gc(:)
+      real *8, allocatable :: gc(:,:,:)
 
-      allocate(gc(r))
+      allocate(gc(r,n,n))
+
+      ! Get DLR coefficients of G_ij
+
+      call dlr_it2cf(r,n,it2cf,it2cfp,g,gc)
+
+      ! Get convolution matrix
 
       do j=1,n
         do i=1,n
 
-          ! Get DLR coefficients of G_ij
-
-          call dlr_it2cf(r,it2cf,it2cfp,g(:,i,j),gc)
-
-
-          ! Get convolution matrix
-
-          call dgemv('N',r*r,r,1.0d0,phi,r*r,gc,1,0.0d0,&
+          call dgemv('N',r*r,r,1.0d0,phi,r*r,gc(:,i,j),1,0.0d0,&
             gmat((i-1)*r+1:i*r,(j-1)*r+1:j*r),1)
 
         enddo
@@ -364,7 +363,7 @@
 
       allocate(gc(r))
 
-      call dlr_it2cf(r,it2cf,it2cfp,g,gc)
+      call dlr_it2cf(r,1,it2cf,it2cfp,g,gc)
 
 
       ! Get convolution matrix taking DLR coefficients -> imaginary time

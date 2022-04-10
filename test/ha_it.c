@@ -100,7 +100,7 @@
 
       gc = malloc(r*sizeof(double));
 
-      c_dlr_it2cf(&r,it2cf,it2cfp,g,gc);
+      c_dlr_it2cf(&r,1,it2cf,it2cfp,g,gc);
 
 
       // Get test points in relative format
@@ -125,7 +125,7 @@
 
         // Evaluate DLR
 
-        c_dlr_it_eval(&r,dlrrf,gc,ttst+i,&gtest);
+        c_dlr_it_eval(&r,1,dlrrf,gc,ttst+i,&gtest);
 
         // Update L^inf and L^2 errors, norms
 

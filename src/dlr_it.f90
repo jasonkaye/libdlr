@@ -182,6 +182,7 @@
       !! imaginary time grid
       !!
       !! @param[in]  r      number of DLR basis functions
+      !! @param[in]  n      number of orbital indices
       !! @param[in]  cf2it  DLR coefficients -> imaginary time grid
       !!                      values transform matrix
       !! @param[in]  gc     DLR coefficients of Green's function
@@ -190,15 +191,15 @@
 
 
 
-      subroutine dlr_cf2it(r,cf2it,gc,g)
+      subroutine dlr_cf2it(r,n,cf2it,gc,g)
 
       implicit none
-      integer r
-      real *8 cf2it(r,r),gc(r),g(r)
+      integer r,n
+      real *8 cf2it(r,r),gc(r,n,n),g(r,n,n)
 
       ! Apply transformation matrix to coefficient vector
 
-      call dgemv('N',r,r,1.0d0,cf2it,r,gc,1,0.0d0,g,1)
+      call dgemm('N','N',r,n*n,r,1.0d0,cf2it,r,gc,r,0.0d0,g,r)
 
       end subroutine dlr_cf2it
 
@@ -251,22 +252,23 @@
       !> Transform values of DLR expansion on imaginary time grid to DLR
       !! coefficients
       !!
-      !! @param[in]  r         number of DLR basis functions
-      !! @param[in]  it2cf     imaginary time grid values ->
-      !!                         DLR coefficients transform matrix, stored in
-      !!                         LAPACK LU factored format; LU factors
-      !! @param[in]  it2cfp  imaginary time grid values ->
-      !!                         DLR coefficients transform matrix, stored in
-      !!                         LAPACK LU factored format; LU pivots
-      !! @param[in]  g         values of Green's function at imaginary
-      !!                         time grid points
-      !! @param[out] gc        DLR coefficients of Green's function
+      !! @param[in]  r        number of DLR basis functions
+      !! @param[in]  n        number of orbital indices
+      !! @param[in]  it2cf    imaginary time grid values ->
+      !!                        DLR coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU factors
+      !! @param[in]  it2cfp   imaginary time grid values ->
+      !!                        DLR coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU pivots
+      !! @param[in]  g        values of Green's function at imaginary
+      !!                        time grid points
+      !! @param[out] gc       DLR coefficients of Green's function
 
-      subroutine dlr_it2cf(r,it2cf,it2cfp,g,gc)
+      subroutine dlr_it2cf(r,n,it2cf,it2cfp,g,gc)
       
       implicit none
-      integer r,it2cfp(r)
-      real *8 it2cf(r,r),g(r),gc(r)
+      integer r,n,it2cfp(r)
+      real *8 it2cf(r,r),g(r,n,n),gc(r,n,n)
 
       integer info
 
@@ -275,7 +277,7 @@
 
       gc = g
 
-      call dgetrs('N',r,1,it2cf,r,it2cfp,gc,r,info)
+      call dgetrs('N',r,n*n,it2cf,r,it2cfp,gc,r,info)
 
       end subroutine dlr_it2cf
 
@@ -373,16 +375,17 @@
       !> Evaluate a DLR expansion at an imaginary time point
       !!
       !! @param[in]  r      number of DLR basis functions
+      !! @param[in]  n      number of orbital indices
       !! @param[in]  dlrrf  DLR frequency nodes
       !! @param[in]  gc     DLR coefficients of expansion
       !! @param[in]  t      imaginary time point in relative format
       !! @param[out] gt     value of DLR expansion at t
 
-      subroutine dlr_it_eval(r,dlrrf,gc,t,gt)
+      subroutine dlr_it_eval(r,n,dlrrf,gc,t,gt)
 
       implicit none
-      integer r
-      real *8 dlrrf(r),gc(r),t,gt
+      integer r,n
+      real *8 dlrrf(r),gc(r,n,n),t,gt(n,n)
 
       integer i
       real *8 kval
@@ -401,7 +404,7 @@
           kval = kfunf(-t,-dlrrf(i))
         endif
 
-        gt = gt + gc(i)*kval
+        gt = gt + gc(i,:,:)*kval
 
       enddo
 

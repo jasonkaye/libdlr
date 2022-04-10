@@ -105,6 +105,7 @@
       !!
       !! @param[in]   beta    inverse temperature
       !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   n       number of orbital indices
       !! @param[in]   g0      values of the right hand side G0 on
       !!                        the Matsubara frequency grid
       !! @param[in]   sigmf   values of the self-energy on the
@@ -112,12 +113,12 @@
       !! @param[out]  gmf     solution of the Dyson equation on the
       !!                        Matsubara frequency grid
 
-      subroutine dyson_mf(beta,r,g0,sigmf,gmf)
+      subroutine dyson_mf(beta,r,n,g0,sigmf,gmf)
 
       implicit none
-      integer r
+      integer r,n
       real *8 beta
-      complex *16 g0(r),sigmf(r),gmf(r)
+      complex *16 g0(r,n,n),sigmf(r,n,n),gmf(r,n,n)
 
       gmf = g0/(1.0d0-beta**2*g0*sigmf)
 

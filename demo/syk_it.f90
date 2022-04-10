@@ -183,7 +183,7 @@
 
       ! Get DLR coefficients of solution
 
-      call dlr_it2cf(r,it2cf,it2cfp,g,g)
+      call dlr_it2cf(r,1,it2cf,it2cfp,g,g)
 
 
       ! Get output points in relative format
@@ -199,7 +199,7 @@
 
       do i=1,nout
 
-        call dlr_it_eval(r,dlrrf,g,ttst(i),gtest)
+        call dlr_it_eval(r,1,dlrrf,g,ttst(i),gtest)
 
         call rel2abs(1,ttst(i),ttst(i))
 

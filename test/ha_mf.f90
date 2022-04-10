@@ -99,7 +99,7 @@
 
       allocate(gc(r))
 
-      call dlr_mf2cf(r,mf2cf,mf2cfp,g,gc)
+      call dlr_mf2cf(r,1,mf2cf,mf2cfp,g,gc)
 
 
       ! Get test points in relative format
@@ -124,7 +124,7 @@
 
         ! Evaluate DLR
 
-        call dlr_it_eval(r,dlrrf,gc,ttst(i),gtest)
+        call dlr_it_eval(r,1,dlrrf,gc,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 

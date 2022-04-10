@@ -210,6 +210,7 @@
       !! Matsubara frequency grid
       !!
       !! @param[in]  r      number of DLR basis functions
+      !! @param[in]  n      number of orbital indices
       !! @param[in]  cf2mf  DLR coefficients -> imaginary time grid
       !!                      values transform matrix
       !! @param[in]  gc     DLR coefficients of Green's function
@@ -218,21 +219,19 @@
 
 
 
-      subroutine dlr_cf2mf(r,cf2mf,gc,gn)
+      subroutine dlr_cf2mf(r,n,cf2mf,gc,gn)
 
       implicit none
-      integer r
-      real *8 gc(r)
-      complex *16 cf2mf(r,r),gn(r)
+      integer r,n
+      real *8 gc(r,n,n)
+      complex *16 cf2mf(r,r),gn(r,n,n)
 
-      complex *16, allocatable :: tmp(:)
+      complex *16, allocatable :: tmp(:,:,:)
 
       ! Apply transformation matrix to coefficient vector
 
-      allocate(tmp(r))
-
       tmp = gc
-      call zgemv('N',r,r,1.0d0,cf2mf,r,tmp,1,0.0d0,gn,1)
+      call zgemm('N','N',r,n*n,r,1.0d0,cf2mf,r,tmp,r,0.0d0,gn,r)
 
       end subroutine dlr_cf2mf
 
@@ -291,6 +290,7 @@
       !! to DLR coefficients
       !!
       !! @param[in]  r       number of DLR basis functions
+      !! @param[in]  n       number of orbital indices
       !! @param[in]  mf2cf   Matsubara frequency grid values ->
       !!                       DLR coefficients transform matrix,
       !!                       stored in LAPACK LU factored format; LU
@@ -303,24 +303,22 @@
       !!                       freq grid points
       !! @param[out] gc      DLR coefficients of Green's function
 
-      subroutine dlr_mf2cf(r,mf2cf,mf2cfp,g,gc)
+      subroutine dlr_mf2cf(r,n,mf2cf,mf2cfp,g,gc)
 
       implicit none
-      integer r,mf2cfp(r)
-      real *8 gc(r)
-      complex *16 mf2cf(r,r),g(r)
+      integer r,n,mf2cfp(r)
+      real *8 gc(r,n,n)
+      complex *16 mf2cf(r,r),g(r,n,n)
 
       integer info
-      complex *16, allocatable :: tmp(:)
+      complex *16, allocatable :: tmp(:,:,:)
 
       ! Solve interpolation problem using DLR coefficients -> Matsubara
       ! frequency grid values matrix stored in LU form
 
-      allocate(tmp(r))
-
       tmp = g
 
-      call zgetrs('N',r,1,mf2cf,r,mf2cfp,tmp,r,info)
+      call zgetrs('N',r,n*n,mf2cf,r,mf2cfp,tmp,r,info)
 
       ! Remove imaginary part
 
@@ -338,27 +336,28 @@
       !! i*omega_n = i*pi*(2n+1) for fermionic Green's functions, and
       !! i*omega_n = i*pi*2n for bosonic Green's functions. The
       !! Matsubara frequency at which the DLR expansion is evaluated it
-      !! determined by the input index n, and xi, which determines whether
+      !! determined by the input index nmf, and xi, which determines whether
       !! n is an index into a fermionic or bosonic Matsubara frequency.
-      !! For example, if n=11 and xi = -1, then the DLR expansion will
+      !! For example, if nmf=11 and xi = -1, then the DLR expansion will
       !! be evaluated at the Matsubara frequency 
       !! i*omega_n = i*pi*(2*11+1); if xi = 1, then it will be evaluated
       !! at i*omega_n = i*pi*(2*11).
       !!
       !! @param[in]  r      number of DLR basis functions
+      !! @param[in]  n      number of orbital indices
       !! @param[in]  dlrrf  DLR frequency nodes
       !! @param[in]  xi     xi=-1 for fermionic frequencies; xi=1
       !!                      for bosonic frequencies
       !! @param[in]  gc     DLR coefficients of expansion
-      !! @param[in]  n      Matsubara frequency integer
+      !! @param[in]  nmf    Matsubara frequency integer
       !! @param[out] gn     value of DLR expansion at i*omega_n
 
-      subroutine dlr_mf_eval(r,dlrrf,xi,gc,n,gn)
+      subroutine dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,gn)
 
       implicit none
-      integer r,xi,n
-      real *8 dlrrf(r),gc(r)
-      complex *16 gn
+      integer r,n,xi,nmf
+      real *8 dlrrf(r),gc(r,n,n)
+      complex *16 gn(n,n)
 
       integer i
       complex *16 kval
@@ -370,9 +369,9 @@
       gn = (0.0d0,0.0d0)
       do i=1,r
 
-        kval = kfunmf(2*n+(1-xi)/2,dlrrf(i))
+        kval = kfunmf(2*nmf+(1-xi)/2,dlrrf(i))
 
-        gn = gn + gc(i)*kval
+        gn = gn + gc(i,:,:)*kval
 
       enddo
 

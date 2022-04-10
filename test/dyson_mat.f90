@@ -147,12 +147,7 @@
 
       ! Get DLR coefficients of solution
 
-      do j=1,2
-        do i=1,2
-          call dlr_it2cf(r,it2cf,it2cfp,g(:,i,j),gc(:,i,j))
-        enddo
-      enddo
-
+      call dlr_it2cf(r,2,it2cf,it2cfp,g,gc)
 
 
       ! Get exact 3x3 Green's function on imaginary time grid by
@@ -166,11 +161,7 @@
       ! Get DLR coefficients of upper left 2x2 block of exact Green's
       ! function
 
-      do j=1,2
-        do i=1,2
-          call dlr_it2cf(r,it2cf,it2cfp,gtrue(:,i,j),gctrue(:,i,j))
-        enddo
-      enddo
+      call dlr_it2cf(r,2,it2cf,it2cfp,gtrue(:,1:2,1:2),gctrue)
 
 
 
@@ -186,15 +177,10 @@
       allocate(gtst(ntst,2,2),gtruetst(ntst,2,2))
 
       do k=1,ntst
-        do j=1,2
-          do i=1,2
 
-            call dlr_it_eval(r,dlrrf,gc(:,i,j),it_tst(k),gtst(k,i,j))
-            call dlr_it_eval(r,dlrrf,gctrue(:,i,j),it_tst(k),&
-              gtruetst(k,i,j))
+        call dlr_it_eval(r,2,dlrrf,gc,it_tst(k),gtst(k,:,:))
+        call dlr_it_eval(r,2,dlrrf,gctrue,it_tst(k),gtruetst(k,:,:))
 
-          enddo
-        enddo
       enddo
 
       err = maxval(abs(gtst-gtruetst))

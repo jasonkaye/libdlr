@@ -114,7 +114,7 @@
       
       ! Get DLR coefficients of G3
 
-      call dlr_it2cf(r,it2cf,it2cfp,g3,g3)
+      call dlr_it2cf(r,1,it2cf,it2cfp,g3,g3)
 
 
       ! Get test points in relative format
@@ -139,7 +139,7 @@
 
         ! Evaluate DLR
 
-        call dlr_it_eval(r,dlrrf,g3,ttst(i),gtest)
+        call dlr_it_eval(r,1,dlrrf,g3,ttst(i),gtest)
 
         ! Update L^inf and L^2 errors, norms
 

@@ -178,7 +178,7 @@
 
       ! Get DLR coefficients of solution
 
-      call dlr_it2cf(r,it2cf,it2cfp,g1,g1c)
+      call dlr_it2cf(r,1,it2cf,it2cfp,g1,g1c)
 
 
 
@@ -190,22 +190,22 @@
 
       ! Get DLR coefficients of self-energy
 
-      call dlr_it2cf(r,it2cf,it2cfp,sig,sigc)
+      call dlr_it2cf(r,1,it2cf,it2cfp,sig,sigc)
 
 
       ! Get self-energy on Matsubara frequency grid
 
-      call dlr_cf2mf(r,cf2mf,sigc,sigmf)
+      call dlr_cf2mf(r,1,cf2mf,sigc,sigmf)
 
 
       ! Solve Dyson equation by diagonal inversion
 
-      call dyson_mf(beta,r,g0mf,sigmf,gmf)
+      call dyson_mf(beta,r,1,g0mf,sigmf,gmf)
 
 
       ! Get DLR coefficients of solution
 
-      call dlr_mf2cf(r,mf2cf,mf2cfp,gmf,g2c)
+      call dlr_mf2cf(r,1,mf2cf,mf2cfp,gmf,g2c)
 
 
 
@@ -222,9 +222,9 @@
 
       do i=1,ntst
 
-        call dlr_it_eval(r,dlrrf,g1c,it_tst(i),g1tst(i))
+        call dlr_it_eval(r,1,dlrrf,g1c,it_tst(i),g1tst(i))
         
-        call dlr_it_eval(r,dlrrf,g2c,it_tst(i),g2tst(i))
+        call dlr_it_eval(r,1,dlrrf,g2c,it_tst(i),g2tst(i))
 
         call gfun_it(pg,npg,pbpg,xgl,wgl,xgj,wgj,beta,it_tst(i),&
           gtrue(i))

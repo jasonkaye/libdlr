@@ -62,11 +62,11 @@ contains
     call dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp)
   end subroutine c_dlr_it2cf_init
 
-  subroutine c_dlr_it2cf(r,it2cf,it2cfp,g,gc) bind(C)
-    integer(c_int), intent(in) :: r,it2cfp(r)
-    real(c_double), intent(in) :: it2cf(r,r),g(r)
-    real(c_double), intent(out) :: gc(r)
-    call dlr_it2cf(r,it2cf,it2cfp,g,gc)
+  subroutine c_dlr_it2cf(r,n,it2cf,it2cfp,g,gc) bind(C)
+    integer(c_int), intent(in) :: r,n,it2cfp(r)
+    real(c_double), intent(in) :: it2cf(r,r),g(r,n,n)
+    real(c_double), intent(out) :: gc(r,n,n)
+    call dlr_it2cf(r,n,it2cf,it2cfp,g,gc)
   end subroutine c_dlr_it2cf
 
   subroutine c_dlr_it2itr_init(r,dlrrf,dlrit,it2cf,it2cfp,it2itr) bind(C)
@@ -83,11 +83,11 @@ contains
     call dlr_it2itr(r,it2itr,g,gr)
   end subroutine c_dlr_it2itr
 
-  subroutine c_dlr_it_eval(r,dlrrf,gc,t,g) bind(C)
-    integer(c_int), intent(in) :: r
-    real(c_double), intent(in) :: dlrrf(r),gc(r),t
-    real(c_double), intent(out) :: g
-    call dlr_it_eval(r,dlrrf,gc,t,g)
+  subroutine c_dlr_it_eval(r,n,dlrrf,gc,t,gt) bind(C)
+    integer(c_int), intent(in) :: r,n
+    real(c_double), intent(in) :: dlrrf(r),gc(r,n,n),t
+    real(c_double), intent(out) :: gt(n,n)
+    call dlr_it_eval(r,n,dlrrf,gc,t,gt)
   end subroutine c_dlr_it_eval
 
   subroutine c_dlr_mf(nmax,r,dlrrf,xi,dlrmf) bind(C)
@@ -123,8 +123,8 @@ contains
 
   subroutine c_dlr_convmat(r,n,it2cf,it2cfp,phi,g,gmat) bind(C)
     integer(c_int), intent(in) :: r,n,it2cfp(r)
-    real(c_double), intent(in) :: it2cf(r,r),phi(r*r,r),g(r)
-    real(c_double), intent(out) :: gmat(r,r)
+    real(c_double), intent(in) :: it2cf(r,r),phi(r*r,r),g(r,n,n)
+    real(c_double), intent(out) :: gmat(r*n,r*n)
     call dlr_convmat(r,n,it2cf,it2cfp,phi,g,gmat)
   end subroutine c_dlr_convmat
 
