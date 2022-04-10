@@ -181,9 +181,9 @@
       real *8 gmat(r*n,r*n)
 
       integer i,j,info
-      real *8, allocatable :: gc(:,:,:)
+      real *8, allocatable :: gc(:,:,:),tmp(:,:)
 
-      allocate(gc(r,n,n))
+      allocate(gc(r,n,n),tmp(r,r*n*n))
 
       ! Get DLR coefficients of G_ij
 
@@ -191,14 +191,15 @@
 
       ! Get convolution matrix
 
+      call dgemm('N','N',r*r,n*n,r,1.0d0,phi,r*r,gc,r,0.0d0,tmp,r*r)
+
       do j=1,n
         do i=1,n
-
-          call dgemv('N',r*r,r,1.0d0,phi,r*r,gc(:,i,j),1,0.0d0,&
-            gmat((i-1)*r+1:i*r,(j-1)*r+1:j*r),1)
-
+          gmat((i-1)*r+1:i*r,(j-1)*r+1:j*r) = &
+            tmp(:,((j-1)*n+(i-1))*r+1:((j-1)*n+(i-1)+1)*r)
         enddo
       enddo
+
 
       end subroutine dlr_convmat
 
