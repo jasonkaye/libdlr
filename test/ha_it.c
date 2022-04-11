@@ -58,7 +58,7 @@
 
       void ha_it_main(double lambda, double eps, int ntst, double beta) {
         
-      int i,j,r;
+      int i,j,r,n;
       int *it2cfp;
       double one,gtrue,gtest,errl2,errlinf,gmax,gl2;
       double *ttst,*it2cf,*dlrit,*dlrrf;
@@ -100,7 +100,8 @@
 
       gc = malloc(r*sizeof(double));
 
-      c_dlr_it2cf(&r,1,it2cf,it2cfp,g,gc);
+      n = 1;
+      c_dlr_it2cf(&r,&n,it2cf,it2cfp,g,gc);
 
 
       // Get test points in relative format
@@ -125,7 +126,7 @@
 
         // Evaluate DLR
 
-        c_dlr_it_eval(&r,1,dlrrf,gc,ttst+i,&gtest);
+        c_dlr_it_eval(&r,&n,dlrrf,gc,ttst+i,&gtest);
 
         // Update L^inf and L^2 errors, norms
 
