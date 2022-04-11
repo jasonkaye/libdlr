@@ -327,14 +327,18 @@
       real *8 it2cf(r,r),fstconv(r,2*r),cf2it(r,r)
       real *8 f(r,n,n),g(r,n,n),h(r,n,n)
 
+      integer info
       real *8, allocatable :: fgc(:,:,:,:),tmp(:,:,:,:),hc(:,:,:)
 
       allocate(fgc(r,n,n,2),tmp(r,n,n,2),hc(r,n,n))
 
       ! Get DLR coefficients of f and g
 
-      call dlr_it2cf(r,n,it2cf,it2cfp,f,fgc(:,:,:,1))
-      call dlr_it2cf(r,n,it2cf,it2cfp,g,fgc(:,:,:,2))
+      fgc(:,:,:,1) = f
+      fgc(:,:,:,2) = g
+
+      call dgetrs('N',r,n*n*2,it2cf,r,it2cfp,fgc,r,info)
+
      
       ! Off-diagonal contribution to convolution
 
@@ -342,6 +346,7 @@
       hc = fgc(:,:,:,2)*tmp(:,:,:,1) + fgc(:,:,:,1)*tmp(:,:,:,2)
 
       call dlr_cf2it(r,n,cf2it,hc,h)
+
 
       ! Diagonal contribution to convolution
 
