@@ -25,7 +25,9 @@
         
       ! Test convolution of two DLR expansions for Green's functions
       ! which are each a single exponential. Compare result with
-      ! analytically-known convolution.
+      ! analytically-known convolution. Test two methods of
+      ! convolution; directly forming matrix of convolution, and fast
+      ! convolution in the DLR coefficient domain.
       
       implicit none
       integer ntst
@@ -56,9 +58,11 @@
 
       integer i,j,r
       integer, allocatable :: it2cfp(:)
-      real *8 one,gtrue,gtest,errl2,errlinf,gmax,gl2
-      real *8, allocatable :: ttst(:),it2cf(:,:),dlrit(:),dlrrf(:)
-      real *8, allocatable :: g1(:),g2(:),g3(:)
+      real *8 one,gtrue,gtst1,gtst2
+      real *8 err1l2,err2l2,err1linf,err2linf,gmax,gl2
+      real *8, allocatable :: dlrit(:),dlrrf(:)
+      real *8, allocatable :: cf2it(:,:),it2cf(:,:),fstconv(:,:)
+      real *8, allocatable :: ttst(:),g1(:),g2(:),g31(:),g32(:)
 
       real *8, allocatable :: phi(:,:),gmat(:,:)
 
@@ -74,6 +78,13 @@
       call dlr_it_build(lambda,eps,r,dlrrf,dlrit)
 
 
+      ! Get DLR coefficients -> imaginary time values matrix
+
+      allocate(cf2it(r,r))
+
+      call dlr_cf2it_init(r,dlrrf,dlrit,cf2it)
+
+
       ! Get imaginary time values -> DLR coefficients matrix (LU form)
 
       allocate(it2cf(r,r),it2cfp(r))
@@ -83,7 +94,7 @@
 
       ! Sample G1 and G2 at imaginary time nodes
 
-      allocate(g1(r),g2(r),g3(r))
+      allocate(g1(r),g2(r),g31(r),g32(r))
 
       do i=1,r
 
@@ -109,12 +120,30 @@
 
       ! Get convolution G3 of G1 with G2
 
-      call dlr_conv(r,1,gmat,g2,g3)
+      call dlr_conv(r,1,gmat,g2,g31)
 
       
       ! Get DLR coefficients of G3
 
-      call dlr_it2cf(r,1,it2cf,it2cfp,g3,g3)
+      call dlr_it2cf(r,1,it2cf,it2cfp,g31,g31)
+
+
+
+      ! Initialize fast convolution routine
+
+      allocate(fstconv(r,2*r))
+
+      call dlr_fstconv_init(beta,r,dlrrf,dlrit,cf2it,fstconv)
+
+
+      ! Get convolution G3 of G1 with G2 by fast convolution
+
+      call dlr_fstconv(r,1,cf2it,it2cf,it2cfp,fstconv,g1,g2,g32)
+
+
+      ! Get DLR coefficients of G3
+
+      call dlr_it2cf(r,1,it2cf,it2cfp,g32,g32)
 
 
       ! Get test points in relative format
@@ -126,8 +155,10 @@
 
       ! Measure L^inf and L^2 errors of convolution
 
-      errlinf = 0*one
-      errl2 = 0*one
+      err1linf = 0*one
+      err1l2 = 0*one
+      err2linf = 0*one
+      err2l2 = 0*one
       gmax = 0*one
       gl2 = 0*one
 
@@ -139,33 +170,42 @@
 
         ! Evaluate DLR
 
-        call dlr_it_eval(r,1,dlrrf,g3,ttst(i),gtest)
+        call dlr_it_eval(r,1,dlrrf,g31,ttst(i),gtst1)
+        call dlr_it_eval(r,1,dlrrf,g32,ttst(i),gtst2)
 
         ! Update L^inf and L^2 errors, norms
 
-        errlinf = max(errlinf,abs(gtrue-gtest))
-        errl2 = errl2 + (gtrue-gtest)**2
+        err1linf = max(err1linf,abs(gtrue-gtst1))
+        err1l2 = err1l2 + (gtrue-gtst1)**2
+        err2linf = max(err2linf,abs(gtrue-gtst2))
+        err2l2 = err2l2 + (gtrue-gtst2)**2
 
         gmax = max(gmax,abs(gtrue))
         gl2 = gl2 + gtrue**2
 
       enddo
 
-      errl2 = sqrt((ttst(2)-ttst(1))*errl2)
+      err1l2 = sqrt((ttst(2)-ttst(1))*err1l2)
+      err2l2 = sqrt((ttst(2)-ttst(1))*err2l2)
       gl2 = sqrt((ttst(2)-ttst(1))*gl2)
 
       write(6,*) ''
       write(6,*) 'DLR rank = ',r
-      write(6,*) 'Abs L^inf err = ',errlinf
-      write(6,*) 'Abs L^2 err   = ',errl2
-      write(6,*) 'Rel L^inf err = ',errlinf/gmax
-      write(6,*) 'Rel L^2 err   = ',errl2/gl2
+      write(6,*) 'Abs L^inf err = ',err1linf
+      write(6,*) 'Abs L^2 err   = ',err1l2
+      write(6,*) 'Rel L^inf err = ',err1linf/gmax
+      write(6,*) 'Rel L^2 err   = ',err1l2/gl2
+
+      write(6,*) 'Abs L^inf err = ',err2linf
+      write(6,*) 'Abs L^2 err   = ',err2l2
+      write(6,*) 'Rel L^inf err = ',err2linf/gmax
+      write(6,*) 'Rel L^2 err   = ',err2l2/gl2
       write(6,*) ''
 
 
       ! Return failed status if error is not sufficiently small
 
-      if (errlinf.gt.1.0d-13) then
+      if (err1linf.gt.1.0d-13.or.err2linf.gt.1.0d-13) then
         call exit(1)
       endif
 

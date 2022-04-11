@@ -238,6 +238,122 @@
 
 
 
+      !> Initialize the fast DLR convolution subroutine dlr_fstconv
+      !!
+      !! The output fstconv of this subroutine should be used as a
+      !! parameter in every call to the subroutine dlr_fstconv
+      !!
+      !! @param[in]   beta      inverse temperature
+      !! @param[in]   r         number of DLR basis functions
+      !! @param[in]   dlrrf     DLR frequency nodes
+      !! @param[in]   dlrit     DLR imaginary time nodes
+      !! @param[in]   cf2it     DLR coefficients -> imaginary time grid
+      !!                          values transform matrix
+      !! @param[out]  fstconv   arrays used for fast convolution 
+
+      subroutine dlr_fstconv_init(beta,r,dlrrf,dlrit,cf2it,fstconv)
+
+      implicit none
+      integer r
+      real *8 beta,dlrrf(r),dlrit(r),cf2it(r,r),fstconv(r,2*r)
+
+      integer i,j
+      real *8, external :: kfunf_rel
+
+      do j=1,r
+        do i=1,r
+          if (i.eq.j) then
+            fstconv(i,j) = 0.0d0
+          else
+            fstconv(i,j) = beta/(dlrrf(j)-dlrrf(i))
+          endif
+        enddo
+      enddo
+
+      do j=1,r
+        do i=1,r
+          if (dlrit(i).gt.0.0d0) then
+
+            fstconv(i,r+j) = beta*(dlrit(i)-kfunf_rel(1.0d0,dlrrf(j)))&
+              *cf2it(i,j)
+
+          else
+
+            fstconv(i,r+j) = beta*(dlrit(i)+kfunf_rel(0.0d0,dlrrf(j)))&
+              *cf2it(i,j)
+
+          endif
+
+        enddo
+      enddo
+
+      end subroutine dlr_fstconv_init
+
+
+
+
+
+      !> Convolve two Green's functions using the fast convolution
+      !! method, which carries out the convolution directly in the DLR
+      !! coefficient domain
+      !!
+      !! This subroutine performs the convolution between Green's
+      !! functions F and G, given by their values on the imaginary time
+      !! grid, and returns the values of the convolution H = G * F on
+      !! the imaginary time grid.
+      !!
+      !! @param[in]  r        number of DLR basis functions
+      !! @param[in]  n        number of orbital indices
+      !! @param[in]  cf2it    DLR coefficients -> imaginary time grid
+      !!                        values transform matrix
+      !! @param[in]  it2cf    imaginary time grid values -> DLR
+      !!                        coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU factors
+      !! @param[in]  it2cfp   imaginary time grid values -> DLR
+      !!                        coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU pivots
+      !! @param[in]  fstconv  arrays used for fast convolution 
+      !! @param[in]  f        values of Green's function F at imaginary
+      !!                        time grid points
+      !! @param[in]  g        values of Green's function G at imaginary
+      !!                        time grid points
+      !! @param[out] h        values of convolution H = F * G at
+      !!                         imaginary time grid points
+
+      subroutine dlr_fstconv(r,n,cf2it,it2cf,it2cfp,fstconv,f,g,h)
+
+      implicit none
+      integer r,n,it2cfp(r)
+      real *8 it2cf(r,r),fstconv(r,2*r),cf2it(r,r)
+      real *8 f(r,n,n),g(r,n,n),h(r,n,n)
+
+      real *8, allocatable :: fgc(:,:,:,:),tmp(:,:,:,:),hc(:,:,:)
+
+      allocate(fgc(r,n,n,2),tmp(r,n,n,2),hc(r,n,n))
+
+      ! Get DLR coefficients of f and g
+
+      call dlr_it2cf(r,n,it2cf,it2cfp,f,fgc(:,:,:,1))
+      call dlr_it2cf(r,n,it2cf,it2cfp,g,fgc(:,:,:,2))
+     
+      ! Off-diagonal contribution to convolution
+
+      call dgemm('N','N',r,n*n*2,r,1.0d0,fstconv,r,fgc,r,0.0d0,tmp,r)
+      hc = fgc(:,:,:,2)*tmp(:,:,:,1) + fgc(:,:,:,1)*tmp(:,:,:,2)
+
+      call dlr_cf2it(r,n,cf2it,hc,h)
+
+      ! Diagonal contribution to convolution
+
+      call dgemm('N','N',r,n*n,r,1.0d0,fstconv(1,r+1),r,&
+        fgc(:,:,:,1)*fgc(:,:,:,2),r,1.0d0,h,r)
+
+      end subroutine dlr_fstconv
+
+
+
+
+
       !> Get tensor taking a set of DLR coefficients to the matrix of
       !! convolution by the corresponding Green's function, acting from
       !! DLR coefficients to DLR grid values.
