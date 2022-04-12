@@ -327,7 +327,7 @@
       real *8 it2cf(r,r),fstconv(r,2*r),cf2it(r,r)
       real *8 f(r,n,n),g(r,n,n),h(r,n,n)
 
-      integer info
+      integer info,i,j,k
       real *8, allocatable :: fgc(:,:,:,:),tmp(:,:,:,:),hc(:,:,:)
 
       allocate(fgc(r,n,n,2),tmp(r,n,n,2),hc(r,n,n))
@@ -339,19 +339,32 @@
 
       call dgetrs('N',r,n*n*2,it2cf,r,it2cfp,fgc,r,info)
 
-     
       ! Off-diagonal contribution to convolution
 
       call dgemm('N','N',r,n*n*2,r,1.0d0,fstconv,r,fgc,r,0.0d0,tmp,r)
-      hc = fgc(:,:,:,2)*tmp(:,:,:,1) + fgc(:,:,:,1)*tmp(:,:,:,2)
+
+      do j=1,n
+        do i=1,n
+          hc(:,i,j) = 0
+          do k=1,n
+            hc(:,i,j) = hc(:,i,j)+fgc(:,i,k,2)*tmp(:,k,j,1) &
+              + fgc(:,i,k,1)*tmp(:,k,j,2)
+          enddo
+        enddo
+      enddo
 
       call dlr_cf2it(r,n,cf2it,hc,h)
 
-
       ! Diagonal contribution to convolution
 
-      call dgemm('N','N',r,n*n,r,1.0d0,fstconv(1,r+1),r,&
-        fgc(:,:,:,1)*fgc(:,:,:,2),r,1.0d0,h,r)
+      do j=1,n
+        do i=1,n
+          do k=1,n
+            call dgemv('N',r,r,1.0d0,fstconv(1,r+1),r,&
+              fgc(:,i,k,1)*fgc(:,k,j,2),1,1.0d0,h(:,i,j),1)
+          enddo
+        enddo
+      enddo
 
       end subroutine dlr_fstconv
 
