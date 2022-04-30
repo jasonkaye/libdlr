@@ -76,11 +76,11 @@ contains
     call dlr_it2itr_init(r,dlrrf,dlrit,it2cf,it2cfp,it2itr)
   end subroutine c_dlr_it2itr_init
 
-  subroutine c_dlr_it2itr(r,it2itr,g,gr) bind(C)
-    integer(c_int), intent(in) :: r
-    real(c_double), intent(in) :: it2itr(r,r),g(r)
-    real(c_double), intent(out) :: gr(r)
-    call dlr_it2itr(r,it2itr,g,gr)
+  subroutine c_dlr_it2itr(r,n,it2itr,g,gr) bind(C)
+    integer(c_int), intent(in) :: r,n
+    real(c_double), intent(in) :: it2itr(r,r),g(r,n,n)
+    real(c_double), intent(out) :: gr(r,n,n)
+    call dlr_it2itr(r,n,it2itr,g,gr)
   end subroutine c_dlr_it2itr
 
   subroutine c_dlr_it_eval(r,n,dlrrf,gc,t,gt) bind(C)

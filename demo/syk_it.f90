@@ -282,7 +282,7 @@
       integer r
       real *8 c,it2itr(r,r),g(r),sig(r)
 
-      call dlr_it2itr(r,it2itr,g,sig)
+      call dlr_it2itr(r,1,it2itr,g,sig)
 
       sig = c*c*g*g*sig
 

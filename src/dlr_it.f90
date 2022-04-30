@@ -343,6 +343,7 @@
       !! imaginary time grid
       !!
       !! @param[in]  r      number of DLR basis functions
+      !! @param[in]  n      number of orbital indices
       !! @param[in]  it2itr DLR coefficients -> imaginary time grid
       !!                      values transform matrix
       !! @param[in]  g      values of Green's function at imaginary
@@ -352,11 +353,11 @@
 
 
 
-      subroutine dlr_it2itr(r,it2itr,g,gr)
+      subroutine dlr_it2itr(r,n,it2itr,g,gr)
 
       implicit none
-      integer r
-      real *8 it2itr(r,r),g(r),gr(r)
+      integer r,n
+      real *8 it2itr(r,r),g(r,n,n),gr(r,n,n)
 
       integer i,j
       real *8, external :: kfunf_rel
@@ -364,7 +365,7 @@
       ! Apply transformation matrix to vector of imaginary time grid
       ! values
 
-      call dgemv('N',r,r,1.0d0,it2itr,r,g,1,0.0d0,gr,1)
+      call dgemm('N','N',r,n*n,r,1.0d0,it2itr,r,g,r,0.0d0,gr,r)
 
       end subroutine dlr_it2itr
 

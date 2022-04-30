@@ -20,7 +20,7 @@ void c_dlr_it2cf(int *r, int *n, double *it2cf, int *it2cfp, double *g, double *
 
 void c_dlr_it2itr_init(int *r, double *dlrrf, double *dlrit, double *it2cf, int *it2cfp, double *it2itr);
 
-void c_dlr_it2itr(int *r, double *it2itr, double *g, double *gr);
+void c_dlr_it2itr(int *r, int *n, double *it2itr, double *g, double *gr);
 
 void c_dlr_it_eval(int *r, int *n, double *dlrrf, double *gc, double *t, double *g);
 
