@@ -34,10 +34,14 @@ void c_dlr_convtens(double *beta, int *xi, int *r, double *dlrrf, double *dlrit,
 
 void c_dlr_convmat(int *r, int *n, double *it2cf, int *it2cfp, double *phi, double *g, double *gmat);
 
+void c_dlr_conv(int *r,int *n,double *gmat,double *f,double *h);
+
 void c_dlr_ipmat(double *beta, int *r, double *dlrit, double *dlrrf, double *it2cf, int *it2cfp, double *ipmat);
 
 void c_dyson_it(int *r, int *n, double *it2cf, int *it2cfp, double *phi, double *g0, double *g0mat, double *sig, double *g);
 
 void c_eqpts_rel(int *n, double *t);
+
+void c_abs2rel(int *n,double *tabs,double *t);
 
 void c_kfunf_rel(double *t, double *om, double *val);

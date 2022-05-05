@@ -128,6 +128,13 @@ contains
     call dlr_convmat(r,n,it2cf,it2cfp,phi,g,gmat)
   end subroutine c_dlr_convmat
 
+  subroutine c_dlr_conv(r,n,gmat,f,h) bind(C)
+    integer(c_int), intent(in) :: r,n
+    real(c_double), intent(in) :: gmat(r,r),f(r)
+    real(c_double), intent(out) :: h(r)
+    call dlr_conv(r,n,gmat,f,h)
+  end subroutine c_dlr_conv
+
   subroutine c_dlr_ipmat(beta,r,dlrit,dlrrf,it2cf,it2cfp,ipmat) bind(C)
     integer(c_int), intent(in) :: r,it2cfp(r)
     real(c_double), intent(in) :: beta,dlrit(r),dlrrf(r),it2cf(r,r)
@@ -150,6 +157,13 @@ contains
     call eqpts_rel(n,t)
   end subroutine c_eqpts_rel
 
+  subroutine c_abs2rel(n,tabs,t) bind(C)
+    integer(c_int), intent(in) :: n
+    real(c_double), intent(in) :: tabs
+    real(c_double), intent(out) :: t
+    call abs2rel(n,tabs,t)
+  end subroutine c_abs2rel
+
   subroutine c_kfunf_rel(t,om,val) bind(C)
     real(c_double), intent(in) :: t,om
     real(c_double), intent(out) :: val
@@ -159,6 +173,5 @@ contains
     val = kfunf_rel(t,om)
 
   end subroutine c_kfunf_rel
-
 
 end module libdlr_c
