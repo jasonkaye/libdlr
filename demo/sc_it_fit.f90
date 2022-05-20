@@ -140,7 +140,7 @@
 
       allocate(gc(r))
 
-      call dlr_it_fit(r,dlrrf,m,tsamp,gsamp,gc)
+      call dlr_it_fit(r,1,dlrrf,m,tsamp,gsamp,gc)
 
 
 
