@@ -343,20 +343,20 @@
 
       call dgemm('N','N',r,n*n*2,r,1.0d0,fstconv,r,fgc,r,0.0d0,tmp,r)
 
-      ! NOTE: This code might be faster for small n
+      !! NOTE: This code might be faster for small n
       !
       !do j=1,n
       !  do i=1,n
       !    hc(:,i,j) = 0
       !    do k=1,n
-      !      hc(:,i,j) = hc(:,i,j)+fgc(:,i,k,2)*tmp(:,k,j,1) &
+      !      hc(:,i,j) = hc(:,i,j)+tmp(:,i,k,1)*fgc(:,k,j,2) &
       !        + fgc(:,i,k,1)*tmp(:,k,j,2)
       !    enddo
       !  enddo
       !enddo
 
       do i=1,r
-        call dgemm('N','N',n,n,n,1.0d0,fgc(i,:,:,2),n,tmp(i,:,:,1),n,0.0d0,hc(i,:,:),n)
+        call dgemm('N','N',n,n,n,1.0d0,tmp(i,:,:,1),n,fgc(i,:,:,2),n,0.0d0,hc(i,:,:),n)
         call dgemm('N','N',n,n,n,1.0d0,fgc(i,:,:,1),n,tmp(i,:,:,2),n,1.0d0,hc(i,:,:),n)
       enddo
 
@@ -364,7 +364,7 @@
 
       ! Diagonal contribution to convolution
 
-      ! NOTE: This code might be faster for small n
+      !! NOTE: This code might be faster for small n
       !
       !do j=1,n
       !  do i=1,n
