@@ -1,5 +1,5 @@
 module libdlr_c
-  use iso_c_binding, only: c_int, c_double, c_char
+  use iso_c_binding, only: c_int, c_double, c_double_complex, c_char
   implicit none
 contains
 
@@ -121,16 +121,15 @@ contains
   subroutine c_dlr_cf2mf_init(r,dlrrf,dlrmf,xi,cf2mf) bind(C)
     integer(c_int), intent(in) :: r,dlrmf(r),xi
     real(c_double), intent(in) :: dlrrf(r)
-    !complex(c_double_complex), intent(out) :: cf2mf(r,r)
-    complex *16, intent(out) :: cf2mf(r,r)
+    complex(c_double_complex), intent(out) :: cf2mf(r,r)
     call dlr_cf2mf_init(r,dlrrf,dlrmf,xi,cf2mf)
   end subroutine c_dlr_cf2mf_init
 
   subroutine c_dlr_cf2mf(r,n,cf2mf,gc,gn) bind(C)
     integer(c_int), intent(in) :: r,n
     real(c_double), intent(in) :: gc(r,n,n)
-    complex *16, intent(in) :: cf2mf(r,r)
-    complex *16, intent(out) :: gn(r,n,n)
+    complex(c_double_complex), intent(in) :: cf2mf(r,r)
+    complex(c_double_complex), intent(out) :: gn(r,n,n)
     call dlr_cf2mf(r,n,cf2mf,gc,gn)
   end subroutine c_dlr_cf2mf
 
@@ -138,14 +137,13 @@ contains
     integer(c_int), intent(in) :: nmax,r,dlrmf(r),xi
     integer(c_int), intent(out) :: mf2cfp(r)
     real(c_double), intent(in) :: dlrrf(r)
-    !complex(c_double_complex), intent(out) :: mf2cf(r,r)
-    complex *16, intent(out) :: mf2cf(r,r)
+    complex(c_double_complex), intent(out) :: mf2cf(r,r)
     call dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,xi,mf2cf,mf2cfp)
   end subroutine c_dlr_mf2cf_init
 
   subroutine c_dlr_mf2cf(r,n,mf2cf,mf2cfp,g,gc) bind(C)
     integer(c_int), intent(in) :: r,n,mf2cfp(r)
-    complex *16, intent(in) :: mf2cf(r,r),g(r,n,n)
+    complex(c_double_complex), intent(in) :: mf2cf(r,r),g(r,n,n)
     real(c_double), intent(out) :: gc(r,n,n)
     call dlr_mf2cf(r,n,mf2cf,mf2cfp,g,gc)
   end subroutine c_dlr_mf2cf
@@ -153,14 +151,14 @@ contains
   subroutine c_dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,gn) bind(C)
     integer(c_int), intent(in) :: r,n,xi,nmf
     real(c_double), intent(in) :: dlrrf(r),gc(r,n,n)
-    complex *16, intent(out) :: gn(n,n)
+    complex(c_double_complex), intent(out) :: gn(n,n)
     call dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,gn)
   end subroutine c_dlr_mf_eval
 
   subroutine c_dlr_mf_fit(r,dlrrf,xi,m,nsamp,gsamp,gc) bind(C)
     integer(c_int), intent(in) :: r,xi,m,nsamp(m)
     real(c_double), intent(in) :: dlrrf(r)
-    complex *16, intent(in) :: gsamp(m)
+    complex(c_double_complex), intent(in) :: gsamp(m)
     real(c_double), intent(out) :: gc(r)
     call dlr_mf_fit(r,dlrrf,xi,m,nsamp,gsamp,gc)
   end subroutine c_dlr_mf_fit
@@ -220,8 +218,8 @@ contains
   subroutine c_dyson_mf(beta,r,n,g0,sigmf,gmf) bind(C)
     integer(c_int), intent(in) :: r,n
     real(c_double), intent(in) :: beta
-    complex *16, intent(in) :: g0(r,n,n),sigmf(r,n,n)
-    complex *16, intent(out) :: gmf(r,n,n)
+    complex(c_double_complex), intent(in) :: g0(r,n,n),sigmf(r,n,n)
+    complex(c_double_complex), intent(out) :: gmf(r,n,n)
     call dyson_mf(beta,r,n,g0,sigmf,gmf)
   end subroutine c_dyson_mf
 
@@ -258,9 +256,9 @@ contains
   subroutine c_kfunmf(n,om,val) bind(C)
     integer(c_int), intent(in) :: n
     real(c_double), intent(in) :: om
-    complex *16, intent(out) :: val
+    complex(c_double_complex), intent(out) :: val
 
-    complex *16, external :: kfunmf
+    complex(c_double_complex), external :: kfunmf
 
     val = kfunmf(n,om)
 
