@@ -54,6 +54,13 @@ contains
     call dlr_cf2it_init(r,dlrrf,dlrit,cf2it)
   end subroutine c_dlr_cf2it_init
 
+  subroutine c_dlr_cf2it(r,n,cf2it,gc,g) bind(C)
+    integer(c_int), intent(in) :: r,n
+    real(c_double), intent(in) :: cf2it(r,r),gc(r,n,n)
+    real(c_double), intent(out) :: g(r,n,n)
+    call dlr_cf2it(r,n,cf2it,gc,g)
+  end subroutine c_dlr_cf2it
+
   subroutine c_dlr_it2cf_init(r,dlrrf,dlrit,it2cf,it2cfp) bind(C)
     integer(c_int), intent(in) :: r
     integer(c_int), intent(out) :: it2cfp(r)
@@ -90,6 +97,20 @@ contains
     call dlr_it_eval(r,n,dlrrf,gc,t,gt)
   end subroutine c_dlr_it_eval
 
+  subroutine c_dlr_it_fit(r,n,dlrrf,m,tsamp,gsamp,gc) bind(C)
+    integer(c_int), intent(in) :: r,n,m
+    real(c_double), intent(in) :: dlrrf(r),tsamp(m),gsamp(m,n,n)
+    real(c_double), intent(out) :: gc(r,n,n)
+    call dlr_it_fit(r,n,dlrrf,m,tsamp,gsamp,gc)
+  end subroutine c_dlr_it_fit
+
+  subroutine c_dlr_mf_build(lambda,eps,nmax,xi,r,dlrrf,dlrmf) bind(C)
+    integer(c_int), intent(in) :: nmax,xi,r
+    real(c_double), intent(in) :: lambda,eps,dlrrf(r)
+    integer(c_int), intent(out) :: dlrmf(r)
+    call dlr_mf_build(lambda,eps,nmax,xi,r,dlrrf,dlrmf)
+  end subroutine c_dlr_mf_build
+
   subroutine c_dlr_mf(nmax,r,dlrrf,xi,dlrmf) bind(C)
     integer(c_int), intent(in) :: nmax,r,xi
     integer(c_int), intent(out) :: dlrmf(r)
@@ -105,14 +126,44 @@ contains
     call dlr_cf2mf_init(r,dlrrf,dlrmf,xi,cf2mf)
   end subroutine c_dlr_cf2mf_init
 
-  subroutine c_dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv) bind(C)
+  subroutine c_dlr_cf2mf(r,n,cf2mf,gc,gn) bind(C)
+    integer(c_int), intent(in) :: r,n
+    real(c_double), intent(in) :: gc(r,n,n)
+    complex *16, intent(in) :: cf2mf(r,r)
+    complex *16, intent(out) :: gn(r,n,n)
+    call dlr_cf2mf(r,n,cf2mf,gc,gn)
+  end subroutine c_dlr_cf2mf
+
+  subroutine c_dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,xi,mf2cf,mf2cfp) bind(C)
     integer(c_int), intent(in) :: nmax,r,dlrmf(r),xi
-    integer(c_int), intent(out) :: mf2cfpiv(r)
+    integer(c_int), intent(out) :: mf2cfp(r)
     real(c_double), intent(in) :: dlrrf(r)
-    !complex(c_double_complex), intent(out) :: dlrmf2cf(r,r)
-    complex *16, intent(out) :: dlrmf2cf(r,r)
-    call dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv)
+    !complex(c_double_complex), intent(out) :: mf2cf(r,r)
+    complex *16, intent(out) :: mf2cf(r,r)
+    call dlr_mf2cf_init(nmax,r,dlrrf,dlrmf,xi,mf2cf,mf2cfp)
   end subroutine c_dlr_mf2cf_init
+
+  subroutine c_dlr_mf2cf(r,n,mf2cf,mf2cfp,g,gc) bind(C)
+    integer(c_int), intent(in) :: r,n,mf2cfp(r)
+    complex *16, intent(in) :: mf2cf(r,r),g(r,n,n)
+    real(c_double), intent(out) :: gc(r,n,n)
+    call dlr_mf2cf(r,n,mf2cf,mf2cfp,g,gc)
+  end subroutine c_dlr_mf2cf
+
+  subroutine c_dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,gn) bind(C)
+    integer(c_int), intent(in) :: r,n,xi,nmf
+    real(c_double), intent(in) :: dlrrf(r),gc(r,n,n)
+    complex *16, intent(out) :: gn(n,n)
+    call dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,gn)
+  end subroutine c_dlr_mf_eval
+
+  subroutine c_dlr_mf_fit(r,dlrrf,xi,m,nsamp,gsamp,gc) bind(C)
+    integer(c_int), intent(in) :: r,xi,m,nsamp(m)
+    real(c_double), intent(in) :: dlrrf(r)
+    complex *16, intent(in) :: gsamp(m)
+    real(c_double), intent(out) :: gc(r)
+    call dlr_mf_fit(r,dlrrf,xi,m,nsamp,gsamp,gc)
+  end subroutine c_dlr_mf_fit
 
   subroutine c_dlr_convtens(beta,xi,r,dlrrf,dlrit,it2cf,it2cfp,phi) bind(C)
     integer(c_int), intent(in) :: xi,r,it2cfp(r)
@@ -130,10 +181,25 @@ contains
 
   subroutine c_dlr_conv(r,n,gmat,f,h) bind(C)
     integer(c_int), intent(in) :: r,n
-    real(c_double), intent(in) :: gmat(r,r),f(r)
-    real(c_double), intent(out) :: h(r)
+    real(c_double), intent(in) :: gmat(r*n,r*n),f(r,n,n)
+    real(c_double), intent(out) :: h(r,n,n)
     call dlr_conv(r,n,gmat,f,h)
   end subroutine c_dlr_conv
+
+  subroutine c_dlr_fstconv_init(beta,r,dlrrf,dlrit,cf2it,fstconv) bind(C)
+    integer(c_int), intent(in) :: r
+    real(c_double), intent(in) :: beta,dlrrf(r),dlrit(r),cf2it(r,r)
+    real(c_double), intent(out) :: fstconv(r,2*r)
+    call dlr_fstconv_init(beta,r,dlrrf,dlrit,cf2it,fstconv)
+  end subroutine c_dlr_fstconv_init
+
+  subroutine c_dlr_fstconv(r,n,cf2it,it2cf,it2cfp,fstconv,f,g,h) bind(C)
+    integer(c_int), intent(in) :: r,n,it2cfp(r)
+    real(c_double), intent(in) :: cf2it(r,r),it2cf(r,r),fstconv(r,2*r)
+    real(c_double), intent(in) :: f(r,n,n),g(r,n,n)
+    real(c_double), intent(out) :: h(r,n,n)
+    call dlr_fstconv(r,n,cf2it,it2cf,it2cfp,fstconv,f,g,h)
+  end subroutine c_dlr_fstconv
 
   subroutine c_dlr_ipmat(beta,r,dlrit,dlrrf,it2cf,it2cfp,ipmat) bind(C)
     integer(c_int), intent(in) :: r,it2cfp(r)
@@ -151,16 +217,31 @@ contains
     call dyson_it(r,n,it2cf,it2cfp,phi,g0,g0mat,sig,g)
   end subroutine c_dyson_it
 
+  subroutine c_dyson_mf(beta,r,n,g0,sigmf,gmf) bind(C)
+    integer(c_int), intent(in) :: r,n
+    real(c_double), intent(in) :: beta
+    complex *16, intent(in) :: g0(r,n,n),sigmf(r,n,n)
+    complex *16, intent(out) :: gmf(r,n,n)
+    call dyson_mf(beta,r,n,g0,sigmf,gmf)
+  end subroutine c_dyson_mf
+
   subroutine c_eqpts_rel(n,t) bind(C)
     integer(c_int), intent(in) :: n
     real(c_double), intent(out) :: t(n)
     call eqpts_rel(n,t)
   end subroutine c_eqpts_rel
 
+  subroutine c_rel2abs(n,t,tabs) bind(C)
+    integer(c_int), intent(in) :: n
+    real(c_double), intent(in) :: t(n)
+    real(c_double), intent(out) :: tabs(n)
+    call rel2abs(n,t,tabs)
+  end subroutine c_rel2abs
+
   subroutine c_abs2rel(n,tabs,t) bind(C)
     integer(c_int), intent(in) :: n
-    real(c_double), intent(in) :: tabs
-    real(c_double), intent(out) :: t
+    real(c_double), intent(in) :: tabs(n)
+    real(c_double), intent(out) :: t(n)
     call abs2rel(n,tabs,t)
   end subroutine c_abs2rel
 
@@ -173,5 +254,16 @@ contains
     val = kfunf_rel(t,om)
 
   end subroutine c_kfunf_rel
+
+  subroutine c_kfunmf(n,om,val) bind(C)
+    integer(c_int), intent(in) :: n
+    real(c_double), intent(in) :: om
+    complex *16, intent(out) :: val
+
+    complex *16, external :: kfunmf
+
+    val = kfunmf(n,om)
+
+  end subroutine c_kfunmf
 
 end module libdlr_c
