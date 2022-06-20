@@ -26,8 +26,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
 file(GLOB dlr_SRC CONFIGURE_DEPENDS "./src/*.f*" "./src/utils_external/*.f*" "./src/utils_external/id_dist/*.f*" "./src/utils_external/qlinpack/*.f*")
 
+add_library(dlr_cplx OBJECT ./src/dlr_conv.f90 ./src/dlr_it.f90)
+target_compile_options(dlr_cplx PRIVATE -DDLR_CPLX -cpp)
+
 add_library(dlr ${dlr_SRC})
-target_link_libraries(dlr PUBLIC BLAS::BLAS LAPACK::LAPACK)
+target_compile_options(dlr PRIVATE -cpp)
+target_link_libraries(dlr PUBLIC dlr_cplx BLAS::BLAS LAPACK::LAPACK)
 install(TARGETS dlr LIBRARY)
 install(TARGETS dlr ARCHIVE)
 

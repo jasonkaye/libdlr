@@ -25,7 +25,7 @@
       ! 
       ! -------------------------------------------------------------
 
-
+#ifndef DLR_CPLX
 
       !> Get tensor taking a set of DLR coefficients to the matrix of
       !! convolution by the corresponding Green's function
@@ -144,7 +144,7 @@
 
       end subroutine dlr_convtens
 
-
+#endif ! not DLR_CPLX
 
 
 
@@ -173,13 +173,24 @@
       !!                        time grid points
       !! @param[out]  gmat    matrix of convolution by g
 
+#ifdef DLR_CPLX
+      subroutine dlr_convmatz(r,n,it2cf,it2cfp,phi,g,gmat)
+#else
       subroutine dlr_convmat(r,n,it2cf,it2cfp,phi,g,gmat)
-
+#endif
+        
       implicit none
       integer r,n,it2cfp(r)
-      real *8 phi(r*r,r),it2cf(r,r),g(r,n,n)
-      real *8 gmat(r*n,r*n)
+      real *8 phi(r*r,r),it2cf(r,r)
 
+#ifdef DLR_CPLX
+      complex *16 g(r,n,n)
+      complex *16 gmat(r*n,r*n)
+#else
+      real *8 g(r,n,n)
+      real *8 gmat(r*n,r*n)
+#endif
+      
       integer i,j,info
       real *8, allocatable :: gc(:,:,:),tmp(:,:)
 
@@ -187,11 +198,19 @@
 
       ! Get DLR coefficients of G_ij
 
+#ifdef DLR_CPLX
+      call dlr_it2cfz(r,n,it2cf,it2cfp,g,gc)
+#else
       call dlr_it2cf(r,n,it2cf,it2cfp,g,gc)
+#endif
 
       ! Get convolution matrix
 
+#ifdef DLR_CPLX
+      call zgemm('N','N',r*r,n*n,r,1.0d0,phi,r*r,gc,r,0.0d0,tmp,r*r)
+#else
       call dgemm('N','N',r*r,n*n,r,1.0d0,phi,r*r,gc,r,0.0d0,tmp,r*r)
+#endif
 
       do j=1,n
         do i=1,n
@@ -201,10 +220,15 @@
       enddo
 
 
+#ifdef DLR_CPLX
+      end subroutine dlr_convmatz
+#else
       end subroutine dlr_convmat
+#endif
 
 
 
+#ifndef DLR_CPLX
 
 
       !> Convolve two Green's functions.
@@ -672,3 +696,6 @@
       endif
 
       end function expfun
+
+#endif ! DLR_CPLX
+      

@@ -25,7 +25,7 @@
       ! 
       ! -------------------------------------------------------------
 
-
+#ifndef DLR_CPLX
 
       !> Get DLR frequency nodes and DLR imaginary time nodes
       !!
@@ -246,7 +246,7 @@
       end subroutine dlr_it2cf_init
 
 
-
+#endif ! not DLR_CPLX
 
 
       !> Transform values of DLR expansion on imaginary time grid to DLR
@@ -264,12 +264,21 @@
       !!                        time grid points
       !! @param[out] gc       DLR coefficients of Green's function
 
+#ifdef DLR_CPLX
+      subroutine dlr_it2cfz(r,n,it2cf,it2cfp,g,gc)
+#else
       subroutine dlr_it2cf(r,n,it2cf,it2cfp,g,gc)
+#endif
       
       implicit none
       integer r,n,it2cfp(r)
-      real *8 it2cf(r,r),g(r,n,n),gc(r,n,n)
-
+      real *8 it2cf(r,r)
+#ifdef DLR_CPLX
+      complex *16 g(r,n,n),gc(r,n,n)
+#else
+      real *8 g(r,n,n),gc(r,n,n)
+#endif
+      
       integer info
 
       ! Solve interpolation problem using DLR coefficients -> imaginary
@@ -279,10 +288,14 @@
 
       call dgetrs('N',r,n*n,it2cf,r,it2cfp,gc,r,info)
 
+#ifdef DLR_CPLX
+      end subroutine dlr_it2cfz
+#else
       end subroutine dlr_it2cf
+#endif
 
 
-
+#ifndef DLR_CPLX
 
 
       !> Build transform matrix from values of a Green's function G on
@@ -587,3 +600,6 @@
 !      call zgemv('N',r,r,1.0d0,it2mf,r,tmp,1,0.0d0,gmf,1)
 !
 !      end subroutine dlr_it2mf
+
+#endif ! not DLR_CPLX
+      
