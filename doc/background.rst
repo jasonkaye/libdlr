@@ -29,9 +29,7 @@ Discrete Lehmann Representation
 
 The discrete Lehmann representation (DLR) provides and efficient method of representing imaginary time functions numerically. The theory and methodology behind is based on the analysis of an integral kernel (`the analytic continuation kernel <https://en.wikipedia.org/wiki/Numerical_analytic_continuation>`_) combined with a clever linear algebra factorization (`the interpolative decomposition <https://en.wikipedia.org/wiki/Interpolative_decomposition>`_). 
 
-For an in depth background on the discrete Lehmann representation (DLR), we suggest reading the original reference on the DLR:
-
-"Discrete Lehmann representation of imaginary time Green's functions", Jason Kaye, Kun Chen, and Olivier Parcollet, `arXiv:2107.13094 <https://arxiv.org/abs/2107.13094>`_
+For an in depth background on the discrete Lehmann representation (DLR), we suggest looking at the two papers cited just below.
 
 
 .. _citations:
@@ -43,8 +41,8 @@ If this library helps you to create software or publications, please let
 us know, and cite
 
 - our repository: `<https://github.com/jasonkaye/libdlr>`_
-- "libdlr: Efficient imaginary time calculations using the discrete Lehmann representation", Jason Kaye and Hugo U.R. Strand, `arXiv:2110.06765 <https://arxiv.org/abs/2110.06765>`_
-- "Discrete Lehmann representation of imaginary time Green's functions", Jason Kaye, Kun Chen, and Olivier Parcollet, `arXiv:2107.13094 <https://arxiv.org/abs/2107.13094>`_
+- `libdlr: Efficient imaginary time calculations using the discrete Lehmann representation, Jason Kaye, Kun Chen, and Hugo U.R. Strand, arXiv:2110.06765. <https://arxiv.org/abs/2110.06765>`_
+- `Discrete Lehmann representation of imaginary time Green's functions, Jason Kaye, Kun Chen, and Olivier Parcollet, Phys. Rev. B 105, 235115, 2022. <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.105.235115>`_ [`arXiv:2107.13094 <https://arxiv.org/abs/2107.13094>`_]
 
 
 ``libdlr`` imaginary time point format
@@ -74,7 +72,7 @@ maintain full relative accuracy.
 
 This apparently annoying characteristic of ``libdlr`` is simply the price of
 maintaining all the accuracy that is possible to maintain in floating
-point arithmic. It is the right thing to do. But it is also largely
+point arithmic. But it is largely
 ignoreable if the loss of accuracy is not noticeable in your application
 (this will be the case for the vast majority of users). Just use the
 provided demos to get started, and follow these guidelines:
@@ -98,3 +96,6 @@ provided demos to get started, and follow these guidelines:
 3. If you happen to want to evaluate a Green's function on an
    equispaced grid on :math:`[0,1]` in imaginary time, use the subroutine ``eqpts_rel``
    to generate this grid in the relative format.
+
+A more in-depth discussion of the relative format is given in Appendix C
+of `our paper on libdlr <https://arxiv.org/abs/2110.06765>`_.

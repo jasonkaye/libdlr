@@ -191,11 +191,13 @@
 
       write(6,*) ''
       write(6,*) 'DLR rank = ',r
+      write(6,*) 'Errors for first method -- convolution tensor:'
       write(6,*) 'Abs L^inf err = ',err1linf
       write(6,*) 'Abs L^2 err   = ',err1l2
       write(6,*) 'Rel L^inf err = ',err1linf/gmax
       write(6,*) 'Rel L^2 err   = ',err1l2/gl2
 
+      write(6,*) 'Errors for second method -- fast convolution:'
       write(6,*) 'Abs L^inf err = ',err2linf
       write(6,*) 'Abs L^2 err   = ',err2l2
       write(6,*) 'Rel L^inf err = ',err2linf/gmax

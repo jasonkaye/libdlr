@@ -37,6 +37,10 @@
       // sum of two delta functions. Recover DLR coefficients from
       // values of Green's function on imaginary time grid, and measure
       // the error of the resulting DLR expansion on a test grid.
+      //
+      // The purpose of this program is to demonstrate and test the C
+      // interface included with libdlr. It carries out the same
+      // calculation as ha_it.f90.
       
       int ntst;
       double lambda,eps,beta;
