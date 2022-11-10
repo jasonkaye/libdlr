@@ -6,8 +6,8 @@ The ``libdlr`` library provides Fortran routines for efficient imaginary time ca
 
 Take a look at our recent preprint for an introduction to the library:
 
-- `libdlr: Efficient imaginary time calculations using the discrete Lehmann representation, Jason Kaye, Kun Chen, and Hugo U.R. Strand, arXiv:2110.06765. <https://arxiv.org/abs/2110.06765>`_
-
+- `libdlr: Efficient imaginary time calculations using the discrete Lehmann representation, Jason Kaye, Kun Chen, and Hugo U.R. Strand, Comput. Phys. Commun. 280, 108458, 2022. <https://www.sciencedirect.com/science/article/pii/S0010465522001771>`_ [`arXiv:2110.06765 <https://arxiv.org/abs/2110.06765>`_]
+  
 We note that ``libdlr`` provides an easy to use C interface. An example
 program is described in the :ref:`Fortran examples` section. There is
 also a Julia package, `Lehmann.jl <https://github.com/numericaleft/Lehmann.jl>`_, which implements similar

@@ -17,7 +17,7 @@ If this library helps you to create software or publications, please let
 us know, and cite
 
 - our repository: https://github.com/jasonkaye/libdlr
-- [libdlr: Efficient imaginary time calculations using the discrete Lehmann representation, Jason Kaye, Kun Chen, and Hugo U.R. Strand, arXiv:2110.06765.](https://arxiv.org/abs/2110.06765)
+- [libdlr: Efficient imaginary time calculations using the discrete Lehmann representation, Jason Kaye, Kun Chen, and Hugo U.R. Strand, Comput. Phys. Commun. 280, 108458, 2022.](https://www.sciencedirect.com/science/article/pii/S0010465522001771) \[[arXiv:2110.06765](https://arxiv.org/abs/2110.06765)\]
 - [Discrete Lehmann representation of imaginary time Green's functions, Jason Kaye, Kun Chen, and Olivier Parcollet, Phys. Rev. B 105, 235115, 2022.](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.105.235115) \[[arXiv:2107.13094](https://arxiv.org/abs/2107.13094)\]
 
 ## Contact
