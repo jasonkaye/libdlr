@@ -133,7 +133,7 @@
 
       do i=1,n
 
-        if (t(i).gt.0.5d0.and.t(i).lt.1.0d0) then
+        if (tabs(i).gt.0.5d0.and.tabs(i).lt.1.0d0) then
           t(i) = tabs(i)-1.0d0
         else
           t(i) = tabs(i)
