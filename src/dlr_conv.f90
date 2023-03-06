@@ -206,6 +206,68 @@
 
 
 
+      !> Get the matrix of convolution by a Green's function, complex version.
+      !!
+      !! The output of this subroutine is the matrix gmat of convolution
+      !! by a Green's function G. The subroutine dlr_conv can be used to
+      !! apply gmat to a vector of imaginary time grid values of a
+      !! Green's function F, giving the values of G * F at the imaginary
+      !! time grid points.
+      !!
+      !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   n       number of orbital indices
+      !! @param[in]   it2cf   imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU factors
+      !! @param[in]   it2cfp  imaginary time grid values ->
+      !!                        DLR coefficients transform matrix,
+      !!                        stored in LAPACK LU factored format;
+      !!                        LU pivots
+      !! @param[in]   phi     tensor produced by subroutine
+      !!                        dlr_convtens taking DLR coefficients
+      !!                        of g to matrix of convolution by g.
+      !! @param[in]   g       values of Green's function at imaginary
+      !!                        time grid points
+      !! @param[out]  gmat    matrix of convolution by g
+
+      subroutine zdlr_convmat(r,n,it2cf,it2cfp,phi,g,gmat)
+
+      implicit none
+      integer r,n,it2cfp(r)
+      real *8 phi(r*r,r),it2cf(r,r)
+      complex *16 g(r,n,n),gmat(r*n,r*n)
+
+      integer i,j,info
+      complex *16, allocatable :: gc(:,:,:),tmp(:,:)
+
+      allocate(gc(r,n,n),tmp(r,r*n*n))
+
+      ! Get DLR coefficients of G_ij
+
+      !call dlr_it2cf(r,n,it2cf,it2cfp,g,gc)
+      call zdlr_it2cf(r,n,it2cf,it2cfp,g,gc)
+
+      ! Get convolution matrix
+
+      !call dgemm('N','N',r*r,n*n,r,1.0d0,phi,r*r,gc,r,0.0d0,tmp,r*r)
+      call zgemm('N','N',r*r,n*n,r,(1.0d0,0.0d0),dcmplx(phi),r*r,gc,r,&
+        (0.0d0,0.0d0),tmp,r*r)
+
+      do j=1,n
+        do i=1,n
+          gmat((i-1)*r+1:i*r,(j-1)*r+1:j*r) = &
+            tmp(:,((j-1)*n+(i-1))*r+1:((j-1)*n+(i-1)+1)*r)
+        enddo
+      enddo
+
+
+      end subroutine zdlr_convmat
+
+
+
+
+
 
       !> Convolve two Green's functions.
       !!
@@ -233,6 +295,39 @@
       call dgemm('N','N',r*n,n,r*n,1.0d0,gmat,r*n,f,r*n,0.0d0,h,r*n)
 
       end subroutine dlr_conv
+
+
+
+
+
+      !> Convolve two Green's functions, complex version.
+      !!
+      !! This subroutine takes the matrix of convolution by a Green's
+      !! function G produced by dlr_convmat, and performs the
+      !! convolution between G and a Green's function F, given by its
+      !! values on the imaginary time grid. It returns the values of the
+      !! convolution H = G * F at the imaginary time grid points.
+      !!
+      !! @param[in]   r       number of DLR basis functions
+      !! @param[in]   n       number of orbital indices
+      !! @param[in]   gmat    matrix of convolution by G
+      !! @param[in]   f       values of Green's function F at imaginary
+      !!                        time grid points
+      !! @param[out]  h       values of convolution H = G * F at
+      !!                        imaginary time grid points
+
+
+      subroutine zdlr_conv(r,n,gmat,f,h)
+
+      implicit none
+      integer r,n
+      complex *16 gmat(r*n,r*n),f(r,n,n),h(r,n,n)
+
+      !call dgemm('N','N',r*n,n,r*n,1.0d0,gmat,r*n,f,r*n,0.0d0,h,r*n)
+      call zgemm('N','N',r*n,n,r*n,(1.0d0,0.0d0),gmat,r*n,f,r*n,&
+        (0.0d0,0.0d0),h,r*n)
+
+      end subroutine zdlr_conv
 
 
 
@@ -382,6 +477,112 @@
       call dgemm('N','N',r,n*n,r,1.0d0,fstconv(1,r+1),r,hc,r,1.0d0,h,r)
 
       end subroutine dlr_fstconv
+
+
+
+
+
+      !> Convolve two Green's functions using the fast convolution
+      !! method, which carries out the convolution directly in the DLR
+      !! coefficient domain. Complex version.
+      !!
+      !! This subroutine performs the convolution between Green's
+      !! functions F and G, given by their values on the imaginary time
+      !! grid, and returns the values of the convolution H = G * F on
+      !! the imaginary time grid.
+      !!
+      !! @param[in]  r        number of DLR basis functions
+      !! @param[in]  n        number of orbital indices
+      !! @param[in]  cf2it    DLR coefficients -> imaginary time grid
+      !!                        values transform matrix
+      !! @param[in]  it2cf    imaginary time grid values -> DLR
+      !!                        coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU factors
+      !! @param[in]  it2cfp   imaginary time grid values -> DLR
+      !!                        coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU pivots
+      !! @param[in]  fstconv  arrays used for fast convolution 
+      !! @param[in]  f        values of Green's function F at imaginary
+      !!                        time grid points
+      !! @param[in]  g        values of Green's function G at imaginary
+      !!                        time grid points
+      !! @param[out] h        values of convolution H = F * G at
+      !!                         imaginary time grid points
+
+      subroutine zdlr_fstconv(r,n,cf2it,it2cf,it2cfp,fstconv,f,g,h)
+
+      implicit none
+      integer r,n,it2cfp(r)
+      real *8 it2cf(r,r),fstconv(r,2*r),cf2it(r,r)
+      complex *16 f(r,n,n),g(r,n,n),h(r,n,n)
+
+      integer info,i,j,k
+      complex *16, allocatable :: fgc(:,:,:,:),tmp(:,:,:,:),hc(:,:,:)
+
+      allocate(fgc(r,n,n,2),tmp(r,n,n,2),hc(r,n,n))
+
+      ! Get DLR coefficients of f and g
+
+      fgc(:,:,:,1) = f
+      fgc(:,:,:,2) = g
+
+      !call dgetrs('N',r,n*n*2,it2cf,r,it2cfp,fgc,r,info)
+      call zgetrs('N',r,n*n*2,dcmplx(it2cf),r,it2cfp,fgc,r,info)
+
+      ! Off-diagonal contribution to convolution
+
+      !call dgemm('N','N',r,n*n*2,r,1.0d0,fstconv,r,fgc,r,0.0d0,tmp,r)
+      call zgemm('N','N',r,n*n*2,r,(1.0d0,0.0d0),dcmplx(fstconv),r,&
+        fgc,r,(0.0d0,0.0d0),tmp,r)
+
+      !! NOTE: This code might be faster for small n
+      !
+      !do j=1,n
+      !  do i=1,n
+      !    hc(:,i,j) = 0
+      !    do k=1,n
+      !      hc(:,i,j) = hc(:,i,j)+tmp(:,i,k,1)*fgc(:,k,j,2) &
+      !        + fgc(:,i,k,1)*tmp(:,k,j,2)
+      !    enddo
+      !  enddo
+      !enddo
+
+      do i=1,r
+        !call dgemm('N','N',n,n,n,1.0d0,tmp(i,:,:,1),n,fgc(i,:,:,2),n,0.0d0,hc(i,:,:),n)
+        !call dgemm('N','N',n,n,n,1.0d0,fgc(i,:,:,1),n,tmp(i,:,:,2),n,1.0d0,hc(i,:,:),n)
+        call zgemm('N','N',n,n,n,(1.0d0,0.0d0),tmp(i,:,:,1),n,&
+          fgc(i,:,:,2),n,(0.0d0,0.0d0),hc(i,:,:),n)
+        call zgemm('N','N',n,n,n,(1.0d0,0.0d0),fgc(i,:,:,1),n,&
+          tmp(i,:,:,2),n,(1.0d0,0.0d0),hc(i,:,:),n)
+      enddo
+
+      call zdlr_cf2it(r,n,cf2it,hc,h)
+
+      ! Diagonal contribution to convolution
+
+      !! NOTE: This code might be faster for small n
+      !
+      !do j=1,n
+      !  do i=1,n
+      !    hc(:,i,j) = 0
+      !    do k=1,n
+      !      hc(:,i,j) = hc(:,i,j) + fgc(:,i,k,1)*fgc(:,k,j,2)
+      !    enddo
+      !  enddo
+      !enddo
+
+      do i=1,r
+        !call dgemm('N','N',n,n,n,1.0d0,fgc(i,:,:,1),n,fgc(i,:,:,2),n,0.0d0,hc(i,:,:),n)
+        call zgemm('N','N',n,n,n,(1.0d0,0.0d0),fgc(i,:,:,1),n,&
+          fgc(i,:,:,2),n,(0.0d0,0.0d0),hc(i,:,:),n)
+      enddo
+
+      !call dgemm('N','N',r,n*n,r,1.0d0,fstconv(1,r+1),r,hc,r,1.0d0,h,r)
+      call zgemm('N','N',r,n*n,r,(1.0d0,0.0d0),&
+        dcmplx(fstconv(1:r,r+1:2*r)),r,hc,r,(1.0d0,0.0d0),h,r)
+
+      end subroutine zdlr_fstconv
+
 
 
 

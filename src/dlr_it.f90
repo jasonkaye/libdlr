@@ -207,6 +207,39 @@
 
 
 
+      !> Transform DLR coefficients to values of DLR expansion on
+      !! imaginary time grid, complex version.
+      !!
+      !! @param[in]  r      number of DLR basis functions
+      !! @param[in]  n      number of orbital indices
+      !! @param[in]  cf2it  DLR coefficients -> imaginary time grid
+      !!                      values transform matrix
+      !! @param[in]  gc     DLR coefficients of Green's function
+      !! @param[out] g      values of Green's function at imaginary
+      !!                      time grid points
+
+
+
+      subroutine zdlr_cf2it(r,n,cf2it,gc,g)
+
+      implicit none
+      integer r,n
+      real *8 cf2it(r,r)
+      complex *16 gc(r,n,n),g(r,n,n)
+
+      ! Apply transformation matrix to coefficient vector
+
+
+      !call dgemm('N','N',r,n*n,r,1.0d0,cf2it,r,gc,r,0.0d0,g,r)
+      call zgemm('N','N',r,n*n,r,(1.0d0,0.0d0),dcmplx(cf2it),r,gc,r,&
+        (0.0d0,0.0d0),g,r)
+
+      end subroutine zdlr_cf2it
+
+
+
+
+
       !> Build transform matrix from values of a Green's function on
       !! imaginary time grid to its DLR coefficients; matrix is stored
       !! in LU factored form
@@ -280,6 +313,44 @@
       call dgetrs('N',r,n*n,it2cf,r,it2cfp,gc,r,info)
 
       end subroutine dlr_it2cf
+
+
+
+
+
+      !> Transform values of DLR expansion on imaginary time grid to DLR
+      !! coefficients, complex version.
+      !!
+      !! @param[in]  r        number of DLR basis functions
+      !! @param[in]  n        number of orbital indices
+      !! @param[in]  it2cf    imaginary time grid values ->
+      !!                        DLR coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU factors
+      !! @param[in]  it2cfp   imaginary time grid values ->
+      !!                        DLR coefficients transform matrix, stored in
+      !!                        LAPACK LU factored format; LU pivots
+      !! @param[in]  g        values of Green's function at imaginary
+      !!                        time grid points
+      !! @param[out] gc       DLR coefficients of Green's function
+
+      subroutine zdlr_it2cf(r,n,it2cf,it2cfp,g,gc)
+      
+      implicit none
+      integer r,n,it2cfp(r)
+      real *8 it2cf(r,r)
+      complex *16 g(r,n,n),gc(r,n,n)
+
+      integer info
+
+      ! Solve interpolation problem using DLR coefficients -> imaginary
+      ! time grid values matrix stored in LU form
+
+      gc = g
+
+      !call dgetrs('N',r,n*n,it2cf,r,it2cfp,gc,r,info)
+      call zgetrs('N',r,n*n,dcmplx(it2cf),r,it2cfp,gc,r,info)
+
+      end subroutine zdlr_it2cf
 
 
 
@@ -373,6 +444,45 @@
 
 
 
+      !> Transform values of a Green's function G on
+      !! imaginary time grid to values of reflection G(1-tau) on
+      !! imaginary time grid, complex version
+      !!
+      !! @param[in]  r      number of DLR basis functions
+      !! @param[in]  n      number of orbital indices
+      !! @param[in]  it2itr DLR coefficients -> imaginary time grid
+      !!                      values transform matrix
+      !! @param[in]  g      values of Green's function at imaginary
+      !!                      time grid points
+      !! @param[in]  gr     values of Green's function at reflected
+      !!                      imaginary time grid points
+
+
+
+      subroutine zdlr_it2itr(r,n,it2itr,g,gr)
+
+      implicit none
+      integer r,n
+      real *8 it2itr(r,r)
+      complex *16 g(r,n,n),gr(r,n,n)
+
+      integer i,j
+      real *8, external :: kfunf_rel
+
+      ! Apply transformation matrix to vector of imaginary time grid
+      ! values
+
+      !call dgemm('N','N',r,n*n,r,1.0d0,it2itr,r,g,r,0.0d0,gr,r)
+      call zgemm('N','N',r,n*n,r,(1.0d0,0.0d0),dcmplx(it2itr),r,g,r,&
+        (0.0d0,0.0d0),gr,r)
+
+      end subroutine zdlr_it2itr
+
+
+
+
+
+
       !> Evaluate a DLR expansion at an imaginary time point
       !!
       !! @param[in]  r      number of DLR basis functions
@@ -410,6 +520,50 @@
       enddo
 
       end subroutine dlr_it_eval
+
+
+
+
+
+      !> Evaluate a DLR expansion at an imaginary time point, complex version
+      !!
+      !! @param[in]  r      number of DLR basis functions
+      !! @param[in]  n      number of orbital indices
+      !! @param[in]  dlrrf  DLR frequency nodes
+      !! @param[in]  gc     DLR coefficients of expansion
+      !! @param[in]  t      imaginary time point in relative format
+      !! @param[out] gt     value of DLR expansion at t
+
+      subroutine zdlr_it_eval(r,n,dlrrf,gc,t,gt)
+
+      implicit none
+      integer r,n
+      real *8 dlrrf(r),t
+      complex *16 gc(r,n,n),gt(n,n)
+
+      integer i
+      real *8 kval
+      real *8, external :: kfunf
+
+      ! Evaluate DLR basis functions and sum against DLR coefficients,
+      ! taking into account relative format of given imaginary time
+      ! point
+
+      gt = 0
+      do i=1,r
+
+        if (t.ge.0.0d0) then
+          kval = kfunf(t,dlrrf(i))
+        else
+          kval = kfunf(-t,-dlrrf(i))
+        endif
+
+        gt = gt + gc(i,:,:)*kval
+
+      enddo
+
+      end subroutine zdlr_it_eval
+
 
 
 
