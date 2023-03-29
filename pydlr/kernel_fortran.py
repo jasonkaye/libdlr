@@ -189,7 +189,7 @@ class KernelInterpolativeDecopositionFortran:
         lib.c_dlr_mf2cf_init(nmax,rank,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv)
 
         self.mf2cfpiv = np.frombuffer(ffi.buffer(mf2cfpiv), dtype=np.int32) - 1
-        self.dlrmf2cf = np.frombuffer(ffi.buffer(dlrmf2cf), dtype=np.complex).reshape((self.rank, self.rank)).T
+        self.dlrmf2cf = np.frombuffer(ffi.buffer(dlrmf2cf), dtype=complex).reshape((self.rank, self.rank)).T
             
         if verbose:
             print(f'mf2cfpiv = {self.mf2cfpiv}')
@@ -199,7 +199,7 @@ class KernelInterpolativeDecopositionFortran:
 
         lib.c_dlr_cf2mf_init(rank,dlrrf,dlrmf,xi,cf2mf)
 
-        self.cf2mf = np.frombuffer(ffi.buffer(cf2mf), dtype=np.complex).reshape((self.rank, self.rank)).T
+        self.cf2mf = np.frombuffer(ffi.buffer(cf2mf), dtype=complex).reshape((self.rank, self.rank)).T
             
         #self.T_lx = get_A(self.dlrit2cf, self.it2cfpiv)
         #self.T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv)
