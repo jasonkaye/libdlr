@@ -102,8 +102,8 @@ class KernelInterpolativeDecopositionFortran:
         rank = r_r
         self.rank = int(r_r[0])
 
-        self.dlrrf = np.frombuffer(ffi.buffer(dlrrf), dtype=np.float)[:self.rank].copy()
-        self.dlrit = np.frombuffer(ffi.buffer(dlrit), dtype=np.float)[:self.rank].copy()
+        self.dlrrf = np.frombuffer(ffi.buffer(dlrrf), dtype=float)[:self.rank].copy()
+        self.dlrit = np.frombuffer(ffi.buffer(dlrit), dtype=float)[:self.rank].copy()
         del dlrrf, dlrit
         
         # -- Sort real frequencies
@@ -142,7 +142,7 @@ class KernelInterpolativeDecopositionFortran:
 
         self.it2cfpiv = np.frombuffer(ffi.buffer(it2cfpiv), dtype=np.int32) - 1
         self.dlrit2cf = np.frombuffer(
-            ffi.buffer(dlrit2cf), dtype=np.float).reshape((self.rank, self.rank)).T
+            ffi.buffer(dlrit2cf), dtype=float).reshape((self.rank, self.rank)).T
         
         if verbose:
             print(f'it2cfpiv = {self.it2cfpiv}')
@@ -153,7 +153,7 @@ class KernelInterpolativeDecopositionFortran:
         lib.c_dlr_cf2it_init(rank,dlrrf,dlrit,cf2it)
 
         self.cf2it = np.frombuffer(
-            ffi.buffer(cf2it), dtype=np.float).reshape((self.rank, self.rank)).T
+            ffi.buffer(cf2it), dtype=float).reshape((self.rank, self.rank)).T
 
         # -- Store raw ffi objects
 
