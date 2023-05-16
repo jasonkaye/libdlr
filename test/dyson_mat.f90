@@ -193,6 +193,9 @@
       if (err.gt.1.0d-13) then
         call exit(1)
       endif
+      if (isnan(err)) then
+        call exit(1)
+      endif
 
       end subroutine dyson_mat_main
 

@@ -148,11 +148,11 @@ contains
     call dlr_mf2cf(r,n,mf2cf,mf2cfp,g,gc)
   end subroutine c_dlr_mf2cf
 
-  subroutine c_dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,gn) bind(C)
+  subroutine c_dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,beta,gn) bind(C)
     integer(c_int), intent(in) :: r,n,xi,nmf
-    real(c_double), intent(in) :: dlrrf(r),gc(r,n,n)
+    real(c_double), intent(in) :: dlrrf(r),gc(r,n,n),beta
     complex(c_double_complex), intent(out) :: gn(n,n)
-    call dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,gn)
+    call dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,beta,gn)
   end subroutine c_dlr_mf_eval
 
   subroutine c_dlr_mf_fit(r,dlrrf,xi,m,nsamp,gsamp,gc) bind(C)

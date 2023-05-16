@@ -163,6 +163,10 @@
       if (errlinf > 1.0e-13) {
         exit(1);
       }
+      if (isnan(errlinf)) {
+        exit(1);
+      }
+
 
       }
 

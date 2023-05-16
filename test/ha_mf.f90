@@ -99,7 +99,7 @@
 
       allocate(gc(r))
 
-      call dlr_mf2cf(r,1,mf2cf,mf2cfp,g,gc)
+      call dlr_mf2cf(r,1,mf2cf,mf2cfp,beta,g,gc)
 
 
       ! Get test points in relative format
@@ -154,6 +154,9 @@
       if (errlinf.gt.1.0d-12) then
         call exit(1)
       endif
+      if (isnan(errlinf)) then
+        call exit(1)
+      endif
 
 
       end subroutine ha_mf_main
@@ -178,9 +181,9 @@
       a4 =  0.915d0
       a5 =  0.929d0
 
-      g = kfunmf(2*n+1,beta*a1) + kfunmf(2*n+1,beta*a2) +&
+      g = beta*(kfunmf(2*n+1,beta*a1) + kfunmf(2*n+1,beta*a2) +&
         kfunmf(2*n+1,beta*a3) + kfunmf(2*n+1,beta*a4) +&
-        kfunmf(2*n+1,beta*a5)
+        kfunmf(2*n+1,beta*a5))
         
       end subroutine gfun_mf
 

@@ -178,7 +178,7 @@
 
       do i=1,2*ntst_mf+1
 
-        call dlr_mf_eval(r,1,dlrrf,-1,gc,mf_tst(i),gtst_mf(i))
+        call dlr_mf_eval(r,1,dlrrf,-1,gc,mf_tst(i),beta,gtst_mf(i))
 
       enddo
 
@@ -271,10 +271,11 @@
       real *8 pbp(2*np+1),xgl(n),wgl(n),xgj(n),wgj(n),beta,t,val
 
       integer ii,jj
-      real *8 one,a,b,x,tt
+      real *8 one,pi,a,b,x,tt
       real *8, external :: kfunf
 
       one = 1.0d0
+      pi = 4*atan(1.0d0)
 
       ! Treat 0.5<tau<1, stored in relative format, by symmetry
 
@@ -310,6 +311,7 @@
           kfunf(tt,beta*x)*sqrt(one-x)
       enddo
 
+      val = -2/pi*val
 
       end subroutine gfun_it
 
@@ -328,10 +330,11 @@
       complex *16 val
 
       integer ii,jj
-      real *8 one,a,b,x
+      real *8 one,a,b,x,pi
       complex *16, external :: kfunmf
 
       one = 1.0d0
+      pi = 4*atan(1.0d0)
 
       val = 0.0d0
       do ii=2,2*np-1
@@ -359,5 +362,7 @@
         val = val + ((b-a)/2)**(1.5d0)*wgj(n-jj+1)*&
           kfunmf(2*m+1,beta*x)*sqrt(one-x)
       enddo
+
+      val = -2/pi*beta*val
 
       end subroutine gfun_mf

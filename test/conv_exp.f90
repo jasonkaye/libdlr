@@ -210,6 +210,9 @@
       if (err1linf.gt.1.0d-13.or.err2linf.gt.1.0d-13) then
         call exit(1)
       endif
+      if (isnan(err1linf).or.isnan(err2linf)) then
+        call exit(1)
+      endif
 
       end subroutine conv_exp_main
 

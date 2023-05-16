@@ -195,7 +195,7 @@
 
       ! Get self-energy on Matsubara frequency grid
 
-      call dlr_cf2mf(r,1,cf2mf,sigc,sigmf)
+      call dlr_cf2mf(r,1,cf2mf,beta,sigc,sigmf)
 
 
       ! Solve Dyson equation by diagonal inversion
@@ -205,8 +205,7 @@
 
       ! Get DLR coefficients of solution
 
-      call dlr_mf2cf(r,1,mf2cf,mf2cfp,gmf,g2c)
-
+      call dlr_mf2cf(r,1,mf2cf,mf2cfp,beta,gmf,g2c)
 
 
       ! Get test points in relative format
@@ -250,6 +249,9 @@
       if (err1.gt.1.0d-12.or.err2.gt.1.0d-12) then
         call exit(1)
       endif
+      if (isnan(err1).or.isnan(err2)) then
+        call exit(1)
+      endif
 
       end subroutine dyson_sc_main
 
@@ -285,7 +287,7 @@
       complex *16, external :: kfunmf
 
       do i=1,r
-        g0(i) = -kfunmf(2*dlrmf(i)+1,beta*mu)
+        g0(i) = -beta*kfunmf(2*dlrmf(i)+1,beta*mu)
       enddo
 
       end subroutine getg0_mf

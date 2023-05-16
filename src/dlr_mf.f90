@@ -213,25 +213,26 @@
       !! @param[in]  n      number of orbital indices
       !! @param[in]  cf2mf  DLR coefficients -> imaginary time grid
       !!                      values transform matrix
+      !! @param[in]  beta   Inverse temperature
       !! @param[in]  gc     DLR coefficients of Green's function
       !! @param[out] gn     values of DLR expansion at Matsubara
       !!                      frequency grid points
 
 
 
-      subroutine dlr_cf2mf(r,n,cf2mf,gc,gn)
+      subroutine dlr_cf2mf(r,n,cf2mf,beta,gc,gn)
 
       implicit none
       integer r,n
-      real *8 gc(r,n,n)
+      real *8 beta,gc(r,n,n)
       complex *16 cf2mf(r,r),gn(r,n,n)
 
       complex *16, allocatable :: tmp(:,:,:)
 
       ! Apply transformation matrix to coefficient vector
 
-      tmp = gc
-      call zgemm('N','N',r,n*n,r,1.0d0,cf2mf,r,tmp,r,0.0d0,gn,r)
+      tmp = beta*gc
+      call zgemm('N','N',r,n*n,r,(1.0d0,0.0d0),cf2mf,r,tmp,r,(0.0d0,0.0d0),gn,r)
 
       end subroutine dlr_cf2mf
 
@@ -299,15 +300,16 @@
       !!                       DLR coefficients transform matrix,
       !!                       stored in LAPACK LU factored format; LU
       !!                       pivots
+      !! @param[in]  beta    Inverse temperature
       !! @param[in]  g       values of Green's function at Matsubara
       !!                       freq grid points
       !! @param[out] gc      DLR coefficients of Green's function
 
-      subroutine dlr_mf2cf(r,n,mf2cf,mf2cfp,g,gc)
+      subroutine dlr_mf2cf(r,n,mf2cf,mf2cfp,beta,g,gc)
 
       implicit none
       integer r,n,mf2cfp(r)
-      real *8 gc(r,n,n)
+      real *8 gc(r,n,n),beta
       complex *16 mf2cf(r,r),g(r,n,n)
 
       integer info
@@ -316,7 +318,7 @@
       ! Solve interpolation problem using DLR coefficients -> Matsubara
       ! frequency grid values matrix stored in LU form
 
-      tmp = g
+      tmp = g/beta
 
       call zgetrs('N',r,n*n,mf2cf,r,mf2cfp,tmp,r,info)
 
@@ -350,13 +352,14 @@
       !!                      for bosonic frequencies
       !! @param[in]  gc     DLR coefficients of expansion
       !! @param[in]  nmf    Matsubara frequency integer
+      !! @param[in]  beta   Inverse temperature
       !! @param[out] gn     value of DLR expansion at i*omega_n
 
-      subroutine dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,gn)
+      subroutine dlr_mf_eval(r,n,dlrrf,xi,gc,nmf,beta,gn)
 
       implicit none
       integer r,n,xi,nmf
-      real *8 dlrrf(r),gc(r,n,n)
+      real *8 dlrrf(r),gc(r,n,n),beta
       complex *16 gn(n,n)
 
       integer i
@@ -374,6 +377,8 @@
         gn = gn + gc(i,:,:)*kval
 
       enddo
+
+      gn = beta*gn
 
       end subroutine dlr_mf_eval
 

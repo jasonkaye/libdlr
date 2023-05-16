@@ -40,7 +40,7 @@ void c_dlr_mf2cf_init(int *nmax, int *r, double *dlrrf, int *dlrmf, int *xi, dou
 
 void c_dlr_mf2cf(int *r, int *n, double _Complex *mf2cf, int *mf2cfp, double _Complex *g, double *gc);
 
-void c_dlr_mf_eval(int *r, int *n, double *dlrrf, int *xi, double *gc, int *nmf, double _Complex *gn);
+void c_dlr_mf_eval(int *r, int *n, double *dlrrf, int *xi, double *gc, int *nmf, double *beta, double _Complex *gn);
 
 void c_dlr_mf_fit(int *r, double *dlrrf, int *xi, int *m, int *nsamp, double _Complex *gsamp, double *gc);
 

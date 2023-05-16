@@ -120,6 +120,6 @@
       real *8 beta
       complex *16 g0(r,n,n),sigmf(r,n,n),gmf(r,n,n)
 
-      gmf = g0/(1.0d0-beta**2*g0*sigmf)
+      gmf = g0/(1.0d0-g0*sigmf)
 
       end subroutine dyson_mf
