@@ -205,7 +205,7 @@ def kernel(tau, omega):
 
     The Fermionic analytical continuation kernel has the form
     
-    .. math:: K(\\tau, \\omega) = \\frac{e^{-\\omega \\tau}}{1 + e^{\\omega}}
+    .. math:: K(\\tau, \\omega) = \\frac{e^{-\\omega \\tau}}{1 + e^{-\\omega}}
 
     in normalized imaginary time :math:`\\tau \\in [0, 1]` and frequency :math:`\omega`.
 
