@@ -32,12 +32,12 @@ The discrete Lehmann representation (DLR) provides and efficient method of repre
 In imaginary time the kernel
 
 .. math::
-   K(\tau, \omega) = \frac{e^{-\omega \tau}{1 + e^{-\omega}}
+   K(\tau, \omega) = \frac{e^{-\omega \tau}}{1 + e^{-\omega}}
    
 is used to represent all kinds of response functions, and in Matsubara frequency the corresponding kernels are
 
 .. math::
-   K_F(i \nu_n, \omega) = -\frac{1}{i\nu_n - \omega} \, , \quad K_B(i\omega_n, \omega_n) = - \frac{\tanh (\omega/2)}{i\omega_n - \omega}
+   K_F(i \nu_n, \omega) = -\frac{1}{i\nu_n - \omega} \, , \quad K_B(i\omega_n, \omega) = - \frac{\tanh (\omega/2)}{i\omega_n - \omega}
 
 for Fermions and Bosons respectively.
 
