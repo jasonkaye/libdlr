@@ -426,7 +426,8 @@ class KernelInterpolativeDecoposition:
 
         if verbose: t = time.time()
 
-        id_eps = self.eps * self.lamb
+        #id_eps = self.eps * self.lamb
+        id_eps = self.eps # Do not scale eps with lamb, to be consistent with Fortran impl.
         if id_eps >= 0.1: id_eps = 0.1
         self.rank, self.oidx, self.proj_w = interp_decomp(self.kmat, id_eps, rand=False)
         self.oidx = np.sort(self.oidx[:self.rank])
