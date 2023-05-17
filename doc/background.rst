@@ -27,7 +27,19 @@ where :math:`\xi = \pm 1` for bosonic and fermionic particles, respectively.
 Discrete Lehmann Representation
 -------------------------------
 
-The discrete Lehmann representation (DLR) provides and efficient method of representing imaginary time functions numerically. The theory and methodology behind is based on the analysis of an integral kernel (`the analytic continuation kernel <https://en.wikipedia.org/wiki/Numerical_analytic_continuation>`_) combined with a clever linear algebra factorization (`the interpolative decomposition <https://en.wikipedia.org/wiki/Interpolative_decomposition>`_). 
+The discrete Lehmann representation (DLR) provides and efficient method of representing imaginary time functions numerically. The theory and methodology behind is based on the analysis of an integral kernel (`the analytic continuation kernel <https://en.wikipedia.org/wiki/Numerical_analytic_continuation>`_) combined with a clever linear algebra factorization (`the interpolative decomposition <https://en.wikipedia.org/wiki/Interpolative_decomposition>`_).
+
+In imaginary time the kernel
+
+.. math::
+   K(\tau, \omega) = \frac{e^{-\omega \tau}{1 + e^{-\omega}}
+   
+is used to represent all kinds of response functions, and in Matsubara frequency the corresponding kernels are
+
+.. math::
+   K_F(i \nu_n, \omega) = -\frac{1}{i\nu_n - \omega} \, , \quad K_B(i\omega_n, \omega_n) = - \frac{\tanh (\omega/2)}{i\omega_n - \omega}
+
+for Fermions and Bosons respectively.
 
 For an in depth background on the discrete Lehmann representation (DLR), we suggest looking at the two papers cited just below.
 
