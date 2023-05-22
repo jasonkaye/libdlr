@@ -102,8 +102,8 @@ class KernelInterpolativeDecopositionFortran:
         rank = r_r
         self.rank = int(r_r[0])
 
-        self.dlrrf = np.frombuffer(ffi.buffer(dlrrf), dtype=np.float)[:self.rank].copy()
-        self.dlrit = np.frombuffer(ffi.buffer(dlrit), dtype=np.float)[:self.rank].copy()
+        self.dlrrf = np.frombuffer(ffi.buffer(dlrrf), dtype=float)[:self.rank].copy()
+        self.dlrit = np.frombuffer(ffi.buffer(dlrit), dtype=float)[:self.rank].copy()
         del dlrrf, dlrit
         
         # -- Sort real frequencies
@@ -142,7 +142,7 @@ class KernelInterpolativeDecopositionFortran:
 
         self.it2cfpiv = np.frombuffer(ffi.buffer(it2cfpiv), dtype=np.int32) - 1
         self.dlrit2cf = np.frombuffer(
-            ffi.buffer(dlrit2cf), dtype=np.float).reshape((self.rank, self.rank)).T
+            ffi.buffer(dlrit2cf), dtype=float).reshape((self.rank, self.rank)).T
         
         if verbose:
             print(f'it2cfpiv = {self.it2cfpiv}')
@@ -153,7 +153,7 @@ class KernelInterpolativeDecopositionFortran:
         lib.c_dlr_cf2it_init(rank,dlrrf,dlrit,cf2it)
 
         self.cf2it = np.frombuffer(
-            ffi.buffer(cf2it), dtype=np.float).reshape((self.rank, self.rank)).T
+            ffi.buffer(cf2it), dtype=float).reshape((self.rank, self.rank)).T
 
         # -- Store raw ffi objects
 
@@ -189,7 +189,7 @@ class KernelInterpolativeDecopositionFortran:
         lib.c_dlr_mf2cf_init(nmax,rank,dlrrf,dlrmf,xi,dlrmf2cf,mf2cfpiv)
 
         self.mf2cfpiv = np.frombuffer(ffi.buffer(mf2cfpiv), dtype=np.int32) - 1
-        self.dlrmf2cf = np.frombuffer(ffi.buffer(dlrmf2cf), dtype=np.complex).reshape((self.rank, self.rank)).T
+        self.dlrmf2cf = np.frombuffer(ffi.buffer(dlrmf2cf), dtype=complex).reshape((self.rank, self.rank)).T
             
         if verbose:
             print(f'mf2cfpiv = {self.mf2cfpiv}')
@@ -199,7 +199,7 @@ class KernelInterpolativeDecopositionFortran:
 
         lib.c_dlr_cf2mf_init(rank,dlrrf,dlrmf,xi,cf2mf)
 
-        self.cf2mf = np.frombuffer(ffi.buffer(cf2mf), dtype=np.complex).reshape((self.rank, self.rank)).T
+        self.cf2mf = np.frombuffer(ffi.buffer(cf2mf), dtype=complex).reshape((self.rank, self.rank)).T
             
         #self.T_lx = get_A(self.dlrit2cf, self.it2cfpiv)
         #self.T_qx = get_A(self.dlrmf2cf, self.mf2cfpiv)

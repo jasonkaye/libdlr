@@ -363,7 +363,7 @@ class dlr(object):
         """
         xi = self.__xi_arg(xi)
 
-        G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv), G_qaa.conj() / beta)
+        G_xaa = lu_solve((self.dlrmf2cf, self.mf2cfpiv), G_qaa / beta)
 
         if xi == 1: G_xaa /= self.bosonic_corr_x[:, None, None]
 
@@ -401,7 +401,6 @@ class dlr(object):
             G_qaa = beta * np.tensordot(self.T_qx, G_xaa, axes=(1, 0))
 
         if len(G_qaa.shape) == 3: G_qaa = np.transpose(G_qaa, axes=(0, 2, 1))
-        G_qaa = G_qaa.conj()
 
         return G_qaa
     

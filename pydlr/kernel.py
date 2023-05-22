@@ -205,7 +205,7 @@ def kernel(tau, omega):
 
     The Fermionic analytical continuation kernel has the form
     
-    .. math:: K(\\tau, \\omega) = \\frac{e^{-\\omega \\tau}}{1 + e^{\\omega}}
+    .. math:: K(\\tau, \\omega) = \\frac{e^{-\\omega \\tau}}{1 + e^{-\\omega}}
 
     in normalized imaginary time :math:`\\tau \\in [0, 1]` and frequency :math:`\omega`.
 
@@ -426,7 +426,8 @@ class KernelInterpolativeDecoposition:
 
         if verbose: t = time.time()
 
-        id_eps = self.eps * self.lamb
+        #id_eps = self.eps * self.lamb
+        id_eps = self.eps # Do not scale eps with lamb, to be consistent with Fortran impl.
         if id_eps >= 0.1: id_eps = 0.1
         self.rank, self.oidx, self.proj_w = interp_decomp(self.kmat, id_eps, rand=False)
         self.oidx = np.sort(self.oidx[:self.rank])
@@ -453,7 +454,7 @@ class KernelInterpolativeDecoposition:
         n = np.arange(-nmax, nmax+1)
         zeta = 0.5 * (1 - xi) # 0 for bosons, 1 for fermions
         iwn = 1.j * np.pi * (2*n + zeta)
-        self.kmat_mf = 1./(iwn[:, None] + self.dlrrf[None, :])
+        self.kmat_mf = -1./(iwn[:, None] - self.dlrrf[None, :])
         if verbose: print(f'kernel mats {time.time() - t} s')
 
         if verbose: t = time.time()
