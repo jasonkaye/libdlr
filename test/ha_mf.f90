@@ -151,13 +151,11 @@
 
       ! Return failed status if error is not sufficiently small
 
-      if (errlinf.gt.1.0d-12) then
+      if (errlinf.lt.1.0d-12) then
+        call exit(0)
+      else
         call exit(1)
       endif
-      if (isnan(errlinf)) then
-        call exit(1)
-      endif
-
 
       end subroutine ha_mf_main
 

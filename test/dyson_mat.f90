@@ -190,10 +190,9 @@
 
       ! Return failed status if error is not sufficiently small
 
-      if (err.gt.1.0d-13) then
-        call exit(1)
-      endif
-      if (isnan(err)) then
+      if (err.lt.1.0d-13) then
+        call exit(0)
+      else
         call exit(1)
       endif
 

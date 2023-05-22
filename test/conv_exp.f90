@@ -207,10 +207,9 @@
 
       ! Return failed status if error is not sufficiently small
 
-      if (err1linf.gt.1.0d-13.or.err2linf.gt.1.0d-13) then
-        call exit(1)
-      endif
-      if (isnan(err1linf).or.isnan(err2linf)) then
+      if (err1linf.lt.1.0d-13.and.err2linf.lt.1.0d-13) then
+        call exit(0)
+      else
         call exit(1)
       endif
 

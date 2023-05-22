@@ -160,10 +160,10 @@
 
       // Return failed status if error is not sufficiently small
 
-      if (errlinf > 1.0e-13) {
-        exit(1);
+      if (errlinf < 1.0e-13) {
+        exit(0);
       }
-      if (isnan(errlinf)) {
+      else {
         exit(1);
       }
 

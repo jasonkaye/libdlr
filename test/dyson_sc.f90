@@ -246,10 +246,9 @@
 
       ! Return failed status if error is not sufficiently small
 
-      if (err1.gt.1.0d-12.or.err2.gt.1.0d-12) then
-        call exit(1)
-      endif
-      if (isnan(err1).or.isnan(err2)) then
+      if (err1.lt.1.0d-12.and.err2.lt.1.0d-12) then
+        call exit(0)
+      else
         call exit(1)
       endif
 
