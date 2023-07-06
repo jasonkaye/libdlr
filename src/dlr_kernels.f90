@@ -67,9 +67,9 @@
       real *8 kfunf,t,om
 
       if (om.ge.0.0d0) then
-        kfunf = exp(-t*om)/(1.0d0+exp(-om))
+        kfunf = -exp(-t*om)/(1.0d0+exp(-om))
       else
-        kfunf = exp((1.0d0-t)*om)/(1.0d0+exp(om))
+        kfunf = -exp((1.0d0-t)*om)/(1.0d0+exp(om))
       endif
 
       end function kfunf
@@ -95,7 +95,7 @@
       pi = 4*atan(1.0d0)
       eye = (0.0d0,1.0d0)
 
-      kfunmf = 1.0d0/(n*pi*eye+om)
+      kfunmf = 1.0d0/(n*pi*eye-om)
 
       end function kfunmf
 
@@ -144,9 +144,9 @@
       real *16 t,om
 
       if (om.ge.0.0q0) then
-        qkfunf = exp(-t*om)/(1.0q0+exp(-om))
+        qkfunf = -exp(-t*om)/(1.0q0+exp(-om))
       else
-        qkfunf = exp((1.0q0-t)*om)/(1.0q0+exp(om))
+        qkfunf = -exp((1.0q0-t)*om)/(1.0q0+exp(om))
       endif
 
       end function qkfunf

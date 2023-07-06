@@ -81,20 +81,20 @@
             if (k.ne.l) then
 
               phitmp(j,k,l) =&
-                (kfunf_rel(dlrit(j),dlrrf(l))*expfun(dlrrf(k),xi) -&
-                kfunf_rel(dlrit(j),dlrrf(k))*expfun(dlrrf(l),xi))/&
+                (kfunf_rel(dlrit(j),dlrrf(k))*expfun(dlrrf(l),xi) -&
+                kfunf_rel(dlrit(j),dlrrf(l))*expfun(dlrrf(k),xi))/&
                 (dlrrf(k)-dlrrf(l))
 
             else
 
               if (dlrit(j).gt.0.0d0) then
 
-                phitmp(j,k,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
+                phitmp(j,k,l) = (-dlrit(j)*expfun(dlrrf(k),xi)+&
                   xi*kfunf(1.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
 
               else
 
-                phitmp(j,k,l) = (dlrit(j)*expfun(dlrrf(k),xi)+&
+                phitmp(j,k,l) = (-dlrit(j)*expfun(dlrrf(k),xi)+&
                   kfunf(0.0d0,dlrrf(k)))*kfunf_rel(dlrit(j),dlrrf(k))
 
               endif
@@ -274,12 +274,12 @@
         do i=1,r
           if (dlrit(i).gt.0.0d0) then
 
-            fstconv(i,r+j) = beta*(dlrit(i)-kfunf_rel(1.0d0,dlrrf(j)))&
+            fstconv(i,r+j) = -beta*(dlrit(i)+kfunf_rel(1.0d0,dlrrf(j)))&
               *cf2it(i,j)
 
           else
 
-            fstconv(i,r+j) = beta*(dlrit(i)+kfunf_rel(0.0d0,dlrrf(j)))&
+            fstconv(i,r+j) = -beta*(dlrit(i)-kfunf_rel(0.0d0,dlrrf(j)))&
               *cf2it(i,j)
 
           endif
@@ -379,7 +379,7 @@
         call dgemm('N','N',n,n,n,1.0d0,fgc(i,:,:,1),n,fgc(i,:,:,2),n,0.0d0,hc(i,:,:),n)
       enddo
 
-      call dgemm('N','N',r,n*n,r,1.0d0,fstconv(1,r+1),r,hc,r,1.0d0,h,r)
+      call dgemm('N','N',r,n*n,r,1.0d0,fstconv(1,r+1),r,hc,r,-1.0d0,h,r)
 
       end subroutine dlr_fstconv
 
@@ -439,8 +439,8 @@
             if (k.ne.l) then
 
               phivcc((k-1)*r+j,l) = &
-                (kfunf_rel(dlrit(j),dlrrf(l))*expfun(dlrrf(k),xi) -&
-                kfunf_rel(dlrit(j),dlrrf(k))*expfun(dlrrf(l),xi))/&
+                (kfunf_rel(dlrit(j),dlrrf(k))*expfun(dlrrf(l),xi) -&
+                kfunf_rel(dlrit(j),dlrrf(l))*expfun(dlrrf(k),xi))/&
                 (dlrrf(k)-dlrrf(l))
 
             else

@@ -263,6 +263,6 @@
       a1 = 0.804d0
       a2 = -0.443d0
 
-      g = (kfunf_rel(t,beta*a2)-kfunf_rel(t,beta*a1))/(a1-a2)
+      g = (kfunf_rel(t,beta*a1)-kfunf_rel(t,beta*a2))/(a1-a2)
 
       end subroutine gfun3
