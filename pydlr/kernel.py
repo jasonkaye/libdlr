@@ -405,7 +405,7 @@ class KernelInterpolativeDecoposition:
 
     """
 
-    def __init__(self, lamb, eps=1e-15, xi=-1, max_rank=500, nmax=None, verbose=False):
+    def __init__(self, lamb, eps=1e-15, xi=-1, max_rank=500, nmax=None, verbose=False, dense_imfreq=False):
 
         if verbose:
             import time        
@@ -451,7 +451,24 @@ class KernelInterpolativeDecoposition:
         # -- Matsubara frequency points
 
         if verbose: t = time.time()
-        n = np.arange(-nmax, nmax+1)
+
+        if dense_imfreq:
+            n = np.arange(-nmax, nmax+1)
+        else:
+            # -- Sparse starting grid in imaginary frequency
+            r = self.rank
+            n_panels = int(np.ceil(np.log2(nmax/r))) + 1 if nmax > r else 2                
+            n = np.zeros(r * n_panels)
+
+            idx = 1
+            for p in range(n_panels):
+                d_idx = r * 2**p
+                nn = np.arange(idx, idx + d_idx, 2**p)
+                n[r*p:r*(p+1)] = nn
+                idx += d_idx
+                
+            n = np.concatenate((1-n[::-1], n))
+            
         zeta = 0.5 * (1 - xi) # 0 for bosons, 1 for fermions
         iwn = 1.j * np.pi * (2*n + zeta)
         self.kmat_mf = -1./(iwn[:, None] - self.dlrrf[None, :])
