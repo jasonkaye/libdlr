@@ -265,6 +265,9 @@ class dlr(object):
             Green's function at the imaginary time points :math:`\\tau_k` with :math:`m \\times m` orbital indices.
         """
 
+        assert(len(G_xaa.shape) == 3 or len(G_xaa.shape) == 1)
+        assert(len(tau_k.shape) == 1)
+
         tau_k = tau_k[:, None] / beta
         
         w_p = self.dlrrf_p[None, :]
@@ -302,6 +305,7 @@ class dlr(object):
 
         shape_iaa = G_iaa.shape
         assert(len(shape_iaa) == 3)
+        assert(len(tau_i.shape) == 1)
         
         shape_iA = (shape_iaa[0], shape_iaa[1]*shape_iaa[2])
         shape_xaa = (len(self), shape_iaa[1], shape_iaa[2])
