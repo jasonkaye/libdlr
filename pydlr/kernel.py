@@ -453,6 +453,8 @@ class KernelInterpolativeDecoposition:
         if verbose: t = time.time()
 
         if dense_imfreq:
+            if nmax < self.rank:
+                nmax = self.rank
             n = np.arange(-nmax, nmax+1)
         else:
             # -- Sparse starting grid in imaginary frequency
