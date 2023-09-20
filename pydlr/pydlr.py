@@ -54,7 +54,7 @@ class dlr(object):
     """
     
     def __init__(self, lamb, eps=1e-15, xi=-1,
-                 max_rank=500, nmax=None, verbose=False, python_impl=True):        
+                 max_rank=500, nmax=None, verbose=False, python_impl=True, dense_imfreq=False):
 
         self.xi = xi
         self.lamb = lamb
@@ -66,7 +66,7 @@ class dlr(object):
         else:
             KID = KernelInterpolativeDecoposition
             
-        kid = KID(lamb, eps=eps, xi=xi, max_rank=max_rank, nmax=nmax, verbose=verbose)
+        kid = KID(lamb, eps=eps, xi=xi, max_rank=max_rank, nmax=nmax, verbose=verbose, dense_imfreq=dense_imfreq)
 
         members = [
             'rank', 'dlrit', 'dlrrf', 'dlrmf',
