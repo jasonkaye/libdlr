@@ -60,13 +60,16 @@ class dlr(object):
         self.lamb = lamb
         self.eps = eps
 
+        opts = dict(eps=eps, xi=xi, max_rank=max_rank, nmax=nmax, verbose=verbose)
+        
         if not python_impl:
             from .kernel_fortran import KernelInterpolativeDecopositionFortran
             KID = KernelInterpolativeDecopositionFortran
         else:
             KID = KernelInterpolativeDecoposition
+            opts['dense_imfreq']= dense_imfreq
             
-        kid = KID(lamb, eps=eps, xi=xi, max_rank=max_rank, nmax=nmax, verbose=verbose, dense_imfreq=dense_imfreq)
+        kid = KID(lamb, **opts)
 
         members = [
             'rank', 'dlrit', 'dlrrf', 'dlrmf',
