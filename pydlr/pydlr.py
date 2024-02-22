@@ -58,7 +58,11 @@ class dlr(object):
 
         self.xi = xi
         self.lamb = lamb
-        self.eps = eps
+
+        eps = np.abs(eps)
+        min_eps = 10 * np.finfo(float).resolution
+
+        self.eps = eps if eps > min_eps else min_eps
 
         opts = dict(eps=eps, xi=xi, max_rank=max_rank, nmax=nmax, verbose=verbose)
         
