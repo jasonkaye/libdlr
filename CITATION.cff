@@ -28,7 +28,7 @@ preferred-citation:
   publisher:
     name: Elsevier
   volume: 280
-  pages: 108458
+  start: 108458
   title: "libdlr: Efficient imaginary time calculations using the 
     discrete Lehmann representation"
   type: article
