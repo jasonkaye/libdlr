@@ -19,11 +19,9 @@ preferred-citation:
     orcid: "https://orcid.org/0000-0001-8045-6179"
   - family-names: Chen
     given-names: Kun
-    orcid: "https://orcid.org/0000-0003-3613-007X"
   - family-names: Strand
     given-names: Hugo U. R.
     orcid: "https://orcid.org/0000-0002-7263-4403"
-
   date-published: 2022-07-08
   doi: 10.1016/j.cpc.2022.108458
   journal: Computer Physics Communications
