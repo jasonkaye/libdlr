@@ -1,0 +1,36 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Kaye
+  given-names: Jason
+  orcid: "https://orcid.org/0000-0001-8045-6179"
+- family-names: Strand
+  given-names: Hugo U. R.
+  orcid: "https://orcid.org/0000-0002-7263-4403"
+contact:
+- family-names: Kaye
+  given-names: Jason
+  orcid: "https://orcid.org/0000-0001-8045-6179"
+message: If you use this software, please cite our article in Computer Physics
+Communications.
+preferred-citation:
+  authors:
+  - family-names: Kaye
+    given-names: Jason
+    orcid: "https://orcid.org/0000-0001-8045-6179"
+  - family-names: Chen
+    given-names: Kun
+    orcid: "https://orcid.org/0000-0003-3613-007X"
+  - family-names: Strand
+    given-names: Hugo U. R.
+    orcid: "https://orcid.org/0000-0002-7263-4403"
+
+  date-published: 2022-07-08
+  doi: 10.1016/j.cpc.2022.108458
+  journal: Computer Physics Communications
+  publisher:
+    name: Elsevier
+  volume: 280
+  pages: 108458
+  title: "libdlr: Efficient imaginary time calculations using the discrete Lehmann representation"
+  type: article
+  url: "https://www.sciencedirect.com/science/article/pii/S0010465522001771"
