@@ -318,6 +318,7 @@
       ! Solve interpolation problem using DLR coefficients -> Matsubara
       ! frequency grid values matrix stored in LU form
 
+      allocate(tmp(r,n,n))
       tmp = g/beta
 
       call zgetrs('N',r,n*n,mf2cf,r,mf2cfp,tmp,r,info)
