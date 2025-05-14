@@ -43,6 +43,13 @@ SYK model in Matsubara frequency
 
 `syk_mf.f90`_ - Solve the SYK model (Dyson equation with SYK self-energy) by a more standard method, which computes the self-energy in the imaginary time domain, and solves the Dyson equation in the Matsubara frequency domain.
 
+From time to frequency and back
+-------------------------------
+
+`timetofreqtotime.f90`_ - For a Green's function with a delta function spectral
+density, form the DLR expansion from samples in imaginary time, evaluate at the
+Matsubara frequency DLR nodes, form another DLR expansion from these values, and
+evaluate back in imaginary time, making sure the original Green's function is recovered. 
 
 Test programs
 ~~~~~~~~~~~~~
